@@ -502,6 +502,9 @@ struct HSNativeServerContract {
         if parts.count >= 4, parts[1] == "dialogs", parts[3] == "folder" {
             return .foldersEditPeerFolders
         }
+        if parts.count >= 4, parts[1] == "dialogs", parts[3] == "notifications" {
+            return .accountUpdatePeerNotifySettings
+        }
         if parts.count == 2, parts[1] == "search" {
             return .messagesSearchGlobal
         }
@@ -723,6 +726,7 @@ enum HSNativeServerOperation: String, Equatable {
     case accountSetPrivacy = "account.setPrivacy"
     case accountGetNotifySettings = "account.getNotifySettings"
     case accountUpdateNotifySettings = "account.updateNotifySettings"
+    case accountUpdatePeerNotifySettings = "account.updateNotifySettings(peer)"
     case accountGetStorageStats = "storage/settings local+remote state"
     case accountGetAuthorizations = "account.getAuthorizations"
     case accountResetAuthorization = "account.resetAuthorization"

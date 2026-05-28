@@ -962,6 +962,25 @@ final class HSAPIClient {
         try await request("v1/settings/notifications", method: "PATCH", body: settings, session: session)
     }
 
+    func updatePeerNotificationSettings(
+        dialogID: Int64,
+        muteInterval: Int?,
+        showPreviews: Bool = true,
+        silent: Bool = false,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/notifications",
+            method: "PATCH",
+            body: PeerNotificationSettingsBody(
+                muteInterval: muteInterval,
+                showPreviews: showPreviews,
+                silent: silent
+            ),
+            session: session
+        )
+    }
+
     func storageSettings(session: HSUserSession) async throws -> HSStorageSettings {
         try await request("v1/settings/storage", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
@@ -1179,6 +1198,18 @@ private struct DialogFolderBody: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case folderID = "folder_id"
+    }
+}
+
+private struct PeerNotificationSettingsBody: Encodable {
+    let muteInterval: Int?
+    let showPreviews: Bool
+    let silent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case muteInterval = "mute_interval"
+        case showPreviews = "show_previews"
+        case silent
     }
 }
 

@@ -140,6 +140,9 @@ struct ChatThreadView: View {
     @State private var didResolveInitialUnreadSeparator = false
     @State private var readOutboxMaxID: Int64
     @State private var pendingHistoryAction: PrivateChatHistoryAction?
+    @State private var isPeerMuted: Bool
+    @State private var isShowingCustomMuteDialog = false
+    @State private var customMuteHoursText = "8"
     @State private var remoteInputActivity: HSInputActivity?
     @State private var lastSentInputActivity: (kind: HSInputActivityKind, date: Date)?
     @State private var inputActivityCleanupTask: Task<Void, Never>?
@@ -148,6 +151,7 @@ struct ChatThreadView: View {
     private let unreadSeparatorScrollID = "hs-unread-separator"
     private static let linkDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
     private static let inputActivityThrottle: TimeInterval = 4
+    private static let muteForeverInterval = Int(Int32.max)
 
     private var activeReplyToMessageID: Int64? {
         replyingToMessage?.id ?? draftReplyToMessageID
@@ -244,6 +248,7 @@ struct ChatThreadView: View {
         self.chat = chat
         self.mode = mode
         _readOutboxMaxID = State(initialValue: chat.readOutboxMaxID)
+        _isPeerMuted = State(initialValue: chat.isMuted)
     }
 
     var body: some View {
@@ -411,6 +416,18 @@ struct ChatThreadView: View {
                 Text(pendingHistoryAction.message)
             }
         }
+        .alert("Custom Mute", isPresented: $isShowingCustomMuteDialog) {
+            TextField("Hours", text: $customMuteHoursText)
+#if os(iOS)
+                .keyboardType(.numberPad)
+#endif
+            Button("Mute") {
+                applyCustomMuteHours()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter the number of hours to mute this private chat.")
+        }
     }
 
     @ToolbarContentBuilder
@@ -452,21 +469,7 @@ struct ChatThreadView: View {
             }
             if canManagePrivateChatHistory {
                 Menu {
-                    Button(role: .destructive) {
-                        confirmHistoryAction(.clearHistory)
-                    } label: {
-                        Label("Clear History", systemImage: "trash")
-                    }
-                    Button(role: .destructive) {
-                        confirmHistoryAction(.deleteChat)
-                    } label: {
-                        Label("Delete Chat", systemImage: "trash")
-                    }
-                    Button(role: .destructive) {
-                        confirmHistoryAction(.deleteForEveryone)
-                    } label: {
-                        Label("Delete for Both", systemImage: "trash")
-                    }
+                    privateChatOptionsMenu
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -479,6 +482,66 @@ struct ChatThreadView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
+        }
+    }
+
+    @ViewBuilder
+    private var privateChatOptionsMenu: some View {
+        Button {
+            Task {
+                await updatePeerMute(interval: 0)
+            }
+        } label: {
+            Label(isPeerMuted ? "Enable Notifications" : "Notifications On", systemImage: "bell")
+        }
+        .disabled(!isPeerMuted)
+
+        Button {
+            Task {
+                await updatePeerMute(interval: 60 * 60)
+            }
+        } label: {
+            Label("Mute for 1 Hour", systemImage: "bell.slash")
+        }
+
+        Button {
+            Task {
+                await updatePeerMute(interval: 2 * 24 * 60 * 60)
+            }
+        } label: {
+            Label("Mute for 2 Days", systemImage: "bell.slash")
+        }
+
+        Button {
+            isShowingCustomMuteDialog = true
+        } label: {
+            Label("Mute Custom...", systemImage: "timer")
+        }
+
+        Button {
+            Task {
+                await updatePeerMute(interval: Self.muteForeverInterval)
+            }
+        } label: {
+            Label("Mute Forever", systemImage: "bell.slash.fill")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            confirmHistoryAction(.clearHistory)
+        } label: {
+            Label("Clear History", systemImage: "trash")
+        }
+        Button(role: .destructive) {
+            confirmHistoryAction(.deleteChat)
+        } label: {
+            Label("Delete Chat", systemImage: "trash")
+        }
+        Button(role: .destructive) {
+            confirmHistoryAction(.deleteForEveryone)
+        } label: {
+            Label("Delete for Both", systemImage: "trash")
         }
     }
 
@@ -2032,6 +2095,58 @@ struct ChatThreadView: View {
             return
         }
         pendingHistoryAction = action
+    }
+
+    private func applyCustomMuteHours() {
+        guard let hours = Int(customMuteHoursText.trimmingCharacters(in: .whitespacesAndNewlines)), hours > 0 else {
+            statusMessage = nil
+            errorMessage = "Enter a valid mute duration."
+            return
+        }
+        let interval = min(hours, Int(Int32.max / 3600)) * 3600
+        Task {
+            await updatePeerMute(interval: interval)
+        }
+    }
+
+    private func updatePeerMute(interval: Int) async {
+        guard let session = authStore.session, canManagePrivateChatHistory else {
+            return
+        }
+        do {
+            _ = try await authStore.api.updatePeerNotificationSettings(
+                dialogID: chat.id,
+                muteInterval: interval,
+                session: session
+            )
+            isPeerMuted = interval != 0
+            statusMessage = peerMuteStatusText(interval: interval)
+            errorMessage = nil
+            NotificationCenter.default.post(
+                name: .hsNativeSyncDidChange,
+                object: nil,
+                userInfo: ["dialog_ids": [chat.id]]
+            )
+        } catch {
+            statusMessage = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func peerMuteStatusText(interval: Int) -> String {
+        if interval == 0 {
+            return "Notifications enabled."
+        }
+        if interval >= Self.muteForeverInterval {
+            return "Muted forever."
+        }
+        if interval >= 24 * 60 * 60, interval % (24 * 60 * 60) == 0 {
+            return "Muted for \(interval / (24 * 60 * 60)) days."
+        }
+        if interval >= 60 * 60, interval % (60 * 60) == 0 {
+            return "Muted for \(interval / (60 * 60)) hours."
+        }
+        return "Muted."
     }
 
     private func applyHistoryAction(_ action: PrivateChatHistoryAction) async {

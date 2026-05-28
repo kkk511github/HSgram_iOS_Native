@@ -726,6 +726,16 @@ final class HSNativeServerTransport: HSServerTransport {
                 let session = try requireSession(session)
                 let settings: HSNotificationSettings = try decodeBody(body)
                 return try typed(try await mtProtoClient.updateNotificationSettings(settings, session: session))
+            case .accountUpdatePeerNotifySettings:
+                let session = try requireSession(session)
+                let request: HSNativePeerNotificationSettingsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.updatePeerNotificationSettings(
+                    dialogID: try route.int64Part(at: 2),
+                    muteInterval: request.muteInterval,
+                    showPreviews: request.showPreviews,
+                    silent: request.silent,
+                    session: session
+                ))
             case .accountGetStorageStats:
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.storageSettings(session: session))
@@ -960,6 +970,18 @@ private struct HSNativePrivacyRuleUpdateBody: Decodable {
     let id: String
     let value: HSPrivacyRuleValue
     let exceptions: HSPrivacyRuleExceptions
+}
+
+private struct HSNativePeerNotificationSettingsBody: Decodable {
+    let muteInterval: Int?
+    let showPreviews: Bool
+    let silent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case muteInterval = "mute_interval"
+        case showPreviews = "show_previews"
+        case silent
+    }
 }
 
 private struct HSNativePushTokenBody: Decodable {

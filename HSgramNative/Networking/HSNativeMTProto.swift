@@ -316,6 +316,7 @@ enum HSNativeMTProtoSchema {
     static let folderPeer: UInt32 = 0xe9baa668
     static let inputUserSelf: UInt32 = 0xf7c1b13f
     static let inputUser: UInt32 = 0xf21158c6
+    static let inputNotifyPeer: UInt32 = 0xb8bc5b0c
     static let inputNotifyUsers: UInt32 = 0x193b4417
     static let inputNotifyChats: UInt32 = 0x4a95e84e
     static let inputNotifyBroadcasts: UInt32 = 0xb1db7c7e
@@ -2641,6 +2642,31 @@ final class HSNativeMTProtoClient {
         return try await notificationSettings(session: session)
     }
 
+    func updatePeerNotificationSettings(
+        dialogID: Int64,
+        muteInterval: Int?,
+        showPreviews: Bool = true,
+        silent: Bool = false,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: accountUpdateNotifySettingsPayload(
+                peer: inputPeer,
+                settings: HSNotifyScopeSettings(
+                    enabled: muteInterval.map { $0 == 0 } ?? true,
+                    showPreviews: showPreviews,
+                    silent: silent,
+                    muteUntil: muteUntilTimestamp(from: muteInterval)
+                )
+            ),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
     func storageSettings(session: HSUserSession) async throws -> HSStorageSettings {
         let catalog = try await assetCatalog(session: session)
         return HSStorageSettings(
@@ -2683,6 +2709,19 @@ final class HSNativeMTProtoClient {
             credentials: credentials
         )
         return try Self.parseNotifySettingsResult(result)
+    }
+
+    private func muteUntilTimestamp(from muteInterval: Int?) -> Int? {
+        guard let muteInterval else {
+            return nil
+        }
+        if muteInterval <= 0 {
+            return 0
+        }
+        if muteInterval >= Int(Int32.max) {
+            return Int(Int32.max)
+        }
+        return Int(Date().timeIntervalSince1970) + muteInterval
     }
 
     func authSendCodePayload(email: String) -> Data {
@@ -3000,6 +3039,15 @@ final class HSNativeMTProtoClient {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.accountUpdateNotifySettings)
         writer.constructor(scope.inputConstructor)
+        writer.raw(inputPeerNotifySettingsPayload(settings))
+        return writer.data
+    }
+
+    private func accountUpdateNotifySettingsPayload(peer: Data, settings: HSNotifyScopeSettings) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountUpdateNotifySettings)
+        writer.constructor(HSNativeMTProtoSchema.inputNotifyPeer)
+        writer.raw(peer)
         writer.raw(inputPeerNotifySettingsPayload(settings))
         return writer.data
     }
