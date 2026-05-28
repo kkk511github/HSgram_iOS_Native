@@ -39,11 +39,37 @@ enum HSPrototypeTheme {
             return .dark
         }
     }
+
+    static func dynamicTypeSize(for config: ThemeConfig) -> DynamicTypeSize? {
+        switch config.fontScale {
+        case ..<0.92:
+            return .small
+        case 0.92..<1.08:
+            return nil
+        case 1.08..<1.18:
+            return .large
+        default:
+            return .xLarge
+        }
+    }
 }
 
 enum HSLayoutMetrics {
     static let rootTabBarClearance: CGFloat = 88
     static let chatInputClearance: CGFloat = 18
+}
+
+struct HSDynamicTypeScaleModifier: ViewModifier {
+    let config: ThemeConfig
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let size = HSPrototypeTheme.dynamicTypeSize(for: config) {
+            content.dynamicTypeSize(size)
+        } else {
+            content
+        }
+    }
 }
 
 extension Color {

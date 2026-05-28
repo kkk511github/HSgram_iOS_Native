@@ -16,6 +16,7 @@ struct HSPrototypeRootView: View {
         .environmentObject(data)
         .tint(HSPrototypeTheme.accentColor(data.themeConfig))
         .preferredColorScheme(HSPrototypeTheme.preferredScheme(for: data.themeConfig))
+        .modifier(HSDynamicTypeScaleModifier(config: data.themeConfig))
     }
 }
 
