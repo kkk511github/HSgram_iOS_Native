@@ -9,7 +9,7 @@ struct AdvancedToolsView: View {
 
     var body: some View {
         List {
-            Section("Unified Access") {
+            Section("统一访问") {
                 if let errorMessage, entitlements.isEmpty {
                     HSErrorBanner(message: errorMessage)
                 }
@@ -19,12 +19,12 @@ struct AdvancedToolsView: View {
                 }
 
                 if entitlements.isEmpty && errorMessage == nil {
-                    Text("No advanced access loaded.")
-                        .foregroundStyle(.secondary)
+                    Text("暂无高级访问项目。")
+                        .foregroundStyle(HSTheme.secondaryText)
                 }
             }
 
-            Section("Tools") {
+            Section("工具") {
                 if let errorMessage, !entitlements.isEmpty && tools.isEmpty {
                     HSErrorBanner(message: errorMessage)
                 }
@@ -34,12 +34,14 @@ struct AdvancedToolsView: View {
                 }
 
                 if tools.isEmpty && errorMessage == nil {
-                    Text("No advanced tools loaded.")
-                        .foregroundStyle(.secondary)
+                    Text("暂无高级工具。")
+                        .foregroundStyle(HSTheme.secondaryText)
                 }
             }
         }
-        .navigationTitle("Advanced")
+        .scrollContentBackground(.hidden)
+        .background(HSTheme.grouped)
+        .navigationTitle("高级")
         .toolbar {
             if isLoading {
                 ProgressView()
@@ -77,16 +79,15 @@ private struct AdvancedEntitlementRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundStyle(color)
-                .frame(width: 30)
+            HSClassicAvatar(title: "", icon: icon, tint: color, size: 40)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(entitlement.title)
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HSTheme.primaryText)
                 Text(entitlement.subtitle)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(HSTheme.secondaryText)
                     .lineLimit(2)
             }
 
@@ -124,16 +125,15 @@ private struct AdvancedToolRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .foregroundStyle(color)
-                .frame(width: 30)
+            HSClassicAvatar(title: "", icon: icon, tint: color, size: 40)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(tool.title)
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HSTheme.primaryText)
                 Text(tool.subtitle)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(HSTheme.secondaryText)
                     .lineLimit(2)
             }
 

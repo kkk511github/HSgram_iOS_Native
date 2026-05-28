@@ -14,25 +14,29 @@ struct DevicesView: View {
                 }
 
                 ForEach(devices) { device in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Label(device.deviceModel.isEmpty ? "Unknown Device" : device.deviceModel, systemImage: icon(for: device))
-                                .font(.headline)
-                            Spacer()
-                            if device.current {
-                                Text("Current")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(HSTheme.trust)
+                    HStack(spacing: 12) {
+                        HSClassicAvatar(title: "", icon: icon(for: device), tint: device.current ? HSTheme.trust : HSTheme.accent, size: 44)
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(device.deviceModel.isEmpty ? "未知设备" : device.deviceModel)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(HSTheme.primaryText)
+                                Spacer()
+                                if device.current {
+                                    Text("当前")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(HSTheme.trust)
+                                }
                             }
+
+                            Text(deviceSubtitle(device))
+                                .font(.footnote)
+                                .foregroundStyle(HSTheme.secondaryText)
+
+                            Text(locationSubtitle(device))
+                                .font(.caption)
+                                .foregroundStyle(HSTheme.secondaryText)
                         }
-
-                        Text(deviceSubtitle(device))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        Text(locationSubtitle(device))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                     .swipeActions {
@@ -42,7 +46,7 @@ struct DevicesView: View {
                                     await reset(device)
                                 }
                             } label: {
-                                Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                Label("退出", systemImage: "rectangle.portrait.and.arrow.right")
                             }
                             .disabled(resettingDeviceID == device.id)
                         }
@@ -50,12 +54,14 @@ struct DevicesView: View {
                 }
 
                 if devices.isEmpty && errorMessage == nil {
-                    Text("No active device sessions.")
-                        .foregroundStyle(.secondary)
+                    Text("暂无活跃设备。")
+                        .foregroundStyle(HSTheme.secondaryText)
                 }
             }
         }
-        .navigationTitle("Devices")
+        .scrollContentBackground(.hidden)
+        .background(HSTheme.grouped)
+        .navigationTitle("设备")
         .task {
             await refresh()
         }

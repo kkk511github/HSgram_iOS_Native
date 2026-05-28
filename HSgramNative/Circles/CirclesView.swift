@@ -45,12 +45,36 @@ struct CirclesView: View {
                                 } label: {
                                     CircleToolLabel(title: "Manage", systemImage: "info.circle")
                                 }
-                                CircleToolButton(title: "Rules", systemImage: "doc.text")
-                                CircleToolButton(title: "Invite Links", systemImage: "link")
-                                CircleToolButton(title: "Members", systemImage: "person.2")
-                                CircleToolButton(title: "Permissions", systemImage: "lock.shield")
-                                CircleToolButton(title: "Admins", systemImage: "star")
-                                CircleToolButton(title: "Recent Actions", systemImage: "clock.arrow.circlepath")
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Rules", systemImage: "doc.text")
+                                }
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Invite Links", systemImage: "link")
+                                }
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Members", systemImage: "person.2")
+                                }
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Permissions", systemImage: "lock.shield")
+                                }
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Admins", systemImage: "star")
+                                }
+                                NavigationLink {
+                                    SupergroupManageView(chat: circleChat(for: circle))
+                                } label: {
+                                    CircleToolLabel(title: "Recent Actions", systemImage: "clock.arrow.circlepath")
+                                }
                             }
                         }
                         .padding(.vertical, 6)
@@ -87,22 +111,9 @@ struct CirclesView: View {
             subtitle: "\(circle.memberCount) members · \(circle.role)",
             unreadCount: 0,
             isCircle: true,
+            peerKind: .chat,
             updatedAt: nil
         )
-    }
-}
-
-private struct CircleToolButton: View {
-    let title: String
-    let systemImage: String
-
-    var body: some View {
-        Button {} label: {
-            Label(title, systemImage: systemImage)
-                .font(.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 36)
-        }
-        .buttonStyle(.bordered)
     }
 }
 

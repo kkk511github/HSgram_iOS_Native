@@ -9,50 +9,53 @@ struct TrustCenterView: View {
         NavigationStack {
             List {
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Trust Center")
-                            .font(.largeTitle.weight(.bold))
-                        Text("Review privacy, reporting, device, support, and account controls.")
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("信任中心")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(HSTheme.primaryText)
+                        Text("查看隐私、设备、支持和账号安全。")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundStyle(HSTheme.secondaryText)
                     }
                     .padding(.vertical, 8)
                 }
 
-                Section("Review") {
+                Section("检查") {
                     if let errorMessage {
                         HSErrorBanner(message: errorMessage)
                     }
                     ForEach(items) { item in
                         HStack(spacing: 12) {
-                            Image(systemName: icon(for: item))
-                                .foregroundStyle(color(for: item))
-                                .frame(width: 30)
+                            HSClassicAvatar(title: "", icon: icon(for: item), tint: color(for: item), size: 44)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(item.title)
-                                    .font(.headline)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(HSTheme.primaryText)
                                 Text(item.subtitle)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundStyle(HSTheme.secondaryText)
                             }
                         }
                         .padding(.vertical, 4)
                     }
                     if items.isEmpty && errorMessage == nil {
-                        Text("No trust review items.")
-                            .foregroundStyle(.secondary)
+                        Text("暂无需要检查的项目。")
+                            .foregroundStyle(HSTheme.secondaryText)
                     }
                 }
 
-                Section("Account") {
-                    Label("Privacy and Security", systemImage: "hand.raised")
-                    Label("Notifications", systemImage: "bell")
-                    Label("Data and Storage", systemImage: "externaldrive")
-                    Label("Support", systemImage: "questionmark.circle")
-                    Label("Delete Account", systemImage: "trash")
+                Section("账号") {
+                    Label("隐私与安全", systemImage: "hand.raised")
+                    Label("通知", systemImage: "bell")
+                    Label("数据与存储", systemImage: "externaldrive")
+                    Label("帮助", systemImage: "questionmark.circle")
+                    Label("删除账号", systemImage: "trash")
                         .foregroundStyle(HSTheme.warning)
                 }
             }
-            .navigationTitle("Trust")
+            .scrollContentBackground(.hidden)
+            .background(HSTheme.grouped)
+            .navigationTitle("信任")
             .task {
                 await refresh()
             }

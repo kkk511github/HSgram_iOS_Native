@@ -20,6 +20,19 @@ struct HSEmailStartResponse: Decodable {
     let codeLength: Int
 }
 
+struct HSPasswordRecoveryResponse: Decodable {
+    let emailPattern: String
+    let codeLength: Int
+}
+
+struct HSLoginPasswordSettings: Codable, Equatable {
+    let hasPassword: Bool
+    let hasRecovery: Bool
+    let hint: String?
+    let pendingEmailPattern: String?
+    let loginEmailPattern: String?
+}
+
 struct HSWorkspaceCounts: Codable, Equatable {
     let joinRequests: Int64
     let ruleAcks: Int64
@@ -76,13 +89,433 @@ struct HSWorkspaceSummary: Codable, Equatable {
     }
 }
 
+enum HSChatPeerKind: String, Codable, Hashable {
+    case user
+    case chat
+    case channel
+}
+
 struct HSChat: Codable, Identifiable, Hashable {
+    static let archiveFolderID = 1
+
     let id: Int64
     let title: String
     let subtitle: String
     let unreadCount: Int
+    let isMarkedUnread: Bool
+    let isPinned: Bool
+    let folderID: Int?
     let isCircle: Bool
+    let peerKind: HSChatPeerKind
+    let isBot: Bool
+    let isContact: Bool
+    let isBroadcast: Bool
+    let isMuted: Bool
     let updatedAt: Date?
+
+    var isArchived: Bool {
+        folderID == Self.archiveFolderID
+    }
+
+    init(
+        id: Int64,
+        title: String,
+        subtitle: String,
+        unreadCount: Int,
+        isMarkedUnread: Bool = false,
+        isPinned: Bool = false,
+        folderID: Int? = nil,
+        isCircle: Bool,
+        peerKind: HSChatPeerKind = .user,
+        isBot: Bool = false,
+        isContact: Bool = false,
+        isBroadcast: Bool = false,
+        isMuted: Bool = false,
+        updatedAt: Date?
+    ) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.unreadCount = unreadCount
+        self.isMarkedUnread = isMarkedUnread
+        self.isPinned = isPinned
+        self.folderID = folderID
+        self.isCircle = isCircle
+        self.peerKind = peerKind
+        self.isBot = isBot
+        self.isContact = isContact
+        self.isBroadcast = isBroadcast
+        self.isMuted = isMuted
+        self.updatedAt = updatedAt
+    }
+
+    func withFolderID(_ folderID: Int?) -> HSChat {
+        HSChat(
+            id: id,
+            title: title,
+            subtitle: subtitle,
+            unreadCount: unreadCount,
+            isMarkedUnread: isMarkedUnread,
+            isPinned: isPinned,
+            folderID: folderID,
+            isCircle: isCircle,
+            peerKind: peerKind,
+            isBot: isBot,
+            isContact: isContact,
+            isBroadcast: isBroadcast,
+            isMuted: isMuted,
+            updatedAt: updatedAt
+        )
+    }
+
+    func withPinned(_ isPinned: Bool) -> HSChat {
+        HSChat(
+            id: id,
+            title: title,
+            subtitle: subtitle,
+            unreadCount: unreadCount,
+            isMarkedUnread: isMarkedUnread,
+            isPinned: isPinned,
+            folderID: folderID,
+            isCircle: isCircle,
+            peerKind: peerKind,
+            isBot: isBot,
+            isContact: isContact,
+            isBroadcast: isBroadcast,
+            isMuted: isMuted,
+            updatedAt: updatedAt
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case subtitle
+        case unreadCount = "unread_count"
+        case isMarkedUnread = "is_marked_unread"
+        case isPinned = "is_pinned"
+        case folderID = "folder_id"
+        case isCircle = "is_circle"
+        case peerKind = "peer_kind"
+        case isBot = "is_bot"
+        case isContact = "is_contact"
+        case isBroadcast = "is_broadcast"
+        case isMuted = "is_muted"
+        case updatedAt = "updated_at"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int64.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        subtitle = try container.decode(String.self, forKey: .subtitle)
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
+        isMarkedUnread = try container.decodeIfPresent(Bool.self, forKey: .isMarkedUnread) ?? false
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        folderID = try container.decodeIfPresent(Int.self, forKey: .folderID)
+        isCircle = try container.decodeIfPresent(Bool.self, forKey: .isCircle) ?? false
+        peerKind = try container.decodeIfPresent(HSChatPeerKind.self, forKey: .peerKind) ?? (isCircle ? .chat : .user)
+        isBot = try container.decodeIfPresent(Bool.self, forKey: .isBot) ?? false
+        isContact = try container.decodeIfPresent(Bool.self, forKey: .isContact) ?? false
+        isBroadcast = try container.decodeIfPresent(Bool.self, forKey: .isBroadcast) ?? false
+        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? false
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+    }
+}
+
+struct HSChatListFilterPeerCategories: OptionSet, Codable, Hashable {
+    let rawValue: Int32
+
+    static let contacts = HSChatListFilterPeerCategories(rawValue: 1 << 0)
+    static let nonContacts = HSChatListFilterPeerCategories(rawValue: 1 << 1)
+    static let groups = HSChatListFilterPeerCategories(rawValue: 1 << 2)
+    static let channels = HSChatListFilterPeerCategories(rawValue: 1 << 3)
+    static let bots = HSChatListFilterPeerCategories(rawValue: 1 << 4)
+
+    static let all: HSChatListFilterPeerCategories = [
+        .contacts,
+        .nonContacts,
+        .groups,
+        .channels,
+        .bots
+    ]
+
+    init(rawValue: Int32) {
+        self.rawValue = rawValue
+    }
+}
+
+struct HSChatListFilterPeer: Codable, Hashable, Identifiable {
+    enum PeerKind: String, Codable, Hashable {
+        case user
+        case chat
+        case channel
+    }
+
+    var id: String {
+        "\(kind.rawValue):\(peerID)"
+    }
+
+    let kind: PeerKind
+    let peerID: Int64
+    let dialogID: Int64
+    let accessHash: Int64?
+}
+
+extension HSChat {
+    private static let channelDialogPrefix: Int64 = -1_000_000_000_000
+
+    var chatListFilterPeer: HSChatListFilterPeer {
+        let kind: HSChatListFilterPeer.PeerKind
+        let peerID: Int64
+        switch peerKind {
+        case .user:
+            kind = .user
+            peerID = id
+        case .chat:
+            kind = .chat
+            peerID = id < 0 ? -id : id
+        case .channel:
+            kind = .channel
+            peerID = id < Self.channelDialogPrefix ? Self.channelDialogPrefix - id : id
+        }
+        return HSChatListFilterPeer(kind: kind, peerID: peerID, dialogID: id, accessHash: nil)
+    }
+}
+
+struct HSChatListFilter: Codable, Identifiable, Hashable {
+    let id: Int
+    let title: String
+    let emoticon: String?
+    let color: Int?
+    let isDefault: Bool
+    let isShared: Bool
+    let hasSharedLinks: Bool
+    let categories: HSChatListFilterPeerCategories
+    let excludeMuted: Bool
+    let excludeRead: Bool
+    let excludeArchived: Bool
+    let includePeers: [HSChatListFilterPeer]
+    let pinnedPeers: [HSChatListFilterPeer]
+    let excludePeers: [HSChatListFilterPeer]
+    let titleAnimationsEnabled: Bool
+
+    var displayTitle: String {
+        if isDefault {
+            return "全部"
+        }
+        return title.isEmpty ? "文件夹 \(id)" : title
+    }
+
+    var isEditable: Bool {
+        !isDefault && !isShared
+    }
+}
+
+struct HSChatListFiltersState: Codable, Hashable {
+    let tagsEnabled: Bool
+    let filters: [HSChatListFilter]
+}
+
+struct HSMessageMediaLocation: Codable, Hashable {
+    enum LocationKind: String, Codable, Hashable {
+        case photo
+        case document
+    }
+
+    let kind: LocationKind
+    let id: Int64
+    let accessHash: Int64
+    let fileReference: Data
+    let dcID: Int?
+    let thumbnailSize: String
+}
+
+struct HSMediaTransferProgress: Equatable {
+    let completedBytes: Int64
+    let totalBytes: Int64?
+
+    var fractionCompleted: Double? {
+        guard let totalBytes, totalBytes > 0 else {
+            return nil
+        }
+        return min(1, max(0, Double(completedBytes) / Double(totalBytes)))
+    }
+}
+
+struct HSMessageMedia: Codable, Hashable {
+    enum MediaKind: String, Codable, Hashable {
+        case photo
+        case video
+        case file
+        case gif
+        case audio
+        case voice
+        case sticker
+        case webpage
+        case unknown
+    }
+
+    let kind: MediaKind
+    let fileName: String?
+    let mimeType: String?
+    let size: Int64?
+    let width: Int?
+    let height: Int?
+    let duration: Double?
+    let waveform: Data?
+    let webPage: HSWebPagePreview?
+    let location: HSMessageMediaLocation?
+
+    init(
+        kind: MediaKind,
+        fileName: String?,
+        mimeType: String?,
+        size: Int64?,
+        width: Int?,
+        height: Int?,
+        duration: Double?,
+        waveform: Data? = nil,
+        webPage: HSWebPagePreview? = nil,
+        location: HSMessageMediaLocation? = nil
+    ) {
+        self.kind = kind
+        self.fileName = fileName
+        self.mimeType = mimeType
+        self.size = size
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.waveform = waveform
+        self.webPage = webPage
+        self.location = location
+    }
+}
+
+struct HSWebPagePreview: Codable, Hashable {
+    let id: Int64?
+    let url: String?
+    let displayURL: String?
+    let type: String?
+    let siteName: String?
+    let title: String?
+    let description: String?
+    let author: String?
+    let duration: Double?
+    let embedURL: String?
+    let embedType: String?
+    let embedWidth: Int?
+    let embedHeight: Int?
+    let photo: HSWebPagePreviewMedia?
+    let document: HSWebPagePreviewMedia?
+    let isPending: Bool
+}
+
+struct HSWebPagePreviewMedia: Codable, Hashable {
+    let kind: HSMessageMedia.MediaKind
+    let mimeType: String?
+    let size: Int64?
+    let width: Int?
+    let height: Int?
+    let duration: Double?
+    let location: HSMessageMediaLocation?
+}
+
+enum HSVoiceWaveformCodec {
+    static func encode(levels: [Double], sampleCount: Int = 64) -> Data? {
+        guard !levels.isEmpty, sampleCount > 0 else {
+            return nil
+        }
+        let bucketSize = Double(levels.count) / Double(sampleCount)
+        var values: [UInt8] = []
+        values.reserveCapacity(sampleCount)
+
+        for index in 0..<sampleCount {
+            let start = Int((Double(index) * bucketSize).rounded(.down))
+            let end = min(levels.count, max(start + 1, Int((Double(index + 1) * bucketSize).rounded(.up))))
+            let slice = levels[start..<end]
+            let level = min(1, max(0, slice.max() ?? 0))
+            values.append(UInt8(clamping: Int((level * 31).rounded())))
+        }
+
+        guard values.contains(where: { $0 > 0 }) else {
+            return nil
+        }
+        return packFiveBitSamples(values)
+    }
+
+    static func decode(_ data: Data?, fallbackCount: Int = 36) -> [Double] {
+        guard let data, !data.isEmpty else {
+            return fallback(count: fallbackCount)
+        }
+        let values = unpackFiveBitSamples(data).prefix(96)
+        guard values.contains(where: { $0 > 0 }) else {
+            return fallback(count: fallbackCount)
+        }
+        return values.map { max(0.08, Double($0) / 31.0) }
+    }
+
+    private static func packFiveBitSamples(_ samples: [UInt8]) -> Data {
+        var bytes: [UInt8] = []
+        var buffer = 0
+        var bitCount = 0
+        for sample in samples {
+            buffer |= Int(sample & 0x1f) << bitCount
+            bitCount += 5
+            while bitCount >= 8 {
+                bytes.append(UInt8(buffer & 0xff))
+                buffer >>= 8
+                bitCount -= 8
+            }
+        }
+        if bitCount > 0 {
+            bytes.append(UInt8(buffer & 0xff))
+        }
+        return Data(bytes)
+    }
+
+    private static func unpackFiveBitSamples(_ data: Data) -> [UInt8] {
+        var samples: [UInt8] = []
+        var buffer = 0
+        var bitCount = 0
+        for byte in data {
+            buffer |= Int(byte) << bitCount
+            bitCount += 8
+            while bitCount >= 5 {
+                samples.append(UInt8(buffer & 0x1f))
+                buffer >>= 5
+                bitCount -= 5
+            }
+        }
+        return samples
+    }
+
+    private static func fallback(count: Int) -> [Double] {
+        let pattern: [Double] = [0.28, 0.45, 0.7, 0.52, 0.36, 0.82, 0.48, 0.62, 0.34, 0.56, 0.74, 0.42]
+        return (0..<max(1, count)).map { pattern[$0 % pattern.count] }
+    }
+}
+
+enum HSSharedMediaFilter: String, Codable, CaseIterable, Identifiable, Hashable {
+    case media
+    case files
+    case links
+    case gifs
+    case voice
+    case music
+
+    var id: String {
+        rawValue
+    }
+}
+
+struct HSSharedMediaCounter: Codable, Identifiable, Hashable {
+    let filter: HSSharedMediaFilter
+    let count: Int
+
+    var id: HSSharedMediaFilter {
+        filter
+    }
 }
 
 struct HSMessage: Codable, Identifiable, Hashable {
@@ -94,6 +527,32 @@ struct HSMessage: Codable, Identifiable, Hashable {
     let kind: String?
     let sentAt: Date
     let isOutgoing: Bool
+    let replyToMessageID: Int64?
+    let media: HSMessageMedia?
+
+    init(
+        id: Int64,
+        dialogID: Int64,
+        authorID: Int64,
+        authorName: String,
+        text: String,
+        kind: String?,
+        sentAt: Date,
+        isOutgoing: Bool,
+        replyToMessageID: Int64?,
+        media: HSMessageMedia? = nil
+    ) {
+        self.id = id
+        self.dialogID = dialogID
+        self.authorID = authorID
+        self.authorName = authorName
+        self.text = text
+        self.kind = kind
+        self.sentAt = sentAt
+        self.isOutgoing = isOutgoing
+        self.replyToMessageID = replyToMessageID
+        self.media = media
+    }
 }
 
 struct HSMessageAction: Codable, Hashable {
@@ -102,6 +561,47 @@ struct HSMessageAction: Codable, Hashable {
     let dialogID: Int64?
     let pts: Int?
     let ptsCount: Int?
+}
+
+struct HSSyncState: Codable, Hashable {
+    let pts: Int
+    let qts: Int
+    let date: Int
+    let seq: Int
+    let unreadCount: Int
+}
+
+struct HSSyncDifference: Codable, Hashable {
+    let state: HSSyncState
+    let messages: [HSMessage]
+    let changedDialogIDs: [Int64]
+    let affectsAllDialogs: Bool
+    let isTooLong: Bool
+    let isSlice: Bool
+
+    var requiresRefresh: Bool {
+        isTooLong || affectsAllDialogs || !messages.isEmpty || !changedDialogIDs.isEmpty
+    }
+
+    func withState(_ state: HSSyncState) -> HSSyncDifference {
+        HSSyncDifference(
+            state: state,
+            messages: messages,
+            changedDialogIDs: changedDialogIDs,
+            affectsAllDialogs: affectsAllDialogs,
+            isTooLong: isTooLong,
+            isSlice: isSlice
+        )
+    }
+}
+
+struct HSDraft: Codable, Identifiable, Hashable {
+    var id: Int64 { dialogID }
+
+    let dialogID: Int64
+    let text: String
+    let replyToMessageID: Int64?
+    let updatedAt: Date?
 }
 
 struct HSCircle: Codable, Identifiable, Hashable {
@@ -224,6 +724,31 @@ struct HSContact: Codable, Identifiable, Hashable {
     let status: String
 }
 
+struct HSSearchMessage: Codable, Identifiable, Hashable {
+    let id: Int64
+    let dialogID: Int64
+    let dialogTitle: String
+    let authorID: Int64
+    let authorName: String
+    let text: String
+    let kind: String?
+    let sentAt: Date
+    let isOutgoing: Bool
+    let isGroup: Bool
+    let isChannel: Bool
+
+    var searchID: String {
+        "\(dialogID)-\(id)"
+    }
+}
+
+struct HSSearchResults: Codable, Hashable {
+    let query: String
+    let dialogs: [HSChat]
+    let contacts: [HSContact]
+    let messages: [HSSearchMessage]
+}
+
 struct HSTrustItem: Codable, Identifiable, Hashable {
     let id: String
     let title: String
@@ -307,10 +832,146 @@ struct HSSettingsItem: Codable, Identifiable, Hashable {
     let subtitle: String
     let value: String
     let status: String
+    let selection: String?
+    let exceptions: HSPrivacyRuleExceptions?
+
+    init(
+        id: String,
+        title: String,
+        subtitle: String,
+        value: String,
+        status: String,
+        selection: String? = nil,
+        exceptions: HSPrivacyRuleExceptions? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.value = value
+        self.status = status
+        self.selection = selection
+        self.exceptions = exceptions
+    }
 }
 
 struct HSPrivacySettings: Codable, Hashable {
     let items: [HSSettingsItem]
+}
+
+enum HSPrivacyPeerKind: String, Codable, Hashable {
+    case user
+    case group
+    case channel
+}
+
+struct HSPrivacyExceptionPeer: Codable, Identifiable, Hashable {
+    let peerID: Int64
+    let dialogID: Int64
+    let title: String
+    let subtitle: String?
+    let kind: HSPrivacyPeerKind
+
+    var id: String {
+        "\(kind.rawValue):\(peerID)"
+    }
+
+    var icon: String {
+        switch kind {
+        case .user:
+            return "person.fill"
+        case .group:
+            return "person.2.fill"
+        case .channel:
+            return "megaphone.fill"
+        }
+    }
+
+    static func user(_ contact: HSContact) -> HSPrivacyExceptionPeer {
+        HSPrivacyExceptionPeer(
+            peerID: contact.id,
+            dialogID: contact.id,
+            title: contact.displayName,
+            subtitle: contact.username.map { "@\($0)" } ?? contact.status,
+            kind: .user
+        )
+    }
+
+    static func chat(_ chat: HSChat) -> HSPrivacyExceptionPeer? {
+        if chat.id > 0 {
+            return user(HSContact(id: chat.id, displayName: chat.title, username: nil, status: chat.subtitle))
+        }
+
+        let channelDialogPrefix: Int64 = -1_000_000_000_000
+        let peerID: Int64
+        if chat.id <= channelDialogPrefix {
+            peerID = channelDialogPrefix - chat.id
+        } else {
+            peerID = -chat.id
+        }
+        guard peerID > 0 else {
+            return nil
+        }
+        return HSPrivacyExceptionPeer(
+            peerID: peerID,
+            dialogID: chat.id,
+            title: chat.title,
+            subtitle: chat.subtitle,
+            kind: chat.id <= channelDialogPrefix ? .channel : .group
+        )
+    }
+}
+
+struct HSPrivacyRuleExceptions: Codable, Hashable {
+    var allow: [HSPrivacyExceptionPeer]
+    var disallow: [HSPrivacyExceptionPeer]
+
+    static let empty = HSPrivacyRuleExceptions(allow: [], disallow: [])
+
+    var isEmpty: Bool {
+        allow.isEmpty && disallow.isEmpty
+    }
+
+    var totalCount: Int {
+        allow.count + disallow.count
+    }
+}
+
+enum HSPrivacyRuleValue: String, Codable, CaseIterable, Identifiable, Hashable {
+    case everyone
+    case contacts
+    case nobody
+    case custom
+    case serverDefault = "server_default"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .everyone:
+            return "所有人"
+        case .contacts:
+            return "我的联系人"
+        case .nobody:
+            return "没有人"
+        case .custom:
+            return "自定义"
+        case .serverDefault:
+            return "服务端默认"
+        }
+    }
+
+    var isBaseRule: Bool {
+        switch self {
+        case .everyone, .contacts, .nobody:
+            return true
+        case .custom, .serverDefault:
+            return false
+        }
+    }
+
+    static var editableCases: [HSPrivacyRuleValue] {
+        [.everyone, .contacts, .nobody]
+    }
 }
 
 struct HSNotifyScopeSettings: Codable, Hashable {

@@ -1,29 +1,164 @@
 import SwiftUI
 import UIKit
+import PhotosUI
+import UniformTypeIdentifiers
+import AVKit
 
 enum HSChatThreadMode {
     case automatic
     case channel
+    case savedMessages
+}
+
+private struct HSMediaPreviewItem: Identifiable {
+    let id: Int64
+    let url: URL
+    let media: HSMessageMedia
+    let image: UIImage?
+}
+
+private struct HSPendingAttachmentUpload: Identifiable {
+    let id: UUID
+    let data: Data
+    let fileName: String
+    let mimeType: String
+    let mediaKind: String
+    let duration: Double?
+    let waveform: Data?
+    let caption: String
+    let replyToMessageID: Int64?
+    let replyMessage: HSMessage?
 }
 
 struct ChatThreadView: View {
     @EnvironmentObject private var authStore: AuthStore
+    @Environment(\.scenePhase) private var scenePhase
     let chat: HSChat
-    let mode: HSChatThreadMode = .automatic
+    let mode: HSChatThreadMode
 
     @State private var messages: [HSMessage] = []
     @State private var draft = ""
+    @State private var linkPreview: HSWebPagePreview?
+    @State private var linkPreviewSourceURL: String?
+    @State private var dismissedLinkPreviewURL: String?
+    @State private var isLoadingLinkPreview = false
+    @State private var linkPreviewTask: Task<Void, Never>?
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var editingMessage: HSMessage?
     @State private var editText = ""
     @State private var forwardingMessage: HSMessage?
+    @State private var replyingToMessage: HSMessage?
+    @State private var draftReplyToMessageID: Int64?
+    @State private var isLoadingOlder = false
+    @State private var hasMoreHistory = true
+    @State private var preserveMessageID: Int64?
+    @State private var shouldScrollToLatest = true
+    @State private var scrollTargetMessageID: Int64?
+    @State private var highlightedSearchMessageID: Int64?
+    @State private var isResolvingSearchResult = false
+    @State private var isThreadSearchActive = false
+    @State private var threadSearchQuery = ""
+    @State private var threadSearchResults: [ChatSearchResult] = []
+    @State private var currentThreadSearchIndex: Int?
+    @State private var isThreadSearchSearching = false
+    @State private var didPerformThreadSearch = false
+    @State private var isShowingThreadSearchResults = false
+    @State private var isShowingAttachmentSheet = false
+    @State private var isShowingPhotoPicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var isShowingCameraCapture = false
+    @State private var isShowingFileImporter = false
+    @State private var isSendingAttachment = false
+    @State private var pendingAttachmentUpload: HSPendingAttachmentUpload?
+    @State private var attachmentUploadProgress: HSMediaTransferProgress?
+    @State private var attachmentUploadFailed = false
+    @State private var attachmentUploadTask: Task<Void, Never>?
+    @State private var selectedMessageIDs: Set<Int64> = []
+    @State private var isShowingSelectionForwardSheet = false
+    @State private var isShowingSelectionDeleteConfirmation = false
+    @State private var mediaDownloadStates: [Int64: HSMediaDownloadState] = [:]
+    @State private var mediaDownloadTasks: [Int64: Task<Void, Never>] = [:]
+    @State private var downloadedMediaURLs: [Int64: URL] = [:]
+    @State private var mediaPreviewItem: HSMediaPreviewItem?
+    @State private var isShowingSharedMediaBrowser = false
+    @State private var autoDownloadContactIDs: Set<Int64> = []
+    @State private var didLoadAutoDownloadContacts = false
+    @State private var unreadSeparatorMessageID: Int64?
+    @State private var shouldScrollToUnreadSeparator = false
+    @State private var didResolveInitialUnreadSeparator = false
+
+    private let pageSize = 50
+    private let unreadSeparatorScrollID = "hs-unread-separator"
+    private static let linkDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+
+    private var activeReplyToMessageID: Int64? {
+        replyingToMessage?.id ?? draftReplyToMessageID
+    }
+
+    private var isSavedMessagesMode: Bool {
+        if case .savedMessages = mode {
+            return true
+        }
+        return false
+    }
+
+    private var messagesByID: [Int64: HSMessage] {
+        Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
+    }
+
+    private var isSelectionMode: Bool {
+        !selectedMessageIDs.isEmpty
+    }
+
+    private var selectedMessages: [HSMessage] {
+        messages.filter { selectedMessageIDs.contains($0.id) }
+    }
+
+    private var selectedMessagesContainText: Bool {
+        selectedMessages.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private var threadContact: HSContact {
+        HSContact(
+            id: chat.id,
+            displayName: chat.title,
+            username: usernameFromSubtitle,
+            status: "contact"
+        )
+    }
+
+    private var usernameFromSubtitle: String? {
+        let trimmed = chat.subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("@"), trimmed.count > 1 else {
+            return nil
+        }
+        return String(trimmed.dropFirst())
+    }
+
+    init(chat: HSChat, mode: HSChatThreadMode = .automatic) {
+        self.chat = chat
+        self.mode = mode
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            if isThreadSearchActive {
+                ChatSearchInputBar(
+                    query: $threadSearchQuery,
+                    isSearching: isThreadSearchSearching,
+                    onCancel: endThreadSearch
+                )
+                .onChange(of: threadSearchQuery) { _ in
+                    Task {
+                        await debouncedThreadSearch()
+                    }
+                }
+            }
+
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 10) {
+                    LazyVStack(spacing: 4) {
                         if let errorMessage {
                             HSErrorBanner(message: errorMessage)
                         }
@@ -33,59 +168,188 @@ struct ChatThreadView: View {
                                 .foregroundStyle(HSTheme.trust)
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(HSTheme.trust.opacity(0.10), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        if !messages.isEmpty && hasMoreHistory {
+                            Button {
+                                Task {
+                                    await loadOlder()
+                                }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    if isLoadingOlder {
+                                        ProgressView()
+                                    } else {
+                                        Image(systemName: "clock.arrow.circlepath")
+                                    }
+                                    Text(isLoadingOlder ? "Loading earlier messages" : "Load Earlier Messages")
+                                }
+                                .font(.footnote.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(isLoadingOlder)
+                            .id("history-loader")
                         }
                         ForEach(messages) { message in
+                            if unreadSeparatorMessageID == message.id {
+                                ChatUnreadSeparatorView()
+                                    .id(unreadSeparatorScrollID)
+                            }
                             MessageBubble(
                                 message: message,
+                                replyPreview: message.replyToMessageID.flatMap { messagesByID[$0] },
                                 isGroup: chat.isCircle,
+                                isHighlighted: message.id == highlightedSearchMessageID,
+                                isSelecting: isSelectionMode,
+                                isSelected: selectedMessageIDs.contains(message.id),
+                                onReply: { beginReply(message) },
+                                onOpenReply: { messageID in Task { await openReplyTarget(messageID) } },
+                                onToggleSelection: { toggleSelection(message) },
+                                onBeginSelection: { beginSelection(message) },
                                 onEdit: { beginEdit(message) },
                                 onDelete: { Task { await delete(message) } },
                                 onForward: { forwardingMessage = message },
                                 onReact: { reaction in Task { await react(message, reaction: reaction) } },
                                 onPin: { Task { await pin(message) } },
-                                onCopyLink: { Task { await copyLink(message) } }
+                                onCopyLink: { Task { await copyLink(message) } },
+                                onOpenTextEntity: handleTextEntity,
+                                mediaDownloadState: mediaDownloadStates[message.id],
+                                onOpenMedia: { handleMediaAction(message) }
                             )
-                                .id(message.id)
+                            .id(message.id)
                         }
                     }
-                    .padding(16)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 10)
                 }
+                .background(HSChatWallpaper())
                 .onChange(of: messages.count) { _ in
-                    if let last = messages.last {
+                    if shouldScrollToUnreadSeparator, unreadSeparatorMessageID != nil {
+                        proxy.scrollTo(unreadSeparatorScrollID, anchor: .center)
+                        shouldScrollToUnreadSeparator = false
+                    } else if let preserved = preserveMessageID {
+                        proxy.scrollTo(preserved, anchor: .top)
+                        preserveMessageID = nil
+                    } else if shouldScrollToLatest, let last = messages.last {
                         proxy.scrollTo(last.id, anchor: .bottom)
                     }
                 }
                 .refreshable {
                     await refresh()
                 }
-            }
-
-            HStack(spacing: 10) {
-                TextField("Message", text: $draft, axis: .vertical)
-                    .lineLimit(1...4)
-                    .padding(12)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
-
-                Button {
+                .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidArrive)) { _ in
                     Task {
-                        await send()
+                        await refresh()
                     }
-                } label: {
-                    Image(systemName: "paperplane.fill")
-                        .font(.headline)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidOpen)) { _ in
+                    Task {
+                        await refresh()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
+                    guard shouldRefreshThread(for: notification) else {
+                        return
+                    }
+                    Task {
+                        await refresh()
+                    }
+                }
+                .onChange(of: scrollTargetMessageID) { targetID in
+                    guard let targetID else {
+                        return
+                    }
+                    proxy.scrollTo(targetID, anchor: .center)
+                    scrollTargetMessageID = nil
+                }
             }
-            .padding(12)
-            .background(.regularMaterial)
+
+            if isSelectionMode {
+                MessageSelectionToolbar(
+                    selectedCount: selectedMessageIDs.count,
+                    canCopy: selectedMessagesContainText,
+                    onCancel: clearSelection,
+                    onCopy: copySelectedMessages,
+                    onForward: {
+                        isShowingSelectionForwardSheet = true
+                    },
+                    onDelete: {
+                        isShowingSelectionDeleteConfirmation = true
+                    }
+                )
+            } else if isThreadSearchActive {
+                ChatSearchNavigationPanel(
+                    currentDisplayIndex: currentThreadSearchDisplayIndex,
+                    totalCount: threadSearchResults.count,
+                    didSearch: didPerformThreadSearch,
+                    canOpenResults: !threadSearchResults.isEmpty,
+                    canNavigateEarlier: canNavigateThreadSearchEarlier,
+                    canNavigateLater: canNavigateThreadSearchLater,
+                    onEarlier: { Task { await navigateThreadSearch(.earlier) } },
+                    onLater: { Task { await navigateThreadSearch(.later) } },
+                    onOpenResults: { isShowingThreadSearchResults = true }
+                )
+            } else {
+                if let pendingAttachmentUpload {
+                    AttachmentUploadBanner(
+                        fileName: pendingAttachmentUpload.fileName,
+                        progress: attachmentUploadProgress,
+                        isFailed: attachmentUploadFailed,
+                        onCancel: cancelAttachmentUpload,
+                        onRetry: retryAttachmentUpload
+                    )
+                }
+                if linkPreview != nil || isLoadingLinkPreview {
+                    ChatComposerLinkPreviewBar(
+                        preview: linkPreview,
+                        isLoading: isLoadingLinkPreview,
+                        onDismiss: dismissLinkPreview
+                    )
+                }
+                ChatComposerView(
+                    draft: $draft,
+                    isReplying: replyingToMessage != nil || draftReplyToMessageID != nil,
+                    replyTitle: replyTitle,
+                    replyPreview: replyPreview,
+                    onClearReply: clearReply,
+                    onAttachment: {
+                        isShowingAttachmentSheet = true
+                    },
+                    onVoiceRecorded: sendVoiceRecording,
+                    onVoiceError: { message in
+                        statusMessage = nil
+                        errorMessage = message
+                    },
+                    onSend: {
+                        Task {
+                            await send()
+                        }
+                    }
+                )
+            }
         }
-        .navigationTitle(chat.title)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .background(HSChatWallpaper().ignoresSafeArea())
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                ChatThreadNavigationTitle(chat: chat, mode: mode)
+            }
             ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if mode == .channel {
+                Button {
+                    isShowingSharedMediaBrowser = true
+                } label: {
+                    Image(systemName: "rectangle.stack")
+                }
+                .disabled(isThreadSearchActive)
+                Button {
+                    beginThreadSearch()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .disabled(isThreadSearchActive)
+                if case .channel = mode {
                     NavigationLink {
                         ChannelManageView(chat: chat)
                     } label: {
@@ -94,6 +358,12 @@ struct ChatThreadView: View {
                 } else if chat.isCircle {
                     NavigationLink {
                         SupergroupManageView(chat: chat)
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                } else if !isSavedMessagesMode {
+                    NavigationLink {
+                        ContactProfileView(contact: threadContact)
                     } label: {
                         Image(systemName: "info.circle")
                     }
@@ -107,7 +377,7 @@ struct ChatThreadView: View {
                 }
             }
         }
-        .alert("Edit Message", isPresented: Binding(
+        .alert("编辑消息", isPresented: Binding(
             get: { editingMessage != nil },
             set: { isPresented in
                 if !isPresented {
@@ -116,13 +386,13 @@ struct ChatThreadView: View {
                 }
             }
         )) {
-            TextField("Message", text: $editText)
-            Button("Save") {
+            TextField("消息", text: $editText)
+            Button("保存") {
                 Task {
                     await saveEdit()
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button("取消", role: .cancel) {
                 editingMessage = nil
                 editText = ""
             }
@@ -135,9 +405,266 @@ struct ChatThreadView: View {
             }
             .environmentObject(authStore)
         }
+        .sheet(isPresented: $isShowingSelectionForwardSheet) {
+            ForwardDialogSheet(currentDialogID: chat.id) { target in
+                Task {
+                    await forwardSelectedMessages(to: target)
+                }
+            }
+            .environmentObject(authStore)
+        }
+        .sheet(isPresented: $isShowingAttachmentSheet) {
+            ChatAttachmentSheet { option in
+                handleAttachment(option)
+            }
+        }
+        .photosPicker(
+            isPresented: $isShowingPhotoPicker,
+            selection: $selectedPhotoItem,
+            matching: .any(of: [.images, .videos])
+        )
+        .onChange(of: selectedPhotoItem) { item in
+            guard let item else {
+                return
+            }
+            Task {
+                await sendPhotoPickerItem(item)
+                selectedPhotoItem = nil
+            }
+        }
+        .sheet(isPresented: $isShowingCameraCapture) {
+            HSCameraCaptureView { result in
+                isShowingCameraCapture = false
+                if let result {
+                    sendCameraCaptureResult(result)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .fileImporter(
+            isPresented: $isShowingFileImporter,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: false
+        ) { result in
+            Task {
+                await sendImportedFile(result)
+            }
+        }
+        .sheet(isPresented: $isShowingThreadSearchResults) {
+            ChatSearchResultsList(
+                query: threadSearchQuery,
+                results: threadSearchResults,
+                currentMessageID: currentThreadSearchResult?.messageID
+            ) { result in
+                isShowingThreadSearchResults = false
+                selectThreadSearchResult(result)
+            }
+        }
+        .sheet(item: $mediaPreviewItem) { item in
+            MediaPreviewSheet(item: item)
+        }
+        .sheet(isPresented: $isShowingSharedMediaBrowser) {
+            SharedMediaBrowserView(chat: chat) { message in
+                Task {
+                    await openSharedMediaMessage(message)
+                }
+            }
+            .environmentObject(authStore)
+        }
         .task {
             await refresh()
+            await loadDraft()
+            scheduleLinkPreviewRefresh(for: draft)
         }
+        .onChange(of: draft) { newValue in
+            scheduleLinkPreviewRefresh(for: newValue)
+        }
+        .onDisappear {
+            cancelActiveTransfersOnDisappear()
+            linkPreviewTask?.cancel()
+            Task {
+                await saveDraft()
+            }
+        }
+        .confirmationDialog(
+            "删除选中的消息？",
+            isPresented: $isShowingSelectionDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("删除 \(selectedMessageIDs.count) 条消息", role: .destructive) {
+                Task {
+                    await deleteSelectedMessages()
+                }
+            }
+            Button("取消", role: .cancel) {}
+        }
+    }
+
+    private var replyTitle: String {
+        if let replyingToMessage {
+            return "Replying to \(replyingToMessage.authorName)"
+        }
+        if let draftReplyToMessageID {
+            return "Replying to message #\(draftReplyToMessageID)"
+        }
+        return "Replying"
+    }
+
+    private var replyPreview: String {
+        if let replyingToMessage {
+            return replyingToMessage.text.isEmpty ? "Message #\(replyingToMessage.id)" : replyingToMessage.text
+        }
+        return "Original message may be outside the loaded page."
+    }
+
+    private var currentThreadSearchResult: ChatSearchResult? {
+        guard let currentThreadSearchIndex, threadSearchResults.indices.contains(currentThreadSearchIndex) else {
+            return nil
+        }
+        return threadSearchResults[currentThreadSearchIndex]
+    }
+
+    private var currentThreadSearchDisplayIndex: Int? {
+        guard let currentThreadSearchIndex, !threadSearchResults.isEmpty else {
+            return nil
+        }
+        return threadSearchResults.count - currentThreadSearchIndex
+    }
+
+    private var canNavigateThreadSearchEarlier: Bool {
+        guard let currentThreadSearchIndex else {
+            return false
+        }
+        return currentThreadSearchIndex > 0
+    }
+
+    private var canNavigateThreadSearchLater: Bool {
+        guard let currentThreadSearchIndex else {
+            return false
+        }
+        return currentThreadSearchIndex < threadSearchResults.count - 1
+    }
+
+    private func beginThreadSearch() {
+        clearSelection()
+        isThreadSearchActive = true
+        shouldScrollToLatest = false
+        statusMessage = nil
+    }
+
+    private func beginThreadSearch(query: String) {
+        beginThreadSearch()
+        threadSearchQuery = query
+        Task {
+            await performThreadSearch()
+        }
+    }
+
+    private func endThreadSearch() {
+        isThreadSearchActive = false
+        threadSearchQuery = ""
+        threadSearchResults = []
+        currentThreadSearchIndex = nil
+        highlightedSearchMessageID = nil
+        didPerformThreadSearch = false
+        isShowingThreadSearchResults = false
+    }
+
+    private func debouncedThreadSearch() async {
+        let current = threadSearchQuery
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        guard current == threadSearchQuery else {
+            return
+        }
+        await performThreadSearch()
+    }
+
+    private func performThreadSearch() async {
+        guard let session = authStore.session else {
+            return
+        }
+        let trimmed = threadSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            threadSearchResults = []
+            currentThreadSearchIndex = nil
+            highlightedSearchMessageID = nil
+            didPerformThreadSearch = false
+            errorMessage = nil
+            return
+        }
+
+        isThreadSearchSearching = true
+        didPerformThreadSearch = true
+        let previousMessageID = currentThreadSearchResult?.messageID
+        defer { isThreadSearchSearching = false }
+
+        do {
+            let response = try await authStore.api.search(query: trimmed, limit: 100, session: session)
+            let found = response.messages
+                .filter { $0.dialogID == chat.id }
+                .map(ChatSearchResult.init)
+                .sorted { lhs, rhs in
+                    if lhs.sentAt == rhs.sentAt {
+                        return lhs.messageID < rhs.messageID
+                    }
+                    return lhs.sentAt < rhs.sentAt
+                }
+
+            threadSearchResults = found
+            if let previousMessageID, let retainedIndex = found.firstIndex(where: { $0.messageID == previousMessageID }) {
+                currentThreadSearchIndex = retainedIndex
+            } else {
+                currentThreadSearchIndex = found.indices.last
+            }
+            if let result = currentThreadSearchResult {
+                await openSearchResult(result)
+            } else {
+                highlightedSearchMessageID = nil
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func navigateThreadSearch(_ direction: ThreadSearchNavigationDirection) async {
+        guard let currentThreadSearchIndex else {
+            return
+        }
+
+        let nextIndex: Int?
+        switch direction {
+        case .earlier:
+            nextIndex = currentThreadSearchIndex > 0 ? currentThreadSearchIndex - 1 : nil
+        case .later:
+            nextIndex = currentThreadSearchIndex < threadSearchResults.count - 1 ? currentThreadSearchIndex + 1 : nil
+        }
+
+        guard let nextIndex, threadSearchResults.indices.contains(nextIndex) else {
+            return
+        }
+        self.currentThreadSearchIndex = nextIndex
+        await openSearchResult(threadSearchResults[nextIndex])
+    }
+
+    private func selectThreadSearchResult(_ result: ChatSearchResult) {
+        if let index = threadSearchResults.firstIndex(where: { $0.messageID == result.messageID }) {
+            currentThreadSearchIndex = index
+        }
+        Task {
+            await openSearchResult(result)
+        }
+    }
+
+    private func shouldRefreshThread(for notification: Notification) -> Bool {
+        if let fullRefresh = notification.userInfo?["full_refresh"] as? Bool, fullRefresh {
+            return true
+        }
+        guard let dialogIDs = notification.userInfo?["dialog_ids"] as? [Int64],
+              !dialogIDs.isEmpty else {
+            return true
+        }
+        return dialogIDs.contains(chat.id)
     }
 
     private func refresh() async {
@@ -145,13 +672,458 @@ struct ChatThreadView: View {
             return
         }
         do {
-            let loaded = try await authStore.api.messages(dialogID: chat.id, session: session)
+            preserveMessageID = nil
+            shouldScrollToLatest = true
+            let initialPage = try await loadInitialMessages(session: session)
+            let loaded = initialPage.messages
+            if !didResolveInitialUnreadSeparator {
+                unreadSeparatorMessageID = initialUnreadSeparatorMessageID(in: loaded)
+                shouldScrollToUnreadSeparator = unreadSeparatorMessageID != nil
+                didResolveInitialUnreadSeparator = true
+                if shouldScrollToUnreadSeparator {
+                    shouldScrollToLatest = false
+                }
+            }
             messages = loaded
+            selectedMessageIDs.formIntersection(Set(loaded.map(\.id)))
+            restoreDraftReplyTarget()
+            hasMoreHistory = initialPage.hasMoreHistory
             errorMessage = nil
             await markRead(messages: loaded)
+            await refreshAutomaticDownloadContactIDsIfNeeded(session: session)
+            startAutomaticMediaDownloads(for: loaded, session: session)
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func loadOlder() async {
+        guard let session = authStore.session, let oldest = messages.first, !isLoadingOlder, hasMoreHistory else {
+            return
+        }
+        isLoadingOlder = true
+        preserveMessageID = oldest.id
+        shouldScrollToLatest = false
+        defer {
+            isLoadingOlder = false
+        }
+        do {
+            let loaded = try await authStore.api.messages(dialogID: chat.id, beforeID: oldest.id, limit: pageSize, session: session)
+            let existingIDs = Set(messages.map(\.id))
+            let olderMessages = loaded.filter { !existingIDs.contains($0.id) }
+            if olderMessages.isEmpty {
+                hasMoreHistory = false
+            } else {
+                messages.insert(contentsOf: olderMessages, at: 0)
+                hasMoreHistory = loaded.count >= pageSize
+                await refreshAutomaticDownloadContactIDsIfNeeded(session: session)
+                startAutomaticMediaDownloads(for: olderMessages, session: session)
+            }
+            errorMessage = nil
+        } catch {
+            preserveMessageID = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func openSearchResult(_ result: ChatSearchResult) async {
+        if isResolvingSearchResult {
+            return
+        }
+        isResolvingSearchResult = true
+        defer { isResolvingSearchResult = false }
+        shouldScrollToLatest = false
+
+        do {
+            try await ensureMessageLoaded(messageID: result.messageID)
+            guard messages.contains(where: { $0.id == result.messageID }) else {
+                errorMessage = "Message is no longer available in this chat."
+                return
+            }
+            highlightedSearchMessageID = result.messageID
+            scrollTargetMessageID = result.messageID
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func ensureMessageLoaded(messageID: Int64) async throws {
+        guard let session = authStore.session else {
+            return
+        }
+        if messages.contains(where: { $0.id == messageID }) {
+            return
+        }
+        if messages.isEmpty {
+            let loaded = try await authStore.api.messages(dialogID: chat.id, limit: pageSize, session: session)
+            messages = loaded
+            hasMoreHistory = loaded.count >= pageSize
+            await refreshAutomaticDownloadContactIDsIfNeeded(session: session)
+            startAutomaticMediaDownloads(for: loaded, session: session)
+        }
+
+        var pageCount = 0
+        while !messages.contains(where: { $0.id == messageID }), hasMoreHistory, pageCount < 40 {
+            guard let oldest = messages.first else {
+                return
+            }
+            let loaded = try await authStore.api.messages(dialogID: chat.id, beforeID: oldest.id, limit: pageSize, session: session)
+            let existingIDs = Set(messages.map(\.id))
+            let olderMessages = loaded.filter { !existingIDs.contains($0.id) }
+            if olderMessages.isEmpty {
+                hasMoreHistory = false
+                return
+            }
+            messages.insert(contentsOf: olderMessages, at: 0)
+            hasMoreHistory = loaded.count >= pageSize
+            await refreshAutomaticDownloadContactIDsIfNeeded(session: session)
+            startAutomaticMediaDownloads(for: olderMessages, session: session)
+            pageCount += 1
+        }
+    }
+
+    private func openReplyTarget(_ messageID: Int64) async {
+        if isResolvingSearchResult {
+            return
+        }
+        isResolvingSearchResult = true
+        defer { isResolvingSearchResult = false }
+        shouldScrollToLatest = false
+
+        do {
+            try await ensureMessageLoaded(messageID: messageID)
+            guard messages.contains(where: { $0.id == messageID }) else {
+                errorMessage = "Original message is no longer available in this chat."
+                return
+            }
+            highlightedSearchMessageID = messageID
+            scrollTargetMessageID = messageID
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func openSharedMediaMessage(_ message: HSMessage) async {
+        if isResolvingSearchResult {
+            return
+        }
+        isResolvingSearchResult = true
+        defer { isResolvingSearchResult = false }
+        shouldScrollToLatest = false
+
+        do {
+            try await ensureMessageLoaded(messageID: message.id)
+            guard messages.contains(where: { $0.id == message.id }) else {
+                errorMessage = "Message is no longer available in this chat."
+                return
+            }
+            highlightedSearchMessageID = message.id
+            scrollTargetMessageID = message.id
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func handleMediaAction(_ message: HSMessage) {
+        if mediaDownloadStates[message.id]?.isDownloading == true {
+            cancelMediaDownload(message)
+            return
+        }
+        openMedia(message)
+    }
+
+    private func openMedia(_ message: HSMessage) {
+        guard let media = message.media else {
+            return
+        }
+        if let url = downloadedMediaURLs[message.id] {
+            if FileManager.default.fileExists(atPath: url.path) {
+                mediaPreviewItem = HSMediaPreviewItem(id: message.id, url: url, media: media, image: previewImage(for: media, url: url))
+                return
+            }
+            downloadedMediaURLs[message.id] = nil
+            mediaDownloadStates[message.id] = nil
+        }
+        do {
+            if let cachedURL = try HSMediaCacheStore.shared.cachedURL(for: media, messageID: message.id) {
+                downloadedMediaURLs[message.id] = cachedURL
+                mediaDownloadStates[message.id] = .downloaded
+                mediaPreviewItem = HSMediaPreviewItem(id: message.id, url: cachedURL, media: media, image: previewImage(for: media, url: cachedURL))
+                return
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        guard media.location != nil else {
+            errorMessage = "这条媒体消息缺少可下载的文件位置。"
+            return
+        }
+        guard let session = authStore.session else {
+            errorMessage = HSAPIError.missingSession.localizedDescription
+            return
+        }
+        if mediaDownloadTasks[message.id] != nil {
+            return
+        }
+        startMediaDownload(message, media: media, session: session, openWhenFinished: true, isAutomatic: false)
+    }
+
+    private func startAutomaticMediaDownloads(for candidateMessages: [HSMessage], session: HSUserSession) {
+        let settings = HSMediaAutoDownloadSettings.load()
+        if scenePhase != .active, !settings.allowsBackgroundAutomaticDownloads() {
+            return
+        }
+        let network = HSMediaNetworkPathMonitor.shared.currentNetworkType ?? .wifi
+
+        var enqueued = 0
+        for message in candidateMessages.reversed() {
+            let peerType = automaticDownloadPeerType(for: message)
+            guard enqueued < 8,
+                  !message.isOutgoing,
+                  mediaDownloadTasks[message.id] == nil,
+                  mediaDownloadStates[message.id] == nil,
+                  downloadedMediaURLs[message.id] == nil,
+                  let media = message.media,
+                  media.location != nil,
+                  settings.allowsAutomaticDownload(media: media, network: network, peerType: peerType) else {
+                continue
+            }
+
+            if let cachedURL = try? HSMediaCacheStore.shared.cachedURL(for: media, messageID: message.id) {
+                downloadedMediaURLs[message.id] = cachedURL
+                mediaDownloadStates[message.id] = .downloaded
+                continue
+            }
+
+            startMediaDownload(message, media: media, session: session, openWhenFinished: false, isAutomatic: true)
+            enqueued += 1
+        }
+    }
+
+    private func refreshAutomaticDownloadContactIDsIfNeeded(session: HSUserSession) async {
+        guard !didLoadAutoDownloadContacts else {
+            return
+        }
+        do {
+            let contacts = try await authStore.api.contacts(session: session)
+            autoDownloadContactIDs = Set(contacts.map(\.id))
+        } catch {
+            autoDownloadContactIDs = []
+        }
+        didLoadAutoDownloadContacts = true
+    }
+
+    private func automaticDownloadPeerType(for message: HSMessage) -> HSMediaAutoDownloadPeerType {
+        if case .channel = mode {
+            return .channel
+        }
+        if chat.isCircle {
+            return autoDownloadContactIDs.contains(message.authorID) ? .contact : .group
+        }
+        if autoDownloadContactIDs.contains(chat.id) || autoDownloadContactIDs.contains(message.authorID) {
+            return .contact
+        }
+        return .otherPrivate
+    }
+
+    private func startMediaDownload(_ message: HSMessage, media: HSMessageMedia, session: HSUserSession, openWhenFinished: Bool, isAutomatic: Bool) {
+        guard mediaDownloadTasks[message.id] == nil else {
+            return
+        }
+        mediaDownloadStates[message.id] = .downloading(progress: nil)
+        let task = Task {
+            await downloadMedia(message, media: media, session: session, openWhenFinished: openWhenFinished, isAutomatic: isAutomatic)
+        }
+        mediaDownloadTasks[message.id] = task
+    }
+
+    private func downloadMedia(_ message: HSMessage, media: HSMessageMedia, session: HSUserSession, openWhenFinished: Bool, isAutomatic: Bool) async {
+        do {
+            let data = try await authStore.api.downloadMedia(
+                media,
+                session: session,
+                progress: { update in
+                    Task { @MainActor in
+                        guard mediaDownloadTasks[message.id] != nil else {
+                            return
+                        }
+                        mediaDownloadStates[message.id] = .downloading(progress: update.fractionCompleted)
+                    }
+                }
+            )
+            try Task.checkCancellation()
+            let url = try HSMediaCacheStore.shared.store(data: data, media: media, messageID: message.id)
+            downloadedMediaURLs[message.id] = url
+            mediaDownloadStates[message.id] = .downloaded
+            mediaDownloadTasks[message.id] = nil
+            if openWhenFinished {
+                mediaPreviewItem = HSMediaPreviewItem(id: message.id, url: url, media: media, image: previewImage(for: media, url: url))
+            }
+            errorMessage = nil
+        } catch is CancellationError {
+            mediaDownloadTasks[message.id] = nil
+            mediaDownloadStates[message.id] = nil
+            if !isAutomatic {
+                statusMessage = "Media download canceled."
+            }
+            errorMessage = nil
+        } catch {
+            mediaDownloadTasks[message.id] = nil
+            if isAutomatic {
+                mediaDownloadStates[message.id] = nil
+            } else {
+                mediaDownloadStates[message.id] = .failed
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func cancelMediaDownload(_ message: HSMessage) {
+        mediaDownloadTasks[message.id]?.cancel()
+        mediaDownloadTasks[message.id] = nil
+        mediaDownloadStates[message.id] = nil
+        statusMessage = "Media download canceled."
+        errorMessage = nil
+    }
+
+    private func previewImage(for media: HSMessageMedia, url: URL) -> UIImage? {
+        switch media.kind {
+        case .photo, .gif, .sticker:
+            return UIImage(contentsOfFile: url.path)
+        case .video, .audio, .voice, .webpage, .file, .unknown:
+            return nil
+        }
+    }
+
+    private func loadDraft() async {
+        guard let session = authStore.session else {
+            return
+        }
+        do {
+            let drafts = try await authStore.api.drafts(session: session)
+            guard let savedDraft = drafts.first(where: { $0.dialogID == chat.id }) else {
+                return
+            }
+            if draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                draft = savedDraft.text
+            }
+            draftReplyToMessageID = savedDraft.replyToMessageID
+            restoreDraftReplyTarget()
+        } catch {
+            // Drafts are helpful continuity, not a blocker for reading the thread.
+        }
+    }
+
+    private func scheduleLinkPreviewRefresh(for text: String) {
+        let detectedURL = Self.firstURLString(in: text)
+        guard let detectedURL else {
+            clearLinkPreviewState()
+            return
+        }
+
+        if dismissedLinkPreviewURL != detectedURL {
+            dismissedLinkPreviewURL = nil
+        }
+        guard dismissedLinkPreviewURL != detectedURL else {
+            linkPreviewTask?.cancel()
+            linkPreviewTask = nil
+            linkPreview = nil
+            linkPreviewSourceURL = detectedURL
+            isLoadingLinkPreview = false
+            return
+        }
+        if linkPreviewSourceURL == detectedURL, linkPreview != nil {
+            return
+        }
+
+        linkPreviewTask?.cancel()
+        linkPreviewSourceURL = detectedURL
+        linkPreview = nil
+        isLoadingLinkPreview = true
+        linkPreviewTask = Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
+            guard let session = authStore.session else {
+                await MainActor.run {
+                    if linkPreviewSourceURL == detectedURL {
+                        isLoadingLinkPreview = false
+                    }
+                }
+                return
+            }
+            do {
+                let preview = try await authStore.api.webPagePreview(text: text, session: session)
+                await MainActor.run {
+                    guard Self.firstURLString(in: draft) == detectedURL,
+                          dismissedLinkPreviewURL != detectedURL else {
+                        return
+                    }
+                    linkPreview = preview
+                    linkPreviewSourceURL = detectedURL
+                    isLoadingLinkPreview = false
+                }
+            } catch {
+                await MainActor.run {
+                    if linkPreviewSourceURL == detectedURL {
+                        linkPreview = nil
+                        isLoadingLinkPreview = false
+                    }
+                }
+            }
+        }
+    }
+
+    private func dismissLinkPreview() {
+        let url = linkPreviewSourceURL ?? Self.firstURLString(in: draft)
+        dismissedLinkPreviewURL = url
+        linkPreviewTask?.cancel()
+        linkPreviewTask = nil
+        linkPreview = nil
+        isLoadingLinkPreview = false
+    }
+
+    private func clearLinkPreviewState() {
+        linkPreviewTask?.cancel()
+        linkPreviewTask = nil
+        linkPreview = nil
+        linkPreviewSourceURL = nil
+        dismissedLinkPreviewURL = nil
+        isLoadingLinkPreview = false
+    }
+
+    private static func firstURLString(in text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+        let nsText = trimmed as NSString
+        let range = NSRange(location: 0, length: nsText.length)
+        guard let match = linkDetector?.firstMatch(in: trimmed, options: [], range: range) else {
+            return nil
+        }
+        if let url = match.url {
+            return url.absoluteString
+        }
+        return nsText.substring(with: match.range)
+    }
+
+    private func saveDraft() async {
+        guard let session = authStore.session else {
+            return
+        }
+        _ = try? await authStore.api.saveDraft(
+            dialogID: chat.id,
+            text: draft,
+            replyToMessageID: activeReplyToMessageID,
+            disableWebPagePreview: dismissedLinkPreviewURL == Self.firstURLString(in: draft),
+            session: session
+        )
     }
 
     private func send() async {
@@ -162,14 +1134,391 @@ struct ChatThreadView: View {
         guard !text.isEmpty else {
             return
         }
+        let replyMessage = replyingToMessage
+        let replyID = activeReplyToMessageID
+        let sentWithoutWebPage = dismissedLinkPreviewURL == Self.firstURLString(in: text)
         draft = ""
+        replyingToMessage = nil
+        draftReplyToMessageID = nil
+        clearLinkPreviewState()
         do {
-            let sent = try await authStore.api.sendMessage(dialogID: chat.id, text: text, session: session)
+            let sent = try await authStore.api.sendMessage(
+                dialogID: chat.id,
+                text: text,
+                replyToMessageID: replyID,
+                disableWebPagePreview: sentWithoutWebPage,
+                session: session
+            )
+            shouldScrollToLatest = true
             messages.append(sent)
+            _ = try? await authStore.api.saveDraft(dialogID: chat.id, text: "", replyToMessageID: nil, session: session)
             errorMessage = nil
             await markRead(messages: messages)
         } catch {
             draft = text
+            replyingToMessage = replyMessage
+            draftReplyToMessageID = replyID
+            if sentWithoutWebPage {
+                dismissedLinkPreviewURL = Self.firstURLString(in: text)
+            } else {
+                scheduleLinkPreviewRefresh(for: text)
+            }
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func handleAttachment(_ option: ChatAttachmentOption) {
+        let detail: String
+        switch option {
+        case .gallery:
+            isShowingPhotoPicker = true
+            return
+        case .camera:
+            guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+                statusMessage = "Camera is not available on this device."
+                errorMessage = nil
+                return
+            }
+            isShowingCameraCapture = true
+            return
+        case .file:
+            isShowingFileImporter = true
+            return
+        case .location:
+            detail = "Location messages need the existing location media contract mapped into the native API client."
+        case .contact:
+            detail = "Contact sharing needs the existing contact media contract mapped into the native API client."
+        case .poll:
+            detail = "Poll creation needs the existing poll media contract mapped into the native API client."
+        case .todo:
+            detail = "Todo messages need the existing task message contract mapped into the native API client."
+        case .quickReply:
+            detail = "Quick replies need the existing business quick-reply contract mapped into the native API client."
+        }
+        statusMessage = detail
+        errorMessage = nil
+    }
+
+    private func sendCameraCaptureResult(_ result: HSCameraCaptureResult) {
+        startAttachmentUpload(
+            data: result.data,
+            fileName: result.fileName,
+            mimeType: result.mimeType,
+            mediaKind: result.mediaKind
+        )
+    }
+
+    private func sendVoiceRecording(_ recording: HSVoiceRecording) {
+        startAttachmentUpload(
+            data: recording.data,
+            fileName: recording.fileName,
+            mimeType: recording.mimeType,
+            mediaKind: "voice",
+            duration: recording.duration,
+            waveform: recording.waveform
+        )
+    }
+
+    private func sendPhotoPickerItem(_ item: PhotosPickerItem) async {
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                throw HSAPIError.server(code: "MEDIA_LOAD_FAILED", message: "无法读取选择的媒体。")
+            }
+            let contentType = item.supportedContentTypes.first ?? .data
+            let fileExtension = contentType.preferredFilenameExtension ?? "dat"
+            let mediaKind = contentType.conforms(to: .movie) ? "video" : "photo"
+            let mimeType = contentType.preferredMIMEType ?? (mediaKind == "photo" ? "image/jpeg" : "video/mp4")
+            startAttachmentUpload(
+                data: data,
+                fileName: "hsgram-\(Int(Date().timeIntervalSince1970)).\(fileExtension)",
+                mimeType: mimeType,
+                mediaKind: mediaKind
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func sendImportedFile(_ result: Result<[URL], Error>) async {
+        do {
+            let urls = try result.get()
+            guard let url = urls.first else {
+                return
+            }
+            let didStartAccessing = url.startAccessingSecurityScopedResource()
+            defer {
+                if didStartAccessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            let data = try Data(contentsOf: url)
+            let contentType = (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType)
+                ?? UTType(filenameExtension: url.pathExtension)
+                ?? .data
+            startAttachmentUpload(
+                data: data,
+                fileName: url.lastPathComponent,
+                mimeType: contentType.preferredMIMEType ?? "application/octet-stream",
+                mediaKind: contentType.conforms(to: .movie) ? "video" : "file"
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func startAttachmentUpload(
+        data: Data,
+        fileName: String,
+        mimeType: String,
+        mediaKind: String,
+        duration: Double? = nil,
+        waveform: Data? = nil
+    ) {
+        guard attachmentUploadTask == nil else {
+            statusMessage = "Finish or cancel the current upload before sending another file."
+            errorMessage = nil
+            return
+        }
+        let pending = HSPendingAttachmentUpload(
+            id: UUID(),
+            data: data,
+            fileName: fileName,
+            mimeType: mimeType,
+            mediaKind: mediaKind,
+            duration: duration,
+            waveform: waveform,
+            caption: draft.trimmingCharacters(in: .whitespacesAndNewlines),
+            replyToMessageID: activeReplyToMessageID,
+            replyMessage: replyingToMessage
+        )
+        beginAttachmentUpload(pending)
+    }
+
+    private func beginAttachmentUpload(_ pending: HSPendingAttachmentUpload) {
+        pendingAttachmentUpload = pending
+        attachmentUploadFailed = false
+        attachmentUploadProgress = HSMediaTransferProgress(completedBytes: 0, totalBytes: Int64(pending.data.count))
+        isSendingAttachment = true
+        statusMessage = nil
+        errorMessage = nil
+        draft = ""
+        replyingToMessage = nil
+        draftReplyToMessageID = nil
+        let task = Task {
+            await performAttachmentUpload(pending)
+        }
+        attachmentUploadTask = task
+    }
+
+    private func performAttachmentUpload(_ pending: HSPendingAttachmentUpload) async {
+        guard let session = authStore.session else {
+            attachmentUploadFailed = true
+            restoreComposer(from: pending)
+            attachmentUploadTask = nil
+            isSendingAttachment = false
+            errorMessage = HSAPIError.missingSession.localizedDescription
+            return
+        }
+        defer {
+            if pendingAttachmentUpload?.id == pending.id {
+                attachmentUploadTask = nil
+                isSendingAttachment = false
+            }
+        }
+        do {
+            let sent = try await authStore.api.sendMedia(
+                dialogID: chat.id,
+                fileName: pending.fileName,
+                mimeType: pending.mimeType,
+                data: pending.data,
+                mediaKind: pending.mediaKind,
+                caption: pending.caption,
+                replyToMessageID: pending.replyToMessageID,
+                duration: pending.duration,
+                waveform: pending.waveform,
+                session: session,
+                progress: { update in
+                    Task { @MainActor in
+                        updateAttachmentUploadProgress(update, uploadID: pending.id)
+                    }
+                }
+            )
+            shouldScrollToLatest = true
+            messages.append(sent)
+            pendingAttachmentUpload = nil
+            attachmentUploadProgress = nil
+            attachmentUploadFailed = false
+            attachmentUploadTask = nil
+            isSendingAttachment = false
+            statusMessage = nil
+            errorMessage = nil
+            _ = try? await authStore.api.saveDraft(dialogID: chat.id, text: "", replyToMessageID: nil, session: session)
+            await markRead(messages: messages)
+        } catch is CancellationError {
+            restoreComposer(from: pending)
+            if pendingAttachmentUpload?.id == pending.id {
+                pendingAttachmentUpload = nil
+                attachmentUploadProgress = nil
+                attachmentUploadFailed = false
+                statusMessage = "Media upload canceled."
+                errorMessage = nil
+            }
+        } catch {
+            restoreComposer(from: pending)
+            if pendingAttachmentUpload?.id == pending.id {
+                attachmentUploadFailed = true
+            }
+            statusMessage = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func updateAttachmentUploadProgress(_ progress: HSMediaTransferProgress, uploadID: UUID) {
+        guard pendingAttachmentUpload?.id == uploadID, !attachmentUploadFailed else {
+            return
+        }
+        attachmentUploadProgress = progress
+    }
+
+    private func retryAttachmentUpload() {
+        guard let pending = pendingAttachmentUpload, attachmentUploadTask == nil else {
+            return
+        }
+        beginAttachmentUpload(pending)
+    }
+
+    private func cancelAttachmentUpload() {
+        guard let pending = pendingAttachmentUpload else {
+            return
+        }
+        attachmentUploadTask?.cancel()
+        attachmentUploadTask = nil
+        restoreComposer(from: pending)
+        pendingAttachmentUpload = nil
+        attachmentUploadProgress = nil
+        attachmentUploadFailed = false
+        isSendingAttachment = false
+        statusMessage = "Media upload canceled."
+        errorMessage = nil
+    }
+
+    private func restoreComposer(from pending: HSPendingAttachmentUpload) {
+        draft = pending.caption
+        replyingToMessage = pending.replyMessage
+        draftReplyToMessageID = pending.replyToMessageID
+    }
+
+    private func cancelActiveTransfersOnDisappear() {
+        if let pending = pendingAttachmentUpload {
+            restoreComposer(from: pending)
+        }
+        attachmentUploadTask?.cancel()
+        attachmentUploadTask = nil
+        isSendingAttachment = false
+        pendingAttachmentUpload = nil
+        attachmentUploadProgress = nil
+        attachmentUploadFailed = false
+        mediaDownloadTasks.values.forEach { $0.cancel() }
+        mediaDownloadTasks.removeAll()
+        mediaDownloadStates = mediaDownloadStates.filter { !$0.value.isDownloading }
+    }
+
+    private func handleTextEntity(_ action: MessageTextEntityAction) {
+        switch action {
+        case .url(let url):
+            UIApplication.shared.open(url)
+        case .mention(let mention):
+            beginThreadSearch(query: "@\(mention)")
+            statusMessage = "Searching @\(mention)"
+        case .hashtag(let hashtag):
+            beginThreadSearch(query: "#\(hashtag)")
+            statusMessage = "Searching #\(hashtag)"
+        }
+        errorMessage = nil
+    }
+
+    private func beginSelection(_ message: HSMessage) {
+        guard message.kind != "service" else {
+            return
+        }
+        endThreadSearch()
+        selectedMessageIDs = [message.id]
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    private func toggleSelection(_ message: HSMessage) {
+        guard message.kind != "service" else {
+            return
+        }
+        if selectedMessageIDs.contains(message.id) {
+            selectedMessageIDs.remove(message.id)
+        } else {
+            selectedMessageIDs.insert(message.id)
+        }
+    }
+
+    private func clearSelection() {
+        selectedMessageIDs.removeAll()
+        isShowingSelectionForwardSheet = false
+        isShowingSelectionDeleteConfirmation = false
+    }
+
+    private func copySelectedMessages() {
+        let copiedText = selectedMessages
+            .map(\.text)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
+        guard !copiedText.isEmpty else {
+            return
+        }
+        UIPasteboard.general.string = copiedText
+        statusMessage = selectedMessageIDs.count == 1 ? "Message copied." : "\(selectedMessageIDs.count) messages copied."
+        errorMessage = nil
+        clearSelection()
+    }
+
+    private func forwardSelectedMessages(to target: HSChat) async {
+        guard let session = authStore.session else {
+            return
+        }
+        let selected = selectedMessages
+        guard !selected.isEmpty else {
+            return
+        }
+        do {
+            for message in selected {
+                _ = try await authStore.api.forwardMessage(dialogID: chat.id, messageID: message.id, toDialogID: target.id, session: session)
+            }
+            statusMessage = selected.count == 1 ? "Forwarded to \(target.title)." : "\(selected.count) messages forwarded to \(target.title)."
+            errorMessage = nil
+            clearSelection()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteSelectedMessages() async {
+        guard let session = authStore.session else {
+            return
+        }
+        let selectedIDs = selectedMessageIDs
+        guard !selectedIDs.isEmpty else {
+            return
+        }
+        var deletedIDs = Set<Int64>()
+        do {
+            for messageID in selectedIDs.sorted() {
+                _ = try await authStore.api.deleteMessage(dialogID: chat.id, messageID: messageID, session: session)
+                deletedIDs.insert(messageID)
+            }
+            messages.removeAll { deletedIDs.contains($0.id) }
+            statusMessage = deletedIDs.count == 1 ? "Message deleted." : "\(deletedIDs.count) messages deleted."
+            errorMessage = nil
+            clearSelection()
+        } catch {
+            messages.removeAll { deletedIDs.contains($0.id) }
+            selectedMessageIDs.subtract(deletedIDs)
             errorMessage = error.localizedDescription
         }
     }
@@ -179,11 +1528,68 @@ struct ChatThreadView: View {
             return
         }
         _ = try? await authStore.api.markDialogRead(dialogID: chat.id, maxMessageID: last.id, session: session)
+        if chat.isMarkedUnread {
+            _ = try? await authStore.api.markDialogUnread(dialogID: chat.id, unread: false, session: session)
+        }
+    }
+
+    private func loadInitialMessages(session: HSUserSession) async throws -> (messages: [HSMessage], hasMoreHistory: Bool) {
+        var loaded = try await authStore.api.messages(dialogID: chat.id, limit: pageSize, session: session)
+        var canLoadEarlier = loaded.count >= pageSize
+
+        guard chat.unreadCount > 0 else {
+            return (loaded, canLoadEarlier)
+        }
+
+        var loadedIDs = Set(loaded.map(\.id))
+        while loaded.filter({ !$0.isOutgoing }).count < chat.unreadCount,
+              canLoadEarlier,
+              loaded.count < pageSize * 5,
+              let oldest = loaded.first {
+            let olderPage = try await authStore.api.messages(dialogID: chat.id, beforeID: oldest.id, limit: pageSize, session: session)
+            canLoadEarlier = olderPage.count >= pageSize
+            let uniqueOlderMessages = olderPage.filter { loadedIDs.insert($0.id).inserted }
+            guard !uniqueOlderMessages.isEmpty else {
+                break
+            }
+            loaded.insert(contentsOf: uniqueOlderMessages, at: 0)
+        }
+
+        return (loaded, canLoadEarlier)
+    }
+
+    private func initialUnreadSeparatorMessageID(in loadedMessages: [HSMessage]) -> Int64? {
+        guard chat.unreadCount > 0 else {
+            return nil
+        }
+        let incomingMessages = loadedMessages.filter { !$0.isOutgoing }
+        guard incomingMessages.count >= chat.unreadCount else {
+            return nil
+        }
+        let firstUnreadOffset = max(0, incomingMessages.count - chat.unreadCount)
+        return incomingMessages[firstUnreadOffset].id
     }
 
     private func beginEdit(_ message: HSMessage) {
         editingMessage = message
         editText = message.text
+    }
+
+    private func beginReply(_ message: HSMessage) {
+        replyingToMessage = message
+        draftReplyToMessageID = message.id
+    }
+
+    private func clearReply() {
+        replyingToMessage = nil
+        draftReplyToMessageID = nil
+    }
+
+    private func restoreDraftReplyTarget() {
+        guard let replyID = draftReplyToMessageID else {
+            return
+        }
+        replyingToMessage = messages.first { $0.id == replyID }
     }
 
     private func saveEdit() async {
@@ -253,6 +1659,7 @@ struct ChatThreadView: View {
         }
         do {
             let serviceMessage = try await authStore.api.pinSupergroupMessage(dialogID: chat.id, messageID: message.id, session: session)
+            shouldScrollToLatest = true
             messages.append(serviceMessage)
             statusMessage = "Message pinned."
             errorMessage = nil
@@ -283,403 +1690,442 @@ struct ChatThreadView: View {
     }
 }
 
-private struct MessageBubble: View {
-    let message: HSMessage
-    let isGroup: Bool
-    let onEdit: () -> Void
-    let onDelete: () -> Void
-    let onForward: () -> Void
-    let onReact: (String) -> Void
-    let onPin: () -> Void
-    let onCopyLink: () -> Void
+private struct ChatComposerLinkPreviewBar: View {
+    let preview: HSWebPagePreview?
+    let isLoading: Bool
+    let onDismiss: () -> Void
 
     var body: some View {
-        HStack {
-            if message.isOutgoing {
-                Spacer(minLength: 40)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                if !message.isOutgoing {
-                    Text(message.authorName)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                if message.kind == "media" {
-                    Label(message.text.isEmpty ? "Media" : message.text, systemImage: "photo")
-                        .font(.body)
-                } else if message.kind == "service" {
-                    Label(message.text.isEmpty ? "Service update" : message.text, systemImage: "info.circle")
-                        .font(.footnote.weight(.semibold))
-                } else {
-                    Text(message.text)
-                        .font(.body)
-                }
-            }
-            .padding(12)
-            .background(message.isOutgoing ? HSTheme.accent : Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8))
-            .foregroundStyle(message.isOutgoing ? .white : .primary)
-            .contextMenu {
-                Button {
-                    UIPasteboard.general.string = message.text
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
+        HStack(spacing: 10) {
+            previewIcon
+                .frame(width: 28, height: 28)
 
-                Button {
-                    onReact("👍")
-                } label: {
-                    Label("React", systemImage: "hand.thumbsup")
-                }
-
-                Button {
-                    onForward()
-                } label: {
-                    Label("Forward", systemImage: "arrowshape.turn.up.right")
-                }
-
-                if message.isOutgoing && message.kind != "service" {
-                    Button {
-                        onEdit()
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                }
-
-                if isGroup {
-                    Button {
-                        onPin()
-                    } label: {
-                        Label("Pin", systemImage: "pin")
-                    }
-                    Button {
-                        onCopyLink()
-                    } label: {
-                        Label("Copy Link", systemImage: "link")
-                    }
-                }
-
-                Button(role: .destructive) {
-                    onDelete()
-                } label: {
-                    Label("Delete", systemImage: "trash")
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(HSTheme.primaryText)
+                    .lineLimit(1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 12))
+                        .foregroundStyle(HSTheme.secondaryText)
+                        .lineLimit(1)
                 }
             }
 
-            if !message.isOutgoing {
-                Spacer(minLength: 40)
+            Spacer(minLength: 8)
+
+            if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 19, weight: .semibold))
+                    .frame(width: 30, height: 30)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(HSTheme.secondaryText)
+            .accessibilityLabel("Hide link preview")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(HSTheme.Chat.composerBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(HSTheme.Chat.panelSeparatorColor)
+                .frame(height: 1 / UIScreen.main.scale)
+        }
+    }
+
+    private var previewIcon: some View {
+        Group {
+            if preview?.photo != nil {
+                Image(systemName: "photo")
+            } else if preview?.document != nil {
+                Image(systemName: "doc.text")
+            } else {
+                Image(systemName: "link")
             }
         }
+        .font(.system(size: 18, weight: .semibold))
+        .foregroundStyle(HSTheme.accent)
+    }
+
+    private var title: String {
+        if isLoading, preview == nil {
+            return "Loading preview"
+        }
+        return firstNonEmpty(preview?.title, preview?.siteName, preview?.displayURL, preview?.url) ?? "Link preview"
+    }
+
+    private var subtitle: String? {
+        if isLoading, preview == nil {
+            return "Fetching link details"
+        }
+        return firstNonEmpty(preview?.description, preview?.displayURL, preview?.url, preview?.author)
+    }
+
+    private func firstNonEmpty(_ values: String?...) -> String? {
+        values
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
     }
 }
 
-private struct ForwardDialogSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authStore: AuthStore
+private struct AttachmentUploadBanner: View {
+    let fileName: String
+    let progress: HSMediaTransferProgress?
+    let isFailed: Bool
+    let onCancel: () -> Void
+    let onRetry: () -> Void
 
-    let currentDialogID: Int64
-    let onSelect: (HSChat) -> Void
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: isFailed ? "exclamationmark.circle.fill" : "arrow.up.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(isFailed ? .red : HSTheme.accent)
+                .frame(width: 28, height: 28)
 
-    @State private var chats: [HSChat] = []
-    @State private var errorMessage: String?
+            VStack(alignment: .leading, spacing: 4) {
+                Text(fileName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(HSTheme.primaryText)
+                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    if !isFailed, let fraction = progress?.fractionCompleted {
+                        ProgressView(value: fraction)
+                            .frame(maxWidth: 120)
+                    } else if !isFailed {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Text(statusText)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(isFailed ? .red : HSTheme.secondaryText)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            if isFailed {
+                Button(action: onRetry) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(HSTheme.accent)
+                .accessibilityLabel("Retry upload")
+            }
+
+            Button(action: onCancel) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 19, weight: .semibold))
+                    .frame(width: 30, height: 30)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(HSTheme.secondaryText)
+            .accessibilityLabel(isFailed ? "Dismiss upload" : "Cancel upload")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(HSTheme.Chat.composerBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(HSTheme.Chat.panelSeparatorColor)
+                .frame(height: 1 / UIScreen.main.scale)
+        }
+    }
+
+    private var statusText: String {
+        if isFailed {
+            return "Upload failed"
+        }
+        if let fraction = progress?.fractionCompleted {
+            return "Uploading \(Int(fraction * 100))%"
+        }
+        return "Uploading"
+    }
+}
+
+private struct MediaPreviewSheet: View {
+    let item: HSMediaPreviewItem
 
     var body: some View {
         NavigationStack {
-            List {
-                if let errorMessage {
-                    HSErrorBanner(message: errorMessage)
-                }
-                ForEach(chats.filter { $0.id != currentDialogID }) { chat in
-                    Button {
-                        onSelect(chat)
-                        dismiss()
-                    } label: {
-                        Label(chat.title, systemImage: chat.isCircle ? "person.3" : "person")
-                    }
-                }
-            }
-            .navigationTitle("Forward To")
+            previewContent
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                ShareLink(item: item.url) {
+                    Image(systemName: "square.and.arrow.up")
                 }
-            }
-            .task {
-                await refresh()
             }
         }
     }
 
-    private func refresh() async {
-        guard let session = authStore.session else {
+    @ViewBuilder
+    private var previewContent: some View {
+        if let image = item.image {
+            ScrollView([.horizontal, .vertical]) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: UIScreen.main.bounds.width, maxHeight: UIScreen.main.bounds.height * 0.72)
+                    .padding()
+            }
+            .background(Color.black.opacity(0.94))
+        } else if item.media.kind == .video {
+            VideoPlayer(player: AVPlayer(url: item.url))
+                .background(Color.black)
+        } else if item.media.kind == .audio || item.media.kind == .voice {
+            AudioPreviewView(url: item.url, title: title, metadataText: metadataText)
+        } else {
+            VStack(spacing: 14) {
+                Image(systemName: iconName)
+                    .font(.system(size: 42, weight: .semibold))
+                    .foregroundStyle(HSTheme.accent)
+                    .frame(width: 76, height: 76)
+                    .background(HSTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                if let metadataText {
+                    Text(metadataText)
+                        .font(.footnote)
+                        .foregroundStyle(HSTheme.secondaryText)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(HSTheme.grouped)
+        }
+    }
+
+    private var title: String {
+        item.media.fileName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            ? item.media.fileName!
+            : fallbackTitle
+    }
+
+    private var fallbackTitle: String {
+        switch item.media.kind {
+        case .photo:
+            return "Photo"
+        case .video:
+            return "Video"
+        case .gif:
+            return "GIF"
+        case .audio:
+            return "Audio"
+        case .voice:
+            return "Voice Message"
+        case .sticker:
+            return "Sticker"
+        case .webpage:
+            return "Link Preview"
+        case .file:
+            return "File"
+        case .unknown:
+            return "Media"
+        }
+    }
+
+    private var iconName: String {
+        switch item.media.kind {
+        case .audio, .voice:
+            return "waveform"
+        case .file:
+            return "doc.fill"
+        case .sticker:
+            return "face.smiling"
+        case .photo:
+            return "photo"
+        case .video:
+            return "play.rectangle.fill"
+        case .gif:
+            return "sparkles.rectangle.stack"
+        case .webpage:
+            return "link"
+        case .unknown:
+            return "paperclip"
+        }
+    }
+
+    private var metadataText: String? {
+        var parts: [String] = []
+        if let mimeType = item.media.mimeType, !mimeType.isEmpty {
+            parts.append(mimeType)
+        }
+        if let size = item.media.size, size > 0 {
+            parts.append(Self.byteFormatter.string(fromByteCount: size))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private static let byteFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        return formatter
+    }()
+}
+
+private struct AudioPreviewView: View {
+    let url: URL
+    let title: String
+    let metadataText: String?
+
+    @State private var player: AVPlayer?
+    @State private var isPlaying = false
+    @State private var playbackObserver: NSObjectProtocol?
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "waveform.circle.fill")
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundStyle(HSTheme.accent)
+
+            Text(title)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+
+            if let metadataText {
+                Text(metadataText)
+                    .font(.footnote)
+                    .foregroundStyle(HSTheme.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button {
+                togglePlayback()
+            } label: {
+                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.system(size: 54, weight: .semibold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(HSTheme.accent)
+            .accessibilityLabel(isPlaying ? "暂停播放" : "播放语音")
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(HSTheme.grouped)
+        .onAppear {
+            player = AVPlayer(url: url)
+            playbackObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: player?.currentItem,
+                queue: .main
+            ) { _ in
+                isPlaying = false
+                player?.seek(to: .zero)
+            }
+        }
+        .onDisappear {
+            player?.pause()
+            player = nil
+            isPlaying = false
+            if let playbackObserver {
+                NotificationCenter.default.removeObserver(playbackObserver)
+                self.playbackObserver = nil
+            }
+        }
+    }
+
+    private func togglePlayback() {
+        guard let player else {
             return
         }
-        do {
-            chats = try await authStore.api.dialogs(session: session)
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+        if isPlaying {
+            player.pause()
+            isPlaying = false
+        } else {
+            player.play()
+            isPlaying = true
         }
     }
 }
 
-struct SupergroupManageView: View {
-    @EnvironmentObject private var authStore: AuthStore
-    let chat: HSChat
+private struct ChatUnreadSeparatorView: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Rectangle()
+                .fill(HSTheme.accent.opacity(0.24))
+                .frame(height: 1)
 
-    @State private var group: HSSupergroup?
-    @State private var members: [HSSupergroupMember] = []
-    @State private var adminEvents: [HSSupergroupAdminLogEvent] = []
-    @State private var inviteLink: String?
-    @State private var errorMessage: String?
-    @State private var statusMessage: String?
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(HSTheme.accent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(HSTheme.accent.opacity(0.11), in: Capsule())
+                .accessibilityLabel(title)
+
+            Rectangle()
+                .fill(HSTheme.accent.opacity(0.24))
+                .frame(height: 1)
+        }
+        .frame(height: 25)
+        .padding(.vertical, 5)
+        .padding(.horizontal, 2)
+    }
+
+    private var title: String {
+        "未读消息"
+    }
+}
+
+private struct ChatThreadNavigationTitle: View {
+    let chat: HSChat
+    let mode: HSChatThreadMode
 
     var body: some View {
-        List {
-            if let errorMessage {
-                HSErrorBanner(message: errorMessage)
-            }
-            if let statusMessage {
-                Label(statusMessage, systemImage: "checkmark.circle")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(HSTheme.trust)
-            }
-
-            Section("Overview") {
-                LabeledContent("Title", value: group?.title ?? chat.title)
-                LabeledContent("Members", value: String(group?.memberCount ?? members.count))
-                if let about = group?.about, !about.isEmpty {
-                    Text(about)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Section("Invite Link") {
-                if let inviteLink {
-                    Text(inviteLink)
-                        .font(.footnote)
-                        .textSelection(.enabled)
-                    Button("Copy Invite Link") {
-                        UIPasteboard.general.string = inviteLink
-                        statusMessage = "Invite link copied."
-                    }
-                }
-                Button("Generate Invite Link") {
-                    Task {
-                        await generateInvite()
-                    }
-                }
-            }
-
-            Section("Group Settings") {
-                Button("Enable Slow Mode 10s") {
-                    Task {
-                        await updateSettings { $0.slowModeSeconds = 10 }
-                    }
-                }
-                Button("Disable Slow Mode") {
-                    Task {
-                        await updateSettings { $0.slowModeSeconds = 0 }
-                    }
-                }
-                Button("Require Join Requests") {
-                    Task {
-                        await updateSettings { $0.joinRequest = true }
-                    }
-                }
-                Button("Show Previous History To New Members") {
-                    Task {
-                        await updateSettings { $0.preHistoryHidden = false }
-                    }
-                }
-                Button("Hide Participant List") {
-                    Task {
-                        await updateSettings { $0.participantsHidden = true }
-                    }
-                }
-            }
-
-            Section("Members") {
-                if members.isEmpty {
-                    Text("No members loaded.")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(members) { member in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(member.displayName)
-                                .font(.headline)
-                            Spacer()
-                            Text(member.role)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                        }
-                        if let username = member.username {
-                            Text("@\(username)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            Task {
-                                await remove(member)
-                            }
-                        } label: {
-                            Label("Remove", systemImage: "person.crop.circle.badge.minus")
-                        }
-                        Button {
-                            Task {
-                                await restrict(member)
-                            }
-                        } label: {
-                            Label("Mute", systemImage: "speaker.slash")
-                        }
-                    }
-                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        Button {
-                            Task {
-                                await promote(member)
-                            }
-                        } label: {
-                            Label("Admin", systemImage: "star")
-                        }
-                        .tint(HSTheme.accent)
-                    }
-                }
-            }
-
-            Section("Admin Log") {
-                if adminEvents.isEmpty {
-                    Text("No recent admin events.")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(adminEvents) { event in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(event.description)
-                            .font(.subheadline.weight(.semibold))
-                        Text("\(event.actorName) · \(event.action)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+        HStack(spacing: 8) {
+            HSClassicAvatar(title: chat.title, icon: iconName, tint: tint, size: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(chat.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(HSTheme.primaryText)
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(HSTheme.secondaryText)
+                    .lineLimit(1)
             }
         }
-        .navigationTitle("Group Info")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            Button {
-                Task {
-                    await refresh()
-                }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-        }
-        .task {
-            await refresh()
-        }
-        .refreshable {
-            await refresh()
-        }
+        .frame(maxWidth: 220)
+        .accessibilityElement(children: .combine)
     }
 
-    private func refresh() async {
-        guard let session = authStore.session else {
-            return
+    private var subtitle: String {
+        if case .savedMessages = mode {
+            return "Saved Messages"
         }
-        do {
-            async let loadedGroup = authStore.api.supergroup(dialogID: chat.id, session: session)
-            async let loadedMembers = authStore.api.supergroupMembers(dialogID: chat.id, limit: 100, session: session)
-            async let loadedEvents = authStore.api.supergroupAdminLog(dialogID: chat.id, limit: 30, session: session)
-            group = try await loadedGroup
-            members = try await loadedMembers
-            adminEvents = try await loadedEvents
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
+        if chat.isCircle {
+            return chat.subtitle.isEmpty ? "group" : chat.subtitle
         }
+        return chat.subtitle.isEmpty ? "online" : chat.subtitle
     }
 
-    private func generateInvite() async {
-        guard let session = authStore.session else {
-            return
+    private var iconName: String {
+        if case .savedMessages = mode {
+            return "bookmark.fill"
         }
-        do {
-            let invite = try await authStore.api.exportSupergroupInvite(dialogID: chat.id, title: "HSgram Invite", session: session)
-            inviteLink = invite.link
-            UIPasteboard.general.string = invite.link
-            statusMessage = "Invite link generated and copied."
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        return chat.isCircle ? "person.3.fill" : "person.fill"
     }
 
-    private func updateSettings(_ configure: (inout HSSupergroupSettings) -> Void) async {
-        guard let session = authStore.session else {
-            return
+    private var tint: Color {
+        if case .savedMessages = mode {
+            return HSTheme.trust
         }
-        var settings = HSSupergroupSettings()
-        configure(&settings)
-        do {
-            group = try await authStore.api.updateSupergroupSettings(dialogID: chat.id, settings: settings, session: session)
-            statusMessage = "Group settings updated."
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func promote(_ member: HSSupergroupMember) async {
-        guard let session = authStore.session else {
-            return
-        }
-        var rights = HSSupergroupAdminRights()
-        rights.changeInfo = true
-        rights.deleteMessages = true
-        rights.banUsers = true
-        rights.inviteUsers = true
-        rights.pinMessages = true
-        rights.manageTopics = true
-        do {
-            _ = try await authStore.api.editSupergroupAdmin(dialogID: chat.id, userID: member.id, rights: rights, rank: "Admin", session: session)
-            statusMessage = "\(member.displayName) is now an admin."
-            await refresh()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func restrict(_ member: HSSupergroupMember) async {
-        guard let session = authStore.session else {
-            return
-        }
-        var rights = HSSupergroupBannedRights()
-        rights.sendMessages = true
-        rights.sendMedia = true
-        rights.sendPlain = true
-        do {
-            _ = try await authStore.api.editSupergroupRestrictions(dialogID: chat.id, userID: member.id, rights: rights, session: session)
-            statusMessage = "\(member.displayName) was muted."
-            await refresh()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    private func remove(_ member: HSSupergroupMember) async {
-        guard let session = authStore.session else {
-            return
-        }
-        do {
-            _ = try await authStore.api.removeSupergroupMember(dialogID: chat.id, userID: member.id, revokeHistory: false, session: session)
-            members.removeAll { $0.id == member.id }
-            statusMessage = "\(member.displayName) was removed."
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        return chat.isCircle ? HSTheme.circle : HSTheme.accent
     }
 }
