@@ -48,7 +48,11 @@ struct HSGroupProfileView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .confirmationDialog("更多", isPresented: $showMore, titleVisibility: .hidden) {
-            Button("更改壁纸") { data.setChatTheme(.blushPattern) }
+            Section("更改壁纸") {
+                ForEach(data.themeConfig.availableChatThemes) { theme in
+                    Button(theme.name) { data.setChatTheme(theme) }
+                }
+            }
             Button("启用自动删除") {}
             Button("禁用分享") {}
             Button("清除消息") {}
@@ -731,7 +735,7 @@ struct HSRecentActionsView: View {
             .background(data.themeConfig.navigationBarBackground.color)
 
             ZStack {
-                HSChatWallpaperView(theme: .blushPattern)
+                HSChatWallpaperView(theme: data.themeConfig.activeChatTheme)
                 VStack(spacing: 18) {
                     Image(systemName: "list.clipboard.fill")
                         .font(.system(size: 56, weight: .semibold))

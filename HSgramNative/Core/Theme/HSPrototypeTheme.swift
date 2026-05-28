@@ -96,7 +96,7 @@ struct HSChatWallpaperView: View {
         ZStack {
             baseLayer
 
-            if theme.chatWallpaperType == .gradientPattern || theme.chatWallpaperType == .defaultLight || theme.chatWallpaperType == .dark {
+            if theme.chatWallpaperType == .gradientPattern {
                 HSLinePatternView(opacity: theme.chatPatternOpacity, ink: patternInk)
             }
 

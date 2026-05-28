@@ -90,7 +90,7 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
         chatWallpaperGradient: [HSThemeColor(0xEAF3FB), HSThemeColor(0xD9E8F4)],
         chatWallpaperImage: nil,
         chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
-        chatPatternOpacity: 0.12,
+        chatPatternOpacity: 0.0,
         chatPatternInkColor: HSThemeColor(0x7894A8, alpha: 0.52),
         chatWallpaperSecondaryColor: HSThemeColor(0xCDE9F9),
         chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.22),
