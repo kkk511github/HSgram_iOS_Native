@@ -11,16 +11,16 @@ struct HSChatsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HSNavigationBar(title: "HSgram")
-            List {
-                Section {
-                    HSSearchBar(text: $query, placeholder: "搜索消息或用户").padding(.horizontal, 16).padding(.vertical, 10)
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(HSPrototypeTheme.surface)
-                }
-                if viewModel.visibleConversations.isEmpty {
-                    Section {
+            header
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    HSSearchBar(text: $query, placeholder: "搜索")
+                        .padding(.horizontal, 16)
+                        .padding(.top, 10)
+                        .padding(.bottom, 16)
+
+                    if viewModel.visibleConversations.isEmpty {
                         HSEmptyStateView(
                             systemImage: "bubble.left.and.bubble.right",
                             title: viewModel.isFiltering ? "没有找到会话" : "还没有会话",
@@ -28,54 +28,89 @@ struct HSChatsView: View {
                             actionTitle: viewModel.isFiltering ? "清空搜索" : nil,
                             action: viewModel.isFiltering ? { query = "" } : nil
                         )
-                        .frame(minHeight: 420)
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(HSPrototypeTheme.surface)
-                    }
-                } else {
-                    Section {
+                        .frame(height: 420)
+                    } else {
                         ForEach(viewModel.visibleConversations) { conversation in
                             Button {
                                 router.open(.chat(conversation.id))
                             } label: {
                                 HSConversationCell(conversation: conversation) {
-                                    if let user = conversation.participants.first(where: { $0.id != data.currentUser.id }) {
+                                    if conversation.isGroup, let groupID = conversation.groupID {
+                                        router.open(.groupProfile(groupID))
+                                    } else if let user = conversation.participants.first(where: { $0.id != data.currentUser.id }) {
                                         router.open(.profile(user.id))
                                     }
                                 }
-                                .overlay(alignment: .bottom) {
-                                    Rectangle()
-                                        .fill(HSPrototypeTheme.separator.opacity(0.55))
-                                        .frame(height: 1 / UIScreen.main.scale)
-                                        .padding(.leading, 82)
-                                }
                             }
                             .buttonStyle(.plain)
-                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                                Button { data.pin(conversation) } label: { Label(conversation.isPinned ? "取消置顶" : "置顶", systemImage: "pin") }.tint(HSPrototypeTheme.accent)
+                            .contextMenu {
+                                Button {
+                                    data.pin(conversation)
+                                } label: {
+                                    Label(conversation.isPinned ? "取消置顶" : "置顶", systemImage: "pin")
+                                }
+                                Button {
+                                    data.mute(conversation)
+                                } label: {
+                                    Label(conversation.isMuted ? "取消静音" : "静音", systemImage: "bell.slash")
+                                }
+                                Button {
+                                    data.archive(conversation)
+                                } label: {
+                                    Label("归档", systemImage: "archivebox")
+                                }
+                                Button(role: .destructive) {
+                                    data.delete(conversation)
+                                } label: {
+                                    Label("删除", systemImage: "trash")
+                                }
                             }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) { data.delete(conversation) } label: { Label("删除", systemImage: "trash") }
-                                Button { data.archive(conversation) } label: { Label("归档", systemImage: "archivebox") }.tint(.gray)
-                                Button { data.mute(conversation) } label: { Label(conversation.isMuted ? "取消静音" : "静音", systemImage: "bell.slash") }.tint(HSPrototypeTheme.orange)
-                            }
-                            .listRowInsets(EdgeInsets())
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(conversation.isPinned ? HSPrototypeTheme.secondarySurface.opacity(0.65) : HSPrototypeTheme.surface)
                         }
                     }
                 }
+                .padding(.bottom, HSLayoutMetrics.rootTabBarClearance + 18)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
-            }
+            .scrollIndicators(.hidden)
             .refreshable { await data.refresh() }
-            .background(HSPrototypeTheme.surface)
         }
-        .background(HSPrototypeTheme.surface.ignoresSafeArea())
+        .background(data.themeConfig.appBackgroundColor.color.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center) {
+            Button("编辑") {}
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                .frame(height: 56)
+                .padding(.horizontal, 18)
+                .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Capsule())
+
+            Spacer()
+
+            HStack(spacing: 6) {
+                Text("聊天")
+                    .font(.system(size: 22, weight: .bold))
+                Image(systemName: "sparkles")
+                    .font(.system(size: 18, weight: .bold))
+            }
+            .foregroundStyle(data.themeConfig.primaryTextColor.color)
+
+            Spacer()
+
+            Button(action: {}) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 25, weight: .semibold))
+                    .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                    .frame(width: 56, height: 56)
+                    .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
+        .background(data.themeConfig.navigationBarBackground.color.opacity(0.02))
     }
 }

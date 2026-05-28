@@ -1,36 +1,32 @@
 import SwiftUI
 
 enum HSAppTab: String, CaseIterable, Identifiable, Hashable {
-    case chats
     case contacts
-    case search
+    case chats
     case settings
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .contacts: return "今日"
         case .chats: return "聊天"
-        case .contacts: return "联系人"
-        case .search: return "搜索"
         case .settings: return "设置"
         }
     }
 
     var icon: String {
         switch self {
-        case .chats: return "bubble.left.and.bubble.right"
         case .contacts: return "person.2"
-        case .search: return "magnifyingglass"
+        case .chats: return "bubble.left.and.bubble.right"
         case .settings: return "gearshape"
         }
     }
 
     var selectedIcon: String {
         switch self {
-        case .chats: return "bubble.left.and.bubble.right.fill"
         case .contacts: return "person.2.fill"
-        case .search: return "magnifyingglass.circle.fill"
+        case .chats: return "bubble.left.and.bubble.right.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -40,6 +36,14 @@ enum HSRoute: Hashable {
     case chat(UUID)
     case profile(UUID)
     case media(UUID)
+    case groupProfile(UUID)
+    case groupSettings(UUID)
+    case groupMembers(UUID)
+    case groupPermissions(UUID)
+    case groupInviteLinks(UUID)
+    case groupReactionSettings(UUID)
+    case groupRemovedUsers(UUID)
+    case groupRecentActions(UUID)
     case appearance
     case settingsDetail(SettingsDestination)
 }

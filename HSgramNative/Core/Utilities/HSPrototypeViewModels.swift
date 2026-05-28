@@ -20,13 +20,8 @@ struct HSAuthViewModel {
     let loginMethod: HSAuthLoginMethod
     let codeSent: Bool
 
-    var showsNameField: Bool {
-        mode == .register
-    }
-
-    var usesEmailLogin: Bool {
-        loginMethod == .email
-    }
+    var showsNameField: Bool { mode == .register }
+    var usesEmailLogin: Bool { loginMethod == .email }
 
     var primaryActionTitle: String {
         guard codeSent else { return "获取验证码" }
@@ -37,9 +32,7 @@ struct HSAuthViewModel {
         "邮箱为主入口，手机号作为辅助登录。当前原型使用 Mock 验证码，后续可接入真实 API。"
     }
 
-    var verificationSeed: String {
-        "1024"
-    }
+    var verificationSeed: String { "1024" }
 
     func toggledMode() -> HSAuthMode {
         mode == .login ? .register : .login
@@ -54,14 +47,15 @@ struct HSChatListViewModel {
         conversations
             .filter { !$0.isArchived }
             .filter { conversation in
-                query.isEmpty
-                    || conversation.title.localizedCaseInsensitiveContains(query)
-                    || (conversation.lastMessage?.body.localizedCaseInsensitiveContains(query) ?? false)
+                query.isEmpty ||
+                    conversation.title.localizedCaseInsensitiveContains(query) ||
+                    conversation.subtitle.localizedCaseInsensitiveContains(query) ||
+                    (conversation.lastMessage?.body.localizedCaseInsensitiveContains(query) ?? false)
             }
     }
 
     var isFiltering: Bool {
-        !query.isEmpty
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 
@@ -78,7 +72,10 @@ struct HSChatRoomViewModel {
     }
 
     var subtitle: String? {
-        conversation?.subtitle
+        if let group {
+            return "\(group.memberCount) 位成员"
+        }
+        return conversation?.subtitle
     }
 
     var isGroupChat: Bool {
@@ -98,18 +95,67 @@ struct HSChatRoomViewModel {
     }
 
     func forwardText(for message: Message) -> String {
-        "转发：\(message.body.isEmpty ? message.attachment?.title ?? "附件" : message.body)"
+        let content = message.body.isEmpty ? message.attachment?.title ?? message.sticker?.title ?? "附件" : message.body
+        return "转发：\(content)"
     }
 
     func makeAttachment(kind: AttachmentKind) -> Attachment {
-        Attachment(
-            id: UUID(),
-            kind: kind,
-            title: kind == .image ? "新图片" : kind == .voice ? "语音消息" : kind == .link ? "hsgram.app" : "设计文档.pdf",
-            subtitle: kind == .voice ? "00:08" : kind == .image ? "960 x 720" : "1.8 MB",
-            previewSystemImage: kind == .image ? "photo" : kind == .voice ? "waveform" : kind == .link ? "link" : "doc.text.fill",
-            accentHex: kind == .voice ? 0x34C759 : kind == .image ? 0x168BFF : 0xFF9500
-        )
+        switch kind {
+        case .image:
+            return Attachment(
+                id: UUID(),
+                kind: .image,
+                title: "新图片",
+                subtitle: "960 x 720",
+                previewSystemImage: "photo",
+                accentHex: 0x48A8F5
+            )
+        case .file:
+            return Attachment(
+                id: UUID(),
+                kind: .file,
+                title: "设计文件.pdf",
+                subtitle: "1.8 MB",
+                previewSystemImage: "doc.text.fill",
+                accentHex: 0xF5A12A
+            )
+        case .voice:
+            return Attachment(
+                id: UUID(),
+                kind: .voice,
+                title: "语音消息",
+                subtitle: "00:08",
+                previewSystemImage: "waveform",
+                accentHex: 0x58C75A
+            )
+        case .link:
+            return Attachment(
+                id: UUID(),
+                kind: .link,
+                title: "hsgram.cloud",
+                subtitle: "邀请链接",
+                previewSystemImage: "link",
+                accentHex: 0x8B5FD3
+            )
+        case .location:
+            return Attachment(
+                id: UUID(),
+                kind: .location,
+                title: "当前位置",
+                subtitle: "附近 40 米",
+                previewSystemImage: "mappin.circle.fill",
+                accentHex: 0xF04B41
+            )
+        case .checklist:
+            return Attachment(
+                id: UUID(),
+                kind: .checklist,
+                title: "核对清单",
+                subtitle: "3 个项目",
+                previewSystemImage: "checklist.checked",
+                accentHex: 0x58C75A
+            )
+        }
     }
 }
 
@@ -119,9 +165,9 @@ struct HSContactsViewModel {
 
     var filteredContacts: [Contact] {
         contacts.filter {
-            query.isEmpty
-                || $0.user.displayName.localizedCaseInsensitiveContains(query)
-                || $0.user.username.localizedCaseInsensitiveContains(query)
+            query.isEmpty ||
+                $0.user.displayName.localizedCaseInsensitiveContains(query) ||
+                $0.user.username.localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -143,18 +189,18 @@ struct HSGlobalSearchViewModel {
 
     var userResults: [User] {
         users.filter {
-            $0.id != currentUser.id
-                && (query.isEmpty
-                    || $0.displayName.localizedCaseInsensitiveContains(query)
-                    || $0.username.localizedCaseInsensitiveContains(query))
+            $0.id != currentUser.id &&
+                (query.isEmpty ||
+                    $0.displayName.localizedCaseInsensitiveContains(query) ||
+                    $0.username.localizedCaseInsensitiveContains(query))
         }
     }
 
     var groupResults: [Group] {
         groups.filter {
-            query.isEmpty
-                || $0.title.localizedCaseInsensitiveContains(query)
-                || $0.about.localizedCaseInsensitiveContains(query)
+            query.isEmpty ||
+                $0.title.localizedCaseInsensitiveContains(query) ||
+                $0.about.localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -192,7 +238,7 @@ struct HSMediaLibraryViewModel {
         messages.filter { message in
             switch selectedTab {
             case .media:
-                return message.kind == .image
+                return message.kind == .image || message.kind == .sticker
             case .files:
                 return message.kind == .file || message.attachment?.kind == .file
             case .links:
@@ -207,15 +253,16 @@ struct HSAppearanceViewModel {
     let users: [User]
     let currentUser: User
 
-    let accentChoices: [UInt32] = [0x168BFF, 0x30B7C5, 0x34C759, 0xFF9500, 0xAF52DE]
+    let accentChoices: [UInt32] = [0x8B5FD3, 0x48A8F5, 0x58C75A, 0xF5A12A, 0xF04B41]
 
     var incomingPreview: Message {
         Message(
             conversationID: UUID(),
             sender: users.first ?? currentUser,
-            body: "这是一条收到的消息预览。",
+            body: "这是默认浅色聊天主题的收到消息预览。",
             sentAt: Date().addingTimeInterval(-120),
-            isOutgoing: false
+            isOutgoing: false,
+            reactions: [MessageReaction(emoji: "👍", count: 1, reactorInitials: ["K"])]
         )
     }
 
@@ -223,35 +270,11 @@ struct HSAppearanceViewModel {
         Message(
             conversationID: UUID(),
             sender: currentUser,
-            body: "主题色和背景会实时影响界面。",
+            body: "粉紫线稿只是一个可切换聊天主题，不是整站默认色。",
             sentAt: Date(),
             isOutgoing: true,
             deliveryState: .read,
-            reactions: [MessageReaction(emoji: "👍", count: 1, isSelectedByCurrentUser: true)]
+            reactions: [MessageReaction(emoji: "♥", count: 1, isSelectedByCurrentUser: true, reactorInitials: ["L"])]
         )
-    }
-}
-
-enum HSMediaTab: String, CaseIterable, Identifiable {
-    case media
-    case files
-    case links
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .media: return "媒体"
-        case .files: return "文件"
-        case .links: return "链接"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .media: return "photo.on.rectangle"
-        case .files: return "doc.text"
-        case .links: return "link"
-        }
     }
 }

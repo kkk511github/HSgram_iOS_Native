@@ -1,4 +1,279 @@
 import Foundation
+import SwiftUI
+
+struct HSThemeColor: Codable, Hashable {
+    var hex: UInt32
+    var alpha: Double
+
+    init(_ hex: UInt32, alpha: Double = 1.0) {
+        self.hex = hex
+        self.alpha = alpha
+    }
+
+    var color: Color {
+        Color(hex: hex, alpha: alpha)
+    }
+}
+
+enum ThemeInterfaceMode: String, Codable, CaseIterable, Identifiable, Hashable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .system: return "跟随系统"
+        case .light: return "浅色"
+        case .dark: return "深色"
+        }
+    }
+}
+
+enum ChatWallpaperType: String, Codable, CaseIterable, Identifiable, Hashable {
+    case defaultLight
+    case solidColor
+    case gradient
+    case image
+    case imageWithOverlay
+    case gradientPattern
+    case dark
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .defaultLight: return "默认浅色"
+        case .solidColor: return "纯色"
+        case .gradient: return "渐变"
+        case .image: return "图片"
+        case .imageWithOverlay: return "图片蒙层"
+        case .gradientPattern: return "渐变线稿"
+        case .dark: return "暗色"
+        }
+    }
+}
+
+struct ChatThemeConfig: Identifiable, Codable, Hashable {
+    var id: String
+    var name: String
+    var incomingBubbleColor: HSThemeColor
+    var outgoingBubbleColor: HSThemeColor
+    var incomingTextColor: HSThemeColor
+    var outgoingTextColor: HSThemeColor
+    var chatWallpaperType: ChatWallpaperType
+    var chatWallpaperColor: HSThemeColor
+    var chatWallpaperGradient: [HSThemeColor]
+    var chatWallpaperImage: String?
+    var chatWallpaperOverlayColor: HSThemeColor
+    var chatPatternOpacity: Double
+    var reactionPillColor: HSThemeColor
+    var reactionAvatarColor: HSThemeColor
+    var inputBarBackgroundColor: HSThemeColor
+    var inputFieldBackgroundColor: HSThemeColor
+    var dateDividerColor: HSThemeColor
+    var pinnedBannerColor: HSThemeColor
+
+    static let defaultLight = ChatThemeConfig(
+        id: "default-light",
+        name: "默认浅色",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xE1FFC7),
+        incomingTextColor: HSThemeColor(0x101014),
+        outgoingTextColor: HSThemeColor(0x101014),
+        chatWallpaperType: .defaultLight,
+        chatWallpaperColor: HSThemeColor(0xDCE8F3),
+        chatWallpaperGradient: [HSThemeColor(0xEAF3FB), HSThemeColor(0xD9E8F4)],
+        chatWallpaperImage: nil,
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
+        chatPatternOpacity: 0.12,
+        reactionPillColor: HSThemeColor(0xE9F1FA),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0xF7F7F7, alpha: 0.86),
+        inputFieldBackgroundColor: HSThemeColor(0xFFFFFF, alpha: 0.92),
+        dateDividerColor: HSThemeColor(0x6C7B89, alpha: 0.52),
+        pinnedBannerColor: HSThemeColor(0xFFFFFF, alpha: 0.82)
+    )
+
+    static let blushPattern = ChatThemeConfig(
+        id: "blush-pattern",
+        name: "粉紫线稿",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xEEDFFF),
+        incomingTextColor: HSThemeColor(0x111014),
+        outgoingTextColor: HSThemeColor(0x171019),
+        chatWallpaperType: .gradientPattern,
+        chatWallpaperColor: HSThemeColor(0xF3C1E7),
+        chatWallpaperGradient: [
+            HSThemeColor(0xD45DC2),
+            HSThemeColor(0xF3A9C5),
+            HSThemeColor(0xF7C29A),
+            HSThemeColor(0xB9A7EF)
+        ],
+        chatWallpaperImage: nil,
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.10),
+        chatPatternOpacity: 0.22,
+        reactionPillColor: HSThemeColor(0x8F63CF, alpha: 0.90),
+        reactionAvatarColor: HSThemeColor(0x68D6DD),
+        inputBarBackgroundColor: HSThemeColor(0xF8DCF4, alpha: 0.74),
+        inputFieldBackgroundColor: HSThemeColor(0xFFF4FF, alpha: 0.82),
+        dateDividerColor: HSThemeColor(0xC85E95, alpha: 0.78),
+        pinnedBannerColor: HSThemeColor(0xFFF4EA, alpha: 0.82)
+    )
+
+    static let dark = ChatThemeConfig(
+        id: "dark",
+        name: "暗色",
+        incomingBubbleColor: HSThemeColor(0x22252E),
+        outgoingBubbleColor: HSThemeColor(0x155A7A),
+        incomingTextColor: HSThemeColor(0xF4F6F8),
+        outgoingTextColor: HSThemeColor(0xF4F6F8),
+        chatWallpaperType: .dark,
+        chatWallpaperColor: HSThemeColor(0x10141B),
+        chatWallpaperGradient: [HSThemeColor(0x111827), HSThemeColor(0x070A10)],
+        chatWallpaperImage: nil,
+        chatWallpaperOverlayColor: HSThemeColor(0x000000, alpha: 0.18),
+        chatPatternOpacity: 0.10,
+        reactionPillColor: HSThemeColor(0x263447),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0x161A21, alpha: 0.86),
+        inputFieldBackgroundColor: HSThemeColor(0x242A34, alpha: 0.92),
+        dateDividerColor: HSThemeColor(0x324054, alpha: 0.78),
+        pinnedBannerColor: HSThemeColor(0x202631, alpha: 0.82)
+    )
+}
+
+struct ThemeConfig: Identifiable, Codable, Hashable {
+    var id: UUID
+    var interfaceMode: ThemeInterfaceMode
+    var fontScale: Double
+    var appBackgroundColor: HSThemeColor
+    var groupedBackgroundColor: HSThemeColor
+    var cardBackgroundColor: HSThemeColor
+    var navigationBarBackground: HSThemeColor
+    var primaryAccentColor: HSThemeColor
+    var secondaryAccentColor: HSThemeColor
+    var incomingBubbleColor: HSThemeColor
+    var outgoingBubbleColor: HSThemeColor
+    var incomingTextColor: HSThemeColor
+    var outgoingTextColor: HSThemeColor
+    var chatWallpaperType: ChatWallpaperType
+    var chatWallpaperColor: HSThemeColor
+    var chatWallpaperGradient: [HSThemeColor]
+    var chatWallpaperImage: String?
+    var chatPatternOpacity: Double
+    var reactionPillColor: HSThemeColor
+    var reactionAvatarColor: HSThemeColor
+    var inputBarBackgroundColor: HSThemeColor
+    var inputFieldBackgroundColor: HSThemeColor
+    var tabBarBackgroundColor: HSThemeColor
+    var separatorColor: HSThemeColor
+    var primaryTextColor: HSThemeColor
+    var secondaryTextColor: HSThemeColor
+    var mutedTextColor: HSThemeColor
+    var successColor: HSThemeColor
+    var destructiveColor: HSThemeColor
+    var warningColor: HSThemeColor
+    var sheetBackgroundColor: HSThemeColor
+    var activeChatTheme: ChatThemeConfig
+    var availableChatThemes: [ChatThemeConfig]
+
+    init(
+        id: UUID = UUID(),
+        interfaceMode: ThemeInterfaceMode = .light,
+        fontScale: Double = 1.0,
+        appBackgroundColor: HSThemeColor = HSThemeColor(0xFFFFFF),
+        groupedBackgroundColor: HSThemeColor = HSThemeColor(0xF2F3F7),
+        cardBackgroundColor: HSThemeColor = HSThemeColor(0xFFFFFF),
+        navigationBarBackground: HSThemeColor = HSThemeColor(0xFFFFFF, alpha: 0.82),
+        primaryAccentColor: HSThemeColor = HSThemeColor(0x8B5FD3),
+        secondaryAccentColor: HSThemeColor = HSThemeColor(0x48A8F5),
+        incomingBubbleColor: HSThemeColor = ChatThemeConfig.defaultLight.incomingBubbleColor,
+        outgoingBubbleColor: HSThemeColor = ChatThemeConfig.defaultLight.outgoingBubbleColor,
+        incomingTextColor: HSThemeColor = ChatThemeConfig.defaultLight.incomingTextColor,
+        outgoingTextColor: HSThemeColor = ChatThemeConfig.defaultLight.outgoingTextColor,
+        chatWallpaperType: ChatWallpaperType = ChatThemeConfig.defaultLight.chatWallpaperType,
+        chatWallpaperColor: HSThemeColor = ChatThemeConfig.defaultLight.chatWallpaperColor,
+        chatWallpaperGradient: [HSThemeColor] = ChatThemeConfig.defaultLight.chatWallpaperGradient,
+        chatWallpaperImage: String? = nil,
+        chatPatternOpacity: Double = ChatThemeConfig.defaultLight.chatPatternOpacity,
+        reactionPillColor: HSThemeColor = ChatThemeConfig.defaultLight.reactionPillColor,
+        reactionAvatarColor: HSThemeColor = ChatThemeConfig.defaultLight.reactionAvatarColor,
+        inputBarBackgroundColor: HSThemeColor = ChatThemeConfig.defaultLight.inputBarBackgroundColor,
+        inputFieldBackgroundColor: HSThemeColor = ChatThemeConfig.defaultLight.inputFieldBackgroundColor,
+        tabBarBackgroundColor: HSThemeColor = HSThemeColor(0xFFFFFF, alpha: 0.84),
+        separatorColor: HSThemeColor = HSThemeColor(0xDADDE3),
+        primaryTextColor: HSThemeColor = HSThemeColor(0x050505),
+        secondaryTextColor: HSThemeColor = HSThemeColor(0x8E8E93),
+        mutedTextColor: HSThemeColor = HSThemeColor(0xC6C7CD),
+        successColor: HSThemeColor = HSThemeColor(0x58C75A),
+        destructiveColor: HSThemeColor = HSThemeColor(0xF04B41),
+        warningColor: HSThemeColor = HSThemeColor(0xF5A12A),
+        sheetBackgroundColor: HSThemeColor = HSThemeColor(0xF8F8FA, alpha: 0.94),
+        activeChatTheme: ChatThemeConfig = .defaultLight,
+        availableChatThemes: [ChatThemeConfig] = [.defaultLight, .blushPattern, .dark]
+    ) {
+        self.id = id
+        self.interfaceMode = interfaceMode
+        self.fontScale = fontScale
+        self.appBackgroundColor = appBackgroundColor
+        self.groupedBackgroundColor = groupedBackgroundColor
+        self.cardBackgroundColor = cardBackgroundColor
+        self.navigationBarBackground = navigationBarBackground
+        self.primaryAccentColor = primaryAccentColor
+        self.secondaryAccentColor = secondaryAccentColor
+        self.incomingBubbleColor = incomingBubbleColor
+        self.outgoingBubbleColor = outgoingBubbleColor
+        self.incomingTextColor = incomingTextColor
+        self.outgoingTextColor = outgoingTextColor
+        self.chatWallpaperType = chatWallpaperType
+        self.chatWallpaperColor = chatWallpaperColor
+        self.chatWallpaperGradient = chatWallpaperGradient
+        self.chatWallpaperImage = chatWallpaperImage
+        self.chatPatternOpacity = chatPatternOpacity
+        self.reactionPillColor = reactionPillColor
+        self.reactionAvatarColor = reactionAvatarColor
+        self.inputBarBackgroundColor = inputBarBackgroundColor
+        self.inputFieldBackgroundColor = inputFieldBackgroundColor
+        self.tabBarBackgroundColor = tabBarBackgroundColor
+        self.separatorColor = separatorColor
+        self.primaryTextColor = primaryTextColor
+        self.secondaryTextColor = secondaryTextColor
+        self.mutedTextColor = mutedTextColor
+        self.successColor = successColor
+        self.destructiveColor = destructiveColor
+        self.warningColor = warningColor
+        self.sheetBackgroundColor = sheetBackgroundColor
+        self.activeChatTheme = activeChatTheme
+        self.availableChatThemes = availableChatThemes
+    }
+
+    static let defaultLight = ThemeConfig()
+
+    static let blushExample: ThemeConfig = {
+        var config = ThemeConfig()
+        config.apply(chatTheme: .blushPattern)
+        return config
+    }()
+
+    mutating func apply(chatTheme: ChatThemeConfig) {
+        activeChatTheme = chatTheme
+        incomingBubbleColor = chatTheme.incomingBubbleColor
+        outgoingBubbleColor = chatTheme.outgoingBubbleColor
+        incomingTextColor = chatTheme.incomingTextColor
+        outgoingTextColor = chatTheme.outgoingTextColor
+        chatWallpaperType = chatTheme.chatWallpaperType
+        chatWallpaperColor = chatTheme.chatWallpaperColor
+        chatWallpaperGradient = chatTheme.chatWallpaperGradient
+        chatWallpaperImage = chatTheme.chatWallpaperImage
+        chatPatternOpacity = chatTheme.chatPatternOpacity
+        reactionPillColor = chatTheme.reactionPillColor
+        reactionAvatarColor = chatTheme.reactionAvatarColor
+        inputBarBackgroundColor = chatTheme.inputBarBackgroundColor
+        inputFieldBackgroundColor = chatTheme.inputFieldBackgroundColor
+    }
+}
 
 enum UserPresence: String, Codable, Hashable {
     case online
@@ -8,14 +283,10 @@ enum UserPresence: String, Codable, Hashable {
 
     var label: String {
         switch self {
-        case .online:
-            return "在线"
-        case .offline:
-            return "离线"
-        case .typing:
-            return "正在输入..."
-        case .recently:
-            return "最近在线"
+        case .online: return "在线"
+        case .offline: return "离线"
+        case .typing: return "正在输入..."
+        case .recently: return "最近上线"
         }
     }
 }
@@ -30,6 +301,7 @@ struct User: Identifiable, Codable, Hashable {
     var initials: String
     var accentHex: UInt32
     var presence: UserPresence
+    var lastSeenText: String
 
     var isOnline: Bool {
         presence == .online || presence == .typing
@@ -46,6 +318,8 @@ enum AttachmentKind: String, Codable, Hashable {
     case file
     case voice
     case link
+    case location
+    case checklist
 }
 
 struct Attachment: Identifiable, Codable, Hashable {
@@ -62,12 +336,20 @@ struct MessageReaction: Identifiable, Codable, Hashable {
     var emoji: String
     var count: Int
     var isSelectedByCurrentUser: Bool
+    var reactorInitials: [String]
 
-    init(id: UUID = UUID(), emoji: String, count: Int, isSelectedByCurrentUser: Bool = false) {
+    init(
+        id: UUID = UUID(),
+        emoji: String,
+        count: Int,
+        isSelectedByCurrentUser: Bool = false,
+        reactorInitials: [String] = []
+    ) {
         self.id = id
         self.emoji = emoji
         self.count = count
         self.isSelectedByCurrentUser = isSelectedByCurrentUser
+        self.reactorInitials = reactorInitials
     }
 }
 
@@ -83,6 +365,7 @@ enum MessageKind: String, Codable, Hashable {
     case image
     case file
     case voice
+    case sticker
 }
 
 struct Message: Identifiable, Codable, Hashable {
@@ -92,11 +375,13 @@ struct Message: Identifiable, Codable, Hashable {
     var body: String
     var kind: MessageKind
     var attachment: Attachment?
+    var sticker: HSSticker?
     var sentAt: Date
     var isOutgoing: Bool
     var deliveryState: MessageDeliveryState
     var reactions: [MessageReaction]
     var replyPreview: String?
+    var forwardSource: String?
     var mentions: [String]
     var senderRole: String?
 
@@ -107,11 +392,13 @@ struct Message: Identifiable, Codable, Hashable {
         body: String,
         kind: MessageKind = .text,
         attachment: Attachment? = nil,
+        sticker: HSSticker? = nil,
         sentAt: Date = Date(),
         isOutgoing: Bool,
         deliveryState: MessageDeliveryState = .sent,
         reactions: [MessageReaction] = [],
         replyPreview: String? = nil,
+        forwardSource: String? = nil,
         mentions: [String] = [],
         senderRole: String? = nil
     ) {
@@ -121,11 +408,13 @@ struct Message: Identifiable, Codable, Hashable {
         self.body = body
         self.kind = kind
         self.attachment = attachment
+        self.sticker = sticker
         self.sentAt = sentAt
         self.isOutgoing = isOutgoing
         self.deliveryState = deliveryState
         self.reactions = reactions
         self.replyPreview = replyPreview
+        self.forwardSource = forwardSource
         self.mentions = mentions
         self.senderRole = senderRole
     }
@@ -146,10 +435,35 @@ struct Conversation: Identifiable, Codable, Hashable {
     var isPinned: Bool
     var isMuted: Bool
     var isArchived: Bool
+    var isVerified: Bool
 
     var isGroup: Bool {
         kind == .groupChat
     }
+}
+
+struct GroupPermissionState: Codable, Hashable {
+    var canSendMessages: Bool
+    var canSendMedia: Bool
+    var canAddMembers: Bool
+    var canPinMessages: Bool
+    var canChangeInfo: Bool
+    var canEditOwnTags: Bool
+    var slowModeSeconds: Double
+}
+
+struct RemovedUser: Identifiable, Codable, Hashable {
+    let id: UUID
+    var user: User
+    var removedBy: String
+}
+
+struct GroupInviteLink: Identifiable, Codable, Hashable {
+    let id: UUID
+    var link: String
+    var shortLink: String
+    var joinedCount: Int
+    var requiresApproval: Bool
 }
 
 struct Group: Identifiable, Codable, Hashable {
@@ -159,14 +473,25 @@ struct Group: Identifiable, Codable, Hashable {
     var announcement: String
     var members: [User]
     var adminIDs: Set<UUID>
+    var ownerID: UUID
+    var avatarInitials: String
     var avatarHex: UInt32
+    var username: String
+    var inviteLinks: [GroupInviteLink]
+    var removedUsers: [RemovedUser]
+    var permissions: GroupPermissionState
+    var reactionsEnabled: Bool
+    var reactionLimit: Double
+    var allowedReactions: String
 
     var memberCount: Int {
         members.count
     }
 
     func role(for user: User) -> String? {
-        adminIDs.contains(user.id) ? "管理员" : nil
+        if user.id == ownerID { return "所有者" }
+        if adminIDs.contains(user.id) { return "管理员" }
+        return nil
     }
 }
 
@@ -203,85 +528,52 @@ struct SettingsItem: Identifiable, Codable, Hashable {
     var destination: SettingsDestination
 }
 
-enum ThemeInterfaceMode: String, Codable, CaseIterable, Identifiable, Hashable {
-    case system
-    case light
-    case dark
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .system:
-            return "跟随系统"
-        case .light:
-            return "浅色"
-        case .dark:
-            return "深色"
-        }
-    }
-}
-
-enum ChatBubbleStyle: String, Codable, CaseIterable, Identifiable, Hashable {
-    case soft
-    case compact
-    case glass
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .soft:
-            return "柔和"
-        case .compact:
-            return "紧凑"
-        case .glass:
-            return "通透"
-        }
-    }
-}
-
-enum ChatBackgroundStyle: String, Codable, CaseIterable, Identifiable, Hashable {
-    case clean
-    case pattern
-    case mist
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .clean:
-            return "纯净"
-        case .pattern:
-            return "细纹"
-        case .mist:
-            return "薄雾"
-        }
-    }
-}
-
-struct ThemeConfig: Identifiable, Codable, Hashable {
+struct HSSticker: Identifiable, Codable, Hashable {
     let id: UUID
-    var interfaceMode: ThemeInterfaceMode
-    var bubbleStyle: ChatBubbleStyle
-    var fontScale: Double
+    var title: String
+    var symbol: String
+    var baseHex: UInt32
     var accentHex: UInt32
-    var chatBackground: ChatBackgroundStyle
+    var mood: String
 
     init(
         id: UUID = UUID(),
-        interfaceMode: ThemeInterfaceMode = .system,
-        bubbleStyle: ChatBubbleStyle = .soft,
-        fontScale: Double = 1.0,
-        accentHex: UInt32 = 0x168BFF,
-        chatBackground: ChatBackgroundStyle = .pattern
+        title: String,
+        symbol: String,
+        baseHex: UInt32,
+        accentHex: UInt32,
+        mood: String
     ) {
         self.id = id
-        self.interfaceMode = interfaceMode
-        self.bubbleStyle = bubbleStyle
-        self.fontScale = fontScale
+        self.title = title
+        self.symbol = symbol
+        self.baseHex = baseHex
         self.accentHex = accentHex
-        self.chatBackground = chatBackground
+        self.mood = mood
+    }
+}
+
+enum HSMediaTab: String, CaseIterable, Identifiable {
+    case media
+    case files
+    case links
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .media: return "媒体"
+        case .files: return "文件"
+        case .links: return "链接"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .media: return "photo.on.rectangle"
+        case .files: return "doc.text"
+        case .links: return "link"
+        }
     }
 }
 
@@ -289,7 +581,11 @@ enum HSDateText {
     static func shortTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_Hans")
-        formatter.dateFormat = Calendar.current.isDateInToday(date) ? "HH:mm" : "M/d"
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateFormat = "HH:mm"
+        } else {
+            formatter.dateFormat = "MM/dd"
+        }
         return formatter.string(from: date)
     }
 
@@ -297,6 +593,17 @@ enum HSDateText {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_Hans")
         formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
+    }
+
+    static func dayLabel(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "今天"
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_Hans")
+        formatter.dateFormat = "M月d日"
         return formatter.string(from: date)
     }
 }

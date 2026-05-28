@@ -31,8 +31,6 @@ private struct HSPrototypeMainShell: View {
                     HSChatsView()
                 case .contacts:
                     HSContactsView()
-                case .search:
-                    HSGlobalSearchView()
                 case .settings:
                     HSSettingsHomeView()
                 }
@@ -45,6 +43,22 @@ private struct HSPrototypeMainShell: View {
                     HSProfileView(userID: id)
                 case .media(let id):
                     HSMediaLibraryView(conversationID: id)
+                case .groupProfile(let id):
+                    HSGroupProfileView(groupID: id)
+                case .groupSettings(let id):
+                    HSGroupSettingsView(groupID: id)
+                case .groupMembers(let id):
+                    HSGroupMembersView(groupID: id)
+                case .groupPermissions(let id):
+                    HSGroupPermissionsView(groupID: id)
+                case .groupInviteLinks(let id):
+                    HSInviteLinksView(groupID: id)
+                case .groupReactionSettings(let id):
+                    HSReactionSettingsView(groupID: id)
+                case .groupRemovedUsers(let id):
+                    HSRemovedUsersView(groupID: id)
+                case .groupRecentActions(let id):
+                    HSRecentActionsView(groupID: id)
                 case .appearance:
                     HSAppearanceView()
                 case .settingsDetail(let destination):

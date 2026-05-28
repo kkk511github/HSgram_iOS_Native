@@ -2,61 +2,55 @@ import SwiftUI
 import UIKit
 
 enum HSPrototypeTheme {
-    static let accent = Color(hex: 0x168BFF)
-    static let accentDeep = Color(hex: 0x0875DA)
-    static let success = Color(hex: 0x34C759)
-    static let warning = Color(hex: 0xFF3B30)
-    static let orange = Color(hex: 0xFF9500)
-    static let purple = Color(hex: 0xAF52DE)
-    static let teal = Color(hex: 0x30B7C5)
+    static let fallback = ThemeConfig.defaultLight
 
-    static let background = Color.hsDynamic(light: 0xF4F6F9, dark: 0x080A0D)
-    static let surface = Color.hsDynamic(light: 0xFFFFFF, dark: 0x171A20)
-    static let secondarySurface = Color.hsDynamic(light: 0xEEF2F6, dark: 0x22262D)
-    static let elevatedSurface = Color.hsDynamic(light: 0xFFFFFF, dark: 0x20242C)
-    static let primaryText = Color.hsDynamic(light: 0x111318, dark: 0xF6F7F9)
-    static let secondaryText = Color.hsDynamic(light: 0x777E89, dark: 0x9CA3AF)
-    static let tertiaryText = Color.hsDynamic(light: 0xA7ADB7, dark: 0x707783)
-    static let separator = Color.hsDynamic(light: 0xD9DEE7, dark: 0x2F3540)
-    static let incomingBubble = Color.hsDynamic(light: 0xFFFFFF, dark: 0x20242C)
-    static let outgoingBubble = Color.hsDynamic(light: 0xDDF4FF, dark: 0x0E4C73)
-    static let unreadMuted = Color.hsDynamic(light: 0xB8BEC9, dark: 0x5D6673)
-    static let glassTint = Color.hsDynamic(light: 0xFFFFFF, dark: 0x111823)
-    static let glassHighlight = Color.hsDynamic(light: 0xFFFFFF, dark: 0x2E3947)
+    static let accent = fallback.primaryAccentColor.color
+    static let accentDeep = Color(hex: 0x6F44BE)
+    static let success = fallback.successColor.color
+    static let warning = fallback.destructiveColor.color
+    static let orange = fallback.warningColor.color
+    static let purple = fallback.primaryAccentColor.color
+    static let teal = fallback.secondaryAccentColor.color
+    static let background = fallback.groupedBackgroundColor.color
+    static let surface = fallback.cardBackgroundColor.color
+    static let secondarySurface = Color(hex: 0xECEEF4)
+    static let elevatedSurface = fallback.cardBackgroundColor.color
+    static let primaryText = fallback.primaryTextColor.color
+    static let secondaryText = fallback.secondaryTextColor.color
+    static let tertiaryText = fallback.mutedTextColor.color
+    static let separator = fallback.separatorColor.color
+    static let incomingBubble = fallback.incomingBubbleColor.color
+    static let outgoingBubble = fallback.outgoingBubbleColor.color
+    static let unreadMuted = fallback.mutedTextColor.color
+    static let glassTint = fallback.navigationBarBackground.color
+    static let glassHighlight = Color.white.opacity(0.60)
     static let glassShadow = Color.black.opacity(0.14)
 
     static func accentColor(_ config: ThemeConfig) -> Color {
-        Color(hex: config.accentHex)
+        config.primaryAccentColor.color
     }
 
     static func preferredScheme(for config: ThemeConfig) -> ColorScheme? {
         switch config.interfaceMode {
-        case .system:
-            return nil
-        case .light:
-            return .light
-        case .dark:
-            return .dark
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
         }
     }
 
     static func dynamicTypeSize(for config: ThemeConfig) -> DynamicTypeSize? {
         switch config.fontScale {
-        case ..<0.92:
-            return .small
-        case 0.92..<1.08:
-            return nil
-        case 1.08..<1.18:
-            return .large
-        default:
-            return .xLarge
+        case ..<0.92: return .small
+        case 0.92..<1.08: return nil
+        case 1.08..<1.18: return .large
+        default: return .xLarge
         }
     }
 }
 
 enum HSLayoutMetrics {
-    static let rootTabBarClearance: CGFloat = 88
-    static let chatInputClearance: CGFloat = 18
+    static let rootTabBarClearance: CGFloat = 92
+    static let chatInputClearance: CGFloat = 22
 }
 
 struct HSDynamicTypeScaleModifier: ViewModifier {
@@ -95,43 +89,181 @@ extension Color {
     }
 }
 
-struct HSChatBackgroundView: View {
-    let style: ChatBackgroundStyle
+struct HSChatWallpaperView: View {
+    let theme: ChatThemeConfig
 
     var body: some View {
         ZStack {
-            switch style {
-            case .clean:
-                HSPrototypeTheme.background
-            case .mist:
-                LinearGradient(
-                    colors: [
-                        Color.hsDynamic(light: 0xEAF6FF, dark: 0x101820),
-                        Color.hsDynamic(light: 0xF7FAFC, dark: 0x0A0D11)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            case .pattern:
-                HSPrototypeTheme.background
-                Canvas { context, size in
-                    let dot = Color.hsDynamic(light: 0xC4DDF2, dark: 0x263446).opacity(0.38)
-                    let line = Color.hsDynamic(light: 0xD8E8F5, dark: 0x1F2A38).opacity(0.5)
-                    for x in stride(from: CGFloat(8), through: size.width, by: 34) {
-                        for y in stride(from: CGFloat(10), through: size.height, by: 34) {
-                            var circle = Path()
-                            circle.addEllipse(in: CGRect(x: x, y: y, width: 2.4, height: 2.4))
-                            context.fill(circle, with: .color(dot))
+            baseLayer
 
-                            var stroke = Path()
-                            stroke.move(to: CGPoint(x: x + 11, y: y + 6))
-                            stroke.addQuadCurve(to: CGPoint(x: x + 22, y: y + 15), control: CGPoint(x: x + 24, y: y + 4))
-                            context.stroke(stroke, with: .color(line), lineWidth: 0.7)
-                        }
-                    }
+            if theme.chatWallpaperType == .gradientPattern || theme.chatWallpaperType == .defaultLight || theme.chatWallpaperType == .dark {
+                HSLinePatternView(opacity: theme.chatPatternOpacity, ink: patternInk)
+            }
+
+            theme.chatWallpaperOverlayColor.color
+        }
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
+    private var baseLayer: some View {
+        switch theme.chatWallpaperType {
+        case .defaultLight:
+            LinearGradient(
+                colors: theme.chatWallpaperGradient.map(\.color),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .solidColor:
+            theme.chatWallpaperColor.color
+        case .gradient, .gradientPattern:
+            LinearGradient(
+                colors: theme.chatWallpaperGradient.map(\.color),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .image, .imageWithOverlay:
+            HSGeneratedWallpaperImage(theme: theme)
+        case .dark:
+            LinearGradient(
+                colors: theme.chatWallpaperGradient.map(\.color),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private var patternInk: Color {
+        switch theme.chatWallpaperType {
+        case .dark:
+            return Color.white.opacity(0.28)
+        case .gradientPattern:
+            return Color(hex: 0x7F346C).opacity(0.85)
+        default:
+            return Color(hex: 0x7894A8).opacity(0.52)
+        }
+    }
+}
+
+struct HSChatBackgroundView: View {
+    let style: ChatWallpaperType
+
+    var body: some View {
+        HSChatWallpaperView(theme: theme)
+    }
+
+    private var theme: ChatThemeConfig {
+        switch style {
+        case .gradientPattern:
+            return .blushPattern
+        case .dark:
+            return .dark
+        default:
+            var theme = ChatThemeConfig.defaultLight
+            theme.chatWallpaperType = style
+            return theme
+        }
+    }
+}
+
+private struct HSGeneratedWallpaperImage: View {
+    let theme: ChatThemeConfig
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [theme.chatWallpaperColor.color, Color(hex: 0xCDE9F9)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            Canvas { context, size in
+                let colors = [Color.white.opacity(0.28), Color(hex: 0x529AD7).opacity(0.14)]
+                for index in 0..<18 {
+                    let x = CGFloat((index * 71) % 390) / 390 * size.width
+                    let y = CGFloat((index * 113) % 820) / 820 * size.height
+                    let rect = CGRect(x: x - 28, y: y - 20, width: 92, height: 58)
+                    var path = Path(roundedRect: rect, cornerRadius: 18)
+                    context.fill(path, with: .color(colors[index % colors.count]))
+                    path = Path()
+                    path.addEllipse(in: CGRect(x: x + 8, y: y + 8, width: 16, height: 16))
+                    context.fill(path, with: .color(Color.white.opacity(0.22)))
                 }
             }
         }
-        .ignoresSafeArea()
+    }
+}
+
+private struct HSLinePatternView: View {
+    let opacity: Double
+    let ink: Color
+
+    var body: some View {
+        Canvas { context, size in
+            let spacing: CGFloat = 112
+            for row in stride(from: CGFloat(-40), through: size.height + spacing, by: spacing) {
+                for column in stride(from: CGFloat(-48), through: size.width + spacing, by: spacing) {
+                    drawMotifs(context: context, origin: CGPoint(x: column, y: row))
+                }
+            }
+        }
+        .opacity(opacity)
+        .allowsHitTesting(false)
+    }
+
+    private func drawMotifs(context: GraphicsContext, origin: CGPoint) {
+        let stroke = GraphicsContext.Shading.color(ink)
+
+        var heart = Path()
+        heart.move(to: CGPoint(x: origin.x + 48, y: origin.y + 28))
+        heart.addCurve(
+            to: CGPoint(x: origin.x + 72, y: origin.y + 28),
+            control1: CGPoint(x: origin.x + 52, y: origin.y + 8),
+            control2: CGPoint(x: origin.x + 68, y: origin.y + 8)
+        )
+        heart.addCurve(
+            to: CGPoint(x: origin.x + 60, y: origin.y + 54),
+            control1: CGPoint(x: origin.x + 90, y: origin.y + 36),
+            control2: CGPoint(x: origin.x + 68, y: origin.y + 48)
+        )
+        heart.addCurve(
+            to: CGPoint(x: origin.x + 48, y: origin.y + 28),
+            control1: CGPoint(x: origin.x + 52, y: origin.y + 48),
+            control2: CGPoint(x: origin.x + 30, y: origin.y + 36)
+        )
+        context.stroke(heart, with: stroke, lineWidth: 1.8)
+
+        var star = Path()
+        star.move(to: CGPoint(x: origin.x + 16, y: origin.y + 20))
+        star.addLine(to: CGPoint(x: origin.x + 21, y: origin.y + 30))
+        star.addLine(to: CGPoint(x: origin.x + 32, y: origin.y + 31))
+        star.addLine(to: CGPoint(x: origin.x + 24, y: origin.y + 38))
+        star.addLine(to: CGPoint(x: origin.x + 27, y: origin.y + 49))
+        star.addLine(to: CGPoint(x: origin.x + 16, y: origin.y + 43))
+        star.addLine(to: CGPoint(x: origin.x + 6, y: origin.y + 49))
+        star.addLine(to: CGPoint(x: origin.x + 9, y: origin.y + 38))
+        star.addLine(to: CGPoint(x: origin.x + 1, y: origin.y + 31))
+        star.addLine(to: CGPoint(x: origin.x + 12, y: origin.y + 30))
+        star.closeSubpath()
+        context.stroke(star, with: stroke, lineWidth: 1.5)
+
+        var gift = Path(roundedRect: CGRect(x: origin.x + 78, y: origin.y + 72, width: 36, height: 30), cornerRadius: 6)
+        context.stroke(gift, with: stroke, lineWidth: 1.6)
+        var ribbon = Path()
+        ribbon.move(to: CGPoint(x: origin.x + 96, y: origin.y + 72))
+        ribbon.addLine(to: CGPoint(x: origin.x + 96, y: origin.y + 102))
+        ribbon.move(to: CGPoint(x: origin.x + 78, y: origin.y + 84))
+        ribbon.addLine(to: CGPoint(x: origin.x + 114, y: origin.y + 84))
+        context.stroke(ribbon, with: stroke, lineWidth: 1.2)
+
+        var flower = Path()
+        for angle in stride(from: 0.0, to: Double.pi * 2, by: Double.pi / 3) {
+            let center = CGPoint(
+                x: origin.x + 36 + cos(angle) * 12,
+                y: origin.y + 82 + sin(angle) * 12
+            )
+            flower.addEllipse(in: CGRect(x: center.x - 7, y: center.y - 5, width: 14, height: 10))
+        }
+        flower.addEllipse(in: CGRect(x: origin.x + 31, y: origin.y + 77, width: 10, height: 10))
+        context.stroke(flower, with: stroke, lineWidth: 1.4)
     }
 }
