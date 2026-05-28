@@ -69,6 +69,22 @@
 		B00100000000000000000048 /* SupergroupSettingsEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000049 /* SupergroupSettingsEditorSheet.swift */; };
 		B00100000000000000000049 /* InviteLinkOptionsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000050 /* InviteLinkOptionsSheet.swift */; };
 		B00100000000000000000050 /* LogoutOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00100000000000000000051 /* LogoutOptionsView.swift */; };
+		A90000000000000000000001 /* HSPrototypeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000001 /* HSPrototypeRootView.swift */; };
+		A90000000000000000000002 /* HSAppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000002 /* HSAppRouter.swift */; };
+		A90000000000000000000003 /* HSPrototypeTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000003 /* HSPrototypeTheme.swift */; };
+		A90000000000000000000004 /* HSPrototypeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000004 /* HSPrototypeModels.swift */; };
+		A90000000000000000000005 /* HSChatDataProviding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000005 /* HSChatDataProviding.swift */; };
+		A90000000000000000000006 /* HSMockChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000006 /* HSMockChatService.swift */; };
+		A90000000000000000000007 /* HSPrototypeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000007 /* HSPrototypeComponents.swift */; };
+		A90000000000000000000008 /* HSPrototypeAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000008 /* HSPrototypeAuthView.swift */; };
+		A90000000000000000000009 /* HSChatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000009 /* HSChatsView.swift */; };
+		A90000000000000000000010 /* HSChatRoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000010 /* HSChatRoomView.swift */; };
+		A90000000000000000000011 /* HSContactsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000011 /* HSContactsView.swift */; };
+		A90000000000000000000012 /* HSSettingsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000012 /* HSSettingsHomeView.swift */; };
+		A90000000000000000000013 /* HSProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000013 /* HSProfileView.swift */; };
+		A90000000000000000000014 /* HSMediaLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000014 /* HSMediaLibraryView.swift */; };
+		A90000000000000000000015 /* HSGlobalSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000015 /* HSGlobalSearchView.swift */; };
+		A90000000000000000000016 /* HSAppearanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A91000000000000000000016 /* HSAppearanceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -137,6 +153,22 @@
 		F00100000000000000000049 /* SupergroupSettingsEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupergroupSettingsEditorSheet.swift; sourceTree = "<group>"; };
 		F00100000000000000000050 /* InviteLinkOptionsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteLinkOptionsSheet.swift; sourceTree = "<group>"; };
 		F00100000000000000000051 /* LogoutOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoutOptionsView.swift; sourceTree = "<group>"; };
+		A91000000000000000000001 /* HSPrototypeRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/App/HSPrototypeRootView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000002 /* HSAppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Core/Router/HSAppRouter.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000003 /* HSPrototypeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Core/Theme/HSPrototypeTheme.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000004 /* HSPrototypeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Models/HSPrototypeModels.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000005 /* HSChatDataProviding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Services/API/HSChatDataProviding.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000006 /* HSMockChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Services/Mock/HSMockChatService.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000007 /* HSPrototypeComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Components/HSPrototypeComponents.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000008 /* HSPrototypeAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Auth/HSPrototypeAuthView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000009 /* HSChatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Chats/HSChatsView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000010 /* HSChatRoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/ChatRoom/HSChatRoomView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000011 /* HSContactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Contacts/HSContactsView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000012 /* HSSettingsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Settings/HSSettingsHomeView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000013 /* HSProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Profile/HSProfileView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000014 /* HSMediaLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Profile/HSMediaLibraryView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000015 /* HSGlobalSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Search/HSGlobalSearchView.swift; sourceTree = SOURCE_ROOT; };
+		A91000000000000000000016 /* HSAppearanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HSgramNative/Features/Appearance/HSAppearanceView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,6 +193,7 @@
 		G00100000000000000000002 /* HSgramNative */ = {
 			isa = PBXGroup;
 			children = (
+				A92000000000000000000001 /* HSgram Prototype */,
 				F00100000000000000000001 /* HSgramNativeApp.swift */,
 				G00100000000000000000003 /* App */,
 				G00100000000000000000004 /* Auth */,
@@ -365,6 +398,29 @@
 			path = Search;
 			sourceTree = "<group>";
 		};
+		A92000000000000000000001 /* HSgram Prototype */ = {
+			isa = PBXGroup;
+			children = (
+				A91000000000000000000001 /* HSPrototypeRootView.swift */,
+				A91000000000000000000002 /* HSAppRouter.swift */,
+				A91000000000000000000003 /* HSPrototypeTheme.swift */,
+				A91000000000000000000004 /* HSPrototypeModels.swift */,
+				A91000000000000000000005 /* HSChatDataProviding.swift */,
+				A91000000000000000000006 /* HSMockChatService.swift */,
+				A91000000000000000000007 /* HSPrototypeComponents.swift */,
+				A91000000000000000000008 /* HSPrototypeAuthView.swift */,
+				A91000000000000000000009 /* HSChatsView.swift */,
+				A91000000000000000000010 /* HSChatRoomView.swift */,
+				A91000000000000000000011 /* HSContactsView.swift */,
+				A91000000000000000000012 /* HSSettingsHomeView.swift */,
+				A91000000000000000000013 /* HSProfileView.swift */,
+				A91000000000000000000014 /* HSMediaLibraryView.swift */,
+				A91000000000000000000015 /* HSGlobalSearchView.swift */,
+				A91000000000000000000016 /* HSAppearanceView.swift */,
+			);
+			name = "HSgram Prototype";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -436,65 +492,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				B00100000000000000000001 /* HSgramNativeApp.swift in Sources */,
-				B00100000000000000000002 /* RootView.swift in Sources */,
-				B00100000000000000000003 /* HSTheme.swift in Sources */,
-				B00100000000000000000004 /* HSModels.swift in Sources */,
-				B00100000000000000000005 /* HSAPIClient.swift in Sources */,
-				B00100000000000000000051 /* HSServerTransport.swift in Sources */,
-				B00100000000000000000054 /* HSNativeMTProto.swift in Sources */,
-				B00100000000000000000055 /* HSNativeServerTransport.swift in Sources */,
-				B00100000000000000000056 /* HSNativeMTProtoCrypto.swift in Sources */,
-				B00100000000000000000057 /* HSNativeMTProtoBigInt.swift in Sources */,
-				B00100000000000000000058 /* NotificationPushStore.swift in Sources */,
-				B00100000000000000000006 /* AuthStore.swift in Sources */,
-				B00100000000000000000007 /* AuthView.swift in Sources */,
-				B00100000000000000000044 /* AuthSessionStore.swift in Sources */,
-				B00100000000000000000008 /* WorkspaceView.swift in Sources */,
-				B00100000000000000000009 /* ChatListView.swift in Sources */,
-				B00100000000000000000010 /* ChatThreadView.swift in Sources */,
-				B00100000000000000000011 /* CirclesView.swift in Sources */,
-				B00100000000000000000012 /* ContactsView.swift in Sources */,
-				B00100000000000000000013 /* TrustCenterView.swift in Sources */,
-				B00100000000000000000014 /* SettingsView.swift in Sources */,
-				B00100000000000000000050 /* LogoutOptionsView.swift in Sources */,
-				B00100000000000000000016 /* AdvancedToolsView.swift in Sources */,
-				B00100000000000000000017 /* DevicesView.swift in Sources */,
-				B00100000000000000000018 /* SearchView.swift in Sources */,
-				B00100000000000000000019 /* AppearanceSettingsView.swift in Sources */,
-				B00100000000000000000020 /* LanguageSettingsView.swift in Sources */,
-				B00100000000000000000021 /* SupportSettingsView.swift in Sources */,
-				B00100000000000000000022 /* ProfileSettingsView.swift in Sources */,
-				B00100000000000000000023 /* PrivacySettingsView.swift in Sources */,
-				B00100000000000000000024 /* NotificationSettingsView.swift in Sources */,
-				B00100000000000000000025 /* DataStorageSettingsView.swift in Sources */,
-				B00100000000000000000026 /* ChatThreadSearchViews.swift in Sources */,
-				B00100000000000000000027 /* MessageBubbleView.swift in Sources */,
-				B00100000000000000000060 /* HSMediaCacheStore.swift in Sources */,
-				B00100000000000000000061 /* HSCameraCaptureView.swift in Sources */,
-				B00100000000000000000062 /* SharedMediaBrowserView.swift in Sources */,
-				B00100000000000000000063 /* DeleteAccountView.swift in Sources */,
-				B00100000000000000000064 /* BlockedUsersView.swift in Sources */,
-				B00100000000000000000028 /* ForwardDialogSheet.swift in Sources */,
-				B00100000000000000000029 /* SupergroupManageView.swift in Sources */,
-				B00100000000000000000030 /* ChatComposerView.swift in Sources */,
-				B00100000000000000000031 /* ChannelsView.swift in Sources */,
-				B00100000000000000000032 /* ChannelManageView.swift in Sources */,
-				B00100000000000000000033 /* NewSupergroupSheet.swift in Sources */,
-				B00100000000000000000034 /* ContactProfileView.swift in Sources */,
-				B00100000000000000000035 /* AddContactSheet.swift in Sources */,
-				B00100000000000000000036 /* ContactRow.swift in Sources */,
-				B00100000000000000000037 /* ChatAttachmentSheet.swift in Sources */,
-				B00100000000000000000038 /* MessageSelectionToolbar.swift in Sources */,
-				B00100000000000000000039 /* ChatListFilterBar.swift in Sources */,
-				B00100000000000000000040 /* MemberSearchSupport.swift in Sources */,
-				B00100000000000000000041 /* PasscodeStore.swift in Sources */,
-				B00100000000000000000042 /* PasscodeLockView.swift in Sources */,
-				B00100000000000000000043 /* PasscodeSettingsView.swift in Sources */,
-				B00100000000000000000045 /* AdminRightsEditorSheet.swift in Sources */,
-				B00100000000000000000046 /* MemberRestrictionsEditorSheet.swift in Sources */,
-				B00100000000000000000047 /* ContactInvitePickerSheet.swift in Sources */,
-				B00100000000000000000048 /* SupergroupSettingsEditorSheet.swift in Sources */,
-				B00100000000000000000049 /* InviteLinkOptionsSheet.swift in Sources */,
+				A90000000000000000000001 /* HSPrototypeRootView.swift in Sources */,
+				A90000000000000000000002 /* HSAppRouter.swift in Sources */,
+				A90000000000000000000003 /* HSPrototypeTheme.swift in Sources */,
+				A90000000000000000000004 /* HSPrototypeModels.swift in Sources */,
+				A90000000000000000000005 /* HSChatDataProviding.swift in Sources */,
+				A90000000000000000000006 /* HSMockChatService.swift in Sources */,
+				A90000000000000000000007 /* HSPrototypeComponents.swift in Sources */,
+				A90000000000000000000008 /* HSPrototypeAuthView.swift in Sources */,
+				A90000000000000000000009 /* HSChatsView.swift in Sources */,
+				A90000000000000000000010 /* HSChatRoomView.swift in Sources */,
+				A90000000000000000000011 /* HSContactsView.swift in Sources */,
+				A90000000000000000000012 /* HSSettingsHomeView.swift in Sources */,
+				A90000000000000000000013 /* HSProfileView.swift in Sources */,
+				A90000000000000000000014 /* HSMediaLibraryView.swift in Sources */,
+				A90000000000000000000015 /* HSGlobalSearchView.swift in Sources */,
+				A90000000000000000000016 /* HSAppearanceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
