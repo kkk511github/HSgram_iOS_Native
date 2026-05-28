@@ -27,62 +27,44 @@ struct HSAppearanceView: View {
 
                 sectionTitle("主题色")
                 HSGroupedSettingsCard {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 14) {
                         ForEach(viewModel.accentChoices, id: \.self) { hex in
                             Button {
                                 data.themeConfig.primaryAccentColor = HSThemeColor(hex)
                             } label: {
                                 Circle()
                                     .fill(Color(hex: hex))
-                                    .frame(width: 38, height: 38)
+                                    .frame(width: 32, height: 32)
                                     .overlay {
                                         if data.themeConfig.primaryAccentColor.hex == hex {
                                             Image(systemName: "checkmark")
-                                                .font(.system(size: 15, weight: .bold))
-                                                .foregroundStyle(.white)
+                                                .font(.system(size: 13, weight: .bold))
+                                                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                                         }
                                     }
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(18)
+                    .padding(14)
                 }
 
                 sectionTitle("聊天背景")
                 HSGroupedSettingsCard {
-                    ForEach(data.themeConfig.availableChatThemes) { theme in
-                        Button {
-                            data.setChatTheme(theme)
-                        } label: {
-                            HStack(spacing: 14) {
-                                ChatThemeSwatch(theme: theme)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(theme.name)
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                                    Text(theme.chatWallpaperType.label)
-                                        .font(.caption)
-                                        .foregroundStyle(data.themeConfig.secondaryTextColor.color)
-                                }
-                                Spacer()
-                                if data.themeConfig.activeChatTheme.id == theme.id {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundStyle(data.themeConfig.primaryAccentColor.color)
-                                }
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
+                        ForEach(data.themeConfig.availableChatThemes) { theme in
+                            Button {
+                                data.setChatTheme(theme)
+                            } label: {
+                                ChatThemeChoiceCard(
+                                    theme: theme,
+                                    isSelected: data.themeConfig.activeChatTheme.id == theme.id
+                                )
                             }
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 13)
-                        }
-                        .buttonStyle(.plain)
-                        if theme.id != data.themeConfig.availableChatThemes.last?.id {
-                            Rectangle()
-                                .fill(data.themeConfig.separatorColor.color)
-                                .frame(height: 1 / UIScreen.main.scale)
-                                .padding(.leading, 78)
+                            .buttonStyle(.plain)
                         }
                     }
+                    .padding(10)
                 }
 
                 sectionTitle("字体大小")
@@ -106,7 +88,7 @@ struct HSAppearanceView: View {
                 .frame(height: 300)
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 12)
             .padding(.top, 18)
             .padding(.bottom, 28)
         }
@@ -125,6 +107,7 @@ struct HSAppearanceView: View {
 }
 
 private struct ChatThemeSwatch: View {
+    @EnvironmentObject private var data: HSMockChatService
     let theme: ChatThemeConfig
 
     var body: some View {
@@ -142,7 +125,49 @@ private struct ChatThemeSwatch: View {
             }
             .padding(8)
         }
-        .frame(width: 46, height: 46)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(height: 62)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.70), lineWidth: 1 / UIScreen.main.scale)
+        }
+    }
+}
+
+private struct ChatThemeChoiceCard: View {
+    @EnvironmentObject private var data: HSMockChatService
+    let theme: ChatThemeConfig
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ZStack(alignment: .topTrailing) {
+                ChatThemeSwatch(theme: theme)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(data.themeConfig.primaryAccentColor.color)
+                        .background(data.themeConfig.cardBackgroundColor.color, in: Circle())
+                        .padding(5)
+                }
+            }
+            Text(theme.name)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                .lineLimit(1)
+            Text(theme.chatWallpaperType.label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(data.themeConfig.secondaryTextColor.color)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .background(
+            isSelected ? data.themeConfig.primaryAccentColor.color.opacity(0.10) : data.themeConfig.groupedBackgroundColor.color.opacity(0.66),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(isSelected ? data.themeConfig.primaryAccentColor.color.opacity(0.50) : data.themeConfig.separatorColor.color.opacity(0.45), lineWidth: 1 / UIScreen.main.scale)
+        }
     }
 }

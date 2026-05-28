@@ -182,6 +182,7 @@ struct HSSearchBar: View {
 }
 
 struct HSAvatarView: View {
+    @EnvironmentObject private var data: HSMockChatService
     let initials: String
     let colorHex: UInt32
     var size: CGFloat = 52
@@ -1111,6 +1112,7 @@ struct HSStickerPanel: View {
 }
 
 struct HSStickerArtwork: View {
+    @EnvironmentObject private var data: HSMockChatService
     let sticker: HSSticker
     var size: CGFloat
 

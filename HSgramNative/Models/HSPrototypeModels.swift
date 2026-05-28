@@ -131,6 +131,102 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
         pinnedBannerColor: HSThemeColor(0xFFF4EA, alpha: 0.82)
     )
 
+    static let calmSolid = ChatThemeConfig(
+        id: "calm-solid",
+        name: "浅蓝纯色",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xDDF4FF),
+        incomingTextColor: HSThemeColor(0x101014),
+        outgoingTextColor: HSThemeColor(0x101014),
+        chatWallpaperType: .solidColor,
+        chatWallpaperColor: HSThemeColor(0xDCECF7),
+        chatWallpaperGradient: [HSThemeColor(0xDCECF7), HSThemeColor(0xDCECF7)],
+        chatWallpaperImage: nil,
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
+        chatPatternOpacity: 0.0,
+        chatPatternInkColor: HSThemeColor(0x7894A8, alpha: 0.0),
+        chatWallpaperSecondaryColor: HSThemeColor(0xDCECF7),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.18),
+        reactionPillColor: HSThemeColor(0xD9EEF8),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0xF7F9FB, alpha: 0.86),
+        inputFieldBackgroundColor: HSThemeColor(0xFFFFFF, alpha: 0.92),
+        dateDividerColor: HSThemeColor(0x6C7B89, alpha: 0.46),
+        pinnedBannerColor: HSThemeColor(0xFFFFFF, alpha: 0.82)
+    )
+
+    static let mintGradient = ChatThemeConfig(
+        id: "mint-gradient",
+        name: "薄荷渐变",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xDFF7E6),
+        incomingTextColor: HSThemeColor(0x101014),
+        outgoingTextColor: HSThemeColor(0x101014),
+        chatWallpaperType: .gradient,
+        chatWallpaperColor: HSThemeColor(0xD7F3E4),
+        chatWallpaperGradient: [HSThemeColor(0xD9F3E6), HSThemeColor(0xEAF3FB)],
+        chatWallpaperImage: nil,
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
+        chatPatternOpacity: 0.0,
+        chatPatternInkColor: HSThemeColor(0x7894A8, alpha: 0.0),
+        chatWallpaperSecondaryColor: HSThemeColor(0xEAF3FB),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.18),
+        reactionPillColor: HSThemeColor(0xE0F4EA),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0xF7FAF8, alpha: 0.86),
+        inputFieldBackgroundColor: HSThemeColor(0xFFFFFF, alpha: 0.92),
+        dateDividerColor: HSThemeColor(0x6B8978, alpha: 0.48),
+        pinnedBannerColor: HSThemeColor(0xFFFFFF, alpha: 0.82)
+    )
+
+    static let imageWallpaper = ChatThemeConfig(
+        id: "image-wallpaper",
+        name: "图片壁纸",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xE1FFC7),
+        incomingTextColor: HSThemeColor(0x101014),
+        outgoingTextColor: HSThemeColor(0x101014),
+        chatWallpaperType: .image,
+        chatWallpaperColor: HSThemeColor(0xDCE8F3),
+        chatWallpaperGradient: [HSThemeColor(0xDCE8F3), HSThemeColor(0xCDE9F9)],
+        chatWallpaperImage: "generated-paper",
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
+        chatPatternOpacity: 0.0,
+        chatPatternInkColor: HSThemeColor(0x529AD7, alpha: 0.30),
+        chatWallpaperSecondaryColor: HSThemeColor(0xCDE9F9),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.28),
+        reactionPillColor: HSThemeColor(0xE9F1FA),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0xF7F7F7, alpha: 0.84),
+        inputFieldBackgroundColor: HSThemeColor(0xFFFFFF, alpha: 0.90),
+        dateDividerColor: HSThemeColor(0x6C7B89, alpha: 0.52),
+        pinnedBannerColor: HSThemeColor(0xFFFFFF, alpha: 0.82)
+    )
+
+    static let imageWithOverlay = ChatThemeConfig(
+        id: "image-overlay",
+        name: "图片蒙层",
+        incomingBubbleColor: HSThemeColor(0xFFFFFF),
+        outgoingBubbleColor: HSThemeColor(0xDCEBFF),
+        incomingTextColor: HSThemeColor(0x101014),
+        outgoingTextColor: HSThemeColor(0x101014),
+        chatWallpaperType: .imageWithOverlay,
+        chatWallpaperColor: HSThemeColor(0xD8E3EE),
+        chatWallpaperGradient: [HSThemeColor(0xD8E3EE), HSThemeColor(0xBFD7EE)],
+        chatWallpaperImage: "generated-overlay-paper",
+        chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.30),
+        chatPatternOpacity: 0.0,
+        chatPatternInkColor: HSThemeColor(0x4F88B8, alpha: 0.22),
+        chatWallpaperSecondaryColor: HSThemeColor(0xBFD7EE),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.32),
+        reactionPillColor: HSThemeColor(0xE3EDF9),
+        reactionAvatarColor: HSThemeColor(0x58C7D0),
+        inputBarBackgroundColor: HSThemeColor(0xF7F9FC, alpha: 0.86),
+        inputFieldBackgroundColor: HSThemeColor(0xFFFFFF, alpha: 0.92),
+        dateDividerColor: HSThemeColor(0x6C7B89, alpha: 0.52),
+        pinnedBannerColor: HSThemeColor(0xFFFFFF, alpha: 0.82)
+    )
+
     static let dark = ChatThemeConfig(
         id: "dark",
         name: "暗色",
@@ -242,7 +338,7 @@ struct ThemeConfig: Identifiable, Codable, Hashable {
         cameraTileColor: HSThemeColor = HSThemeColor(0x462214),
         stickerInkColor: HSThemeColor = HSThemeColor(0x1E1E22),
         activeChatTheme: ChatThemeConfig = .defaultLight,
-        availableChatThemes: [ChatThemeConfig] = [.defaultLight, .blushPattern, .dark]
+        availableChatThemes: [ChatThemeConfig] = [.defaultLight, .calmSolid, .mintGradient, .imageWallpaper, .imageWithOverlay, .blushPattern, .dark]
     ) {
         self.id = id
         self.interfaceMode = interfaceMode
