@@ -80,6 +80,9 @@ struct HSGlobalSearchView: View {
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
+            }
             .background(HSPrototypeTheme.background)
         }
         .background(HSPrototypeTheme.background.ignoresSafeArea())

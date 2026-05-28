@@ -75,6 +75,9 @@ struct HSContactsView: View {
                     }
                     .listStyle(.insetGrouped)
                     .scrollContentBackground(.hidden)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
+                    }
                     .background(HSPrototypeTheme.background)
                     if !grouped.isEmpty {
                         alphabetIndex(proxy: proxy)

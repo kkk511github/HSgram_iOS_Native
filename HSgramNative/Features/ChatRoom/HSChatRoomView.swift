@@ -77,7 +77,7 @@ struct HSChatRoomView: View {
                             }
                         }
                         .padding(.top, 10)
-                        .padding(.bottom, 12)
+                        .padding(.bottom, HSLayoutMetrics.chatInputClearance)
                     }
                     .onAppear { scrollToBottom(proxy) }
                     .onChange(of: messages.count) { _ in scrollToBottom(proxy) }

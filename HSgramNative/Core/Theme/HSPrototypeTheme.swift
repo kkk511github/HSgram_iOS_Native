@@ -41,6 +41,11 @@ enum HSPrototypeTheme {
     }
 }
 
+enum HSLayoutMetrics {
+    static let rootTabBarClearance: CGFloat = 88
+    static let chatInputClearance: CGFloat = 18
+}
+
 extension Color {
     init(hex: UInt32, alpha: Double = 1) {
         self.init(

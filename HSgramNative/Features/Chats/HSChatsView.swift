@@ -71,6 +71,9 @@ struct HSChatsView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
+            }
             .refreshable { await data.refresh() }
             .background(HSPrototypeTheme.surface)
         }

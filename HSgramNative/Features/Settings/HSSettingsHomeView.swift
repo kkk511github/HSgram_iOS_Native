@@ -32,6 +32,7 @@ struct HSSettingsHomeView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 24)
                 }
+                .padding(.bottom, HSLayoutMetrics.rootTabBarClearance)
             }
             .background(HSPrototypeTheme.background)
         }
