@@ -5,10 +5,8 @@ struct HSChatsView: View {
     @EnvironmentObject private var data: HSMockChatService
     @State private var query = ""
 
-    private var visibleConversations: [Conversation] {
-        data.conversations
-            .filter { !$0.isArchived }
-            .filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || ($0.lastMessage?.body.localizedCaseInsensitiveContains(query) ?? false) }
+    private var viewModel: HSChatListViewModel {
+        HSChatListViewModel(conversations: data.conversations, query: query)
     }
 
     var body: some View {
@@ -21,14 +19,14 @@ struct HSChatsView: View {
                         .listRowSeparator(.hidden)
                         .listRowBackground(HSPrototypeTheme.surface)
                 }
-                if visibleConversations.isEmpty {
+                if viewModel.visibleConversations.isEmpty {
                     Section {
                         HSEmptyStateView(
                             systemImage: "bubble.left.and.bubble.right",
-                            title: query.isEmpty ? "还没有会话" : "没有找到会话",
-                            message: query.isEmpty ? "新的聊天、群组和收藏消息会显示在这里。" : "换个关键词试试，或清空搜索回到全部会话。",
-                            actionTitle: query.isEmpty ? nil : "清空搜索",
-                            action: query.isEmpty ? nil : { query = "" }
+                            title: viewModel.isFiltering ? "没有找到会话" : "还没有会话",
+                            message: viewModel.isFiltering ? "换个关键词试试，或清空搜索回到全部会话。" : "新的聊天、群组和收藏消息会显示在这里。",
+                            actionTitle: viewModel.isFiltering ? "清空搜索" : nil,
+                            action: viewModel.isFiltering ? { query = "" } : nil
                         )
                         .frame(minHeight: 420)
                         .listRowInsets(EdgeInsets())
@@ -37,7 +35,7 @@ struct HSChatsView: View {
                     }
                 } else {
                     Section {
-                        ForEach(visibleConversations) { conversation in
+                        ForEach(viewModel.visibleConversations) { conversation in
                             Button {
                                 router.open(.chat(conversation.id))
                             } label: {

@@ -23,6 +23,7 @@ protocol HSChatDataProviding: ObservableObject {
     func mute(_ conversation: Conversation)
     func archive(_ conversation: Conversation)
     func delete(_ conversation: Conversation)
+    func deleteMessage(_ messageID: UUID, in conversationID: UUID)
     func refresh() async
 }
 

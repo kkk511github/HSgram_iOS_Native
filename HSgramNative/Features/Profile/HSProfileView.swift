@@ -6,7 +6,11 @@ struct HSProfileView: View {
     let userID: UUID
     @State private var selectedTab: ProfileTab = .media
 
-    private var user: User { data.user(id: userID) ?? data.currentUser }
+    private var viewModel: HSProfileViewModel {
+        HSProfileViewModel(user: data.user(id: userID) ?? data.currentUser, conversations: data.conversations)
+    }
+
+    private var user: User { viewModel.user }
 
     var body: some View {
         ScrollView {
@@ -48,7 +52,7 @@ struct HSProfileView: View {
 
     private var actionButtons: some View {
         Button {
-            if let conversation = data.conversations.first(where: { $0.participants.contains(user) }) { router.open(.chat(conversation.id)) }
+            if let conversation = viewModel.conversationForMessage(currentUser: data.currentUser) { router.open(.chat(conversation.id)) }
         } label: {
             Label("发消息", systemImage: "bubble.left.fill").frame(maxWidth: .infinity)
         }

@@ -6,14 +6,8 @@ struct HSContactsView: View {
     @State private var query = ""
     @State private var contactStatus: String?
 
-    private var filteredContacts: [Contact] {
-        data.contacts.filter { query.isEmpty || $0.user.displayName.localizedCaseInsensitiveContains(query) || $0.user.username.localizedCaseInsensitiveContains(query) }
-    }
-
-    private var grouped: [(String, [Contact])] {
-        Dictionary(grouping: filteredContacts, by: \.sectionTitle)
-            .map { ($0.key, $0.value.sorted { $0.user.displayName < $1.user.displayName }) }
-            .sorted { $0.0 < $1.0 }
+    private var viewModel: HSContactsViewModel {
+        HSContactsViewModel(contacts: data.contacts, query: query)
     }
 
     var body: some View {
@@ -45,14 +39,14 @@ struct HSContactsView: View {
                                     .padding(.vertical, 3)
                             }
                         }
-                        if grouped.isEmpty {
+                        if viewModel.groupedContacts.isEmpty {
                             Section {
                                 HSEmptyStateView(systemImage: "person.2", title: "没有找到联系人", message: "换个关键词试试，或通过邮箱/手机号添加好友。")
                                     .frame(height: 330)
                                     .listRowBackground(HSPrototypeTheme.background)
                             }
                         } else {
-                            ForEach(grouped, id: \.0) { section, contacts in
+                            ForEach(viewModel.groupedContacts, id: \.0) { section, contacts in
                                 Section(section) {
                                     ForEach(contacts) { contact in
                                         Button { router.open(.profile(contact.user.id)) } label: {
@@ -79,7 +73,7 @@ struct HSContactsView: View {
                         Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
                     }
                     .background(HSPrototypeTheme.background)
-                    if !grouped.isEmpty {
+                    if !viewModel.groupedContacts.isEmpty {
                         alphabetIndex(proxy: proxy)
                             .padding(.trailing, 4)
                     }
@@ -91,7 +85,7 @@ struct HSContactsView: View {
 
     private func alphabetIndex(proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 2) {
-            ForEach(grouped.map(\.0), id: \.self) { section in
+            ForEach(viewModel.groupedContacts.map(\.0), id: \.self) { section in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         proxy.scrollTo(section, anchor: .top)

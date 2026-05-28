@@ -4,6 +4,10 @@ struct HSSettingsHomeView: View {
     @EnvironmentObject private var router: HSAppRouter
     @EnvironmentObject private var data: HSMockChatService
 
+    private var viewModel: HSSettingsHomeViewModel {
+        HSSettingsHomeViewModel(currentUser: data.currentUser, settingsItems: data.settingsItems)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HSNavigationBar(title: "设置")
@@ -11,14 +15,14 @@ struct HSSettingsHomeView: View {
                 VStack(spacing: 18) {
                     profileCard.padding(.horizontal, 16).padding(.top, 16)
                     VStack(spacing: 0) {
-                        ForEach(data.settingsItems) { item in
+                        ForEach(viewModel.settingsItems) { item in
                             Button {
                                 item.destination == .appearance ? router.open(.appearance) : router.open(.settingsDetail(item.destination))
                             } label: {
                                 HSSettingsRow(item: item)
                             }
                             .buttonStyle(.plain)
-                            if item.id != data.settingsItems.last?.id {
+                            if item.id != viewModel.settingsItems.last?.id {
                                 Rectangle().fill(HSPrototypeTheme.separator.opacity(0.55)).frame(height: 1 / UIScreen.main.scale).padding(.leading, 62)
                             }
                         }
@@ -40,13 +44,13 @@ struct HSSettingsHomeView: View {
     }
 
     private var profileCard: some View {
-        Button { router.open(.profile(data.currentUser.id)) } label: {
+        Button { router.open(.profile(viewModel.currentUser.id)) } label: {
             HStack(spacing: 14) {
-                HSAvatarView(initials: data.currentUser.initials, colorHex: data.currentUser.accentHex, size: 64, isOnline: true)
+                HSAvatarView(initials: viewModel.currentUser.initials, colorHex: viewModel.currentUser.accentHex, size: 64, isOnline: true)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(data.currentUser.displayName).font(.title3.weight(.bold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                    Text("@\(data.currentUser.username)").font(.subheadline).foregroundStyle(HSPrototypeTheme.accent)
-                    Text(data.currentUser.email).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+                    Text(viewModel.currentUser.displayName).font(.title3.weight(.bold)).foregroundStyle(HSPrototypeTheme.primaryText)
+                    Text("@\(viewModel.currentUser.username)").font(.subheadline).foregroundStyle(HSPrototypeTheme.accent)
+                    Text(viewModel.currentUser.email).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(HSPrototypeTheme.tertiaryText)

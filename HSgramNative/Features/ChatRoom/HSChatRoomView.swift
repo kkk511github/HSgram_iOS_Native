@@ -12,12 +12,21 @@ struct HSChatRoomView: View {
     @State private var selectedMessageIDs: Set<UUID> = []
     @State private var statusMessage: String?
 
-    private var conversation: Conversation? { data.conversation(id: conversationID) }
-    private var messages: [Message] { data.messages(for: conversationID) }
+    private var viewModel: HSChatRoomViewModel {
+        let conversation = data.conversation(id: conversationID)
+        return HSChatRoomViewModel(
+            conversationID: conversationID,
+            conversation: conversation,
+            messages: data.messages(for: conversationID),
+            currentUser: data.currentUser,
+            group: conversation?.groupID.flatMap { data.group(id: $0) },
+            themeConfig: data.themeConfig
+        )
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            HSChatBackgroundView(style: data.themeConfig.chatBackground)
+            HSChatBackgroundView(style: viewModel.themeConfig.chatBackground)
             VStack(spacing: 0) {
                 topBar
                 if let statusMessage {
@@ -30,23 +39,23 @@ struct HSChatRoomView: View {
                     ScrollView {
                         LazyVStack(spacing: 4) {
                             servicePill("今天")
-                            if let conversation, conversation.isGroup { groupQuickPanel(conversation) }
-                            ForEach(messages) { message in
+                            if viewModel.isGroupChat { groupQuickPanel(viewModel) }
+                            ForEach(viewModel.messages) { message in
                                 ZStack(alignment: .top) {
                                     HSMessageBubble(
                                         message: message,
-                                        showAuthor: conversation?.isGroup == true,
+                                        showAuthor: viewModel.isGroupChat,
                                         onAvatarTap: { router.open(.profile(message.sender.id)) },
                                         onReactionTap: { data.toggleReaction($0, for: message.id, in: conversationID) },
                                         onShowReactionBar: {
                                             withAnimation(.spring(response: 0.24, dampingFraction: 0.78)) { showReactionForMessageID = message.id }
                                         },
                                         onReply: {
-                                            draft = "@\(message.sender.username) "
+                                            draft = viewModel.replyDraft(for: message)
                                             statusMessage = "已准备回复 \(message.sender.displayName)"
                                         },
                                         onForward: {
-                                            data.sendText("转发：\(message.body.isEmpty ? message.attachment?.title ?? "附件" : message.body)", in: conversationID)
+                                            data.sendText(viewModel.forwardText(for: message), in: conversationID)
                                             statusMessage = "已转发到当前会话"
                                         },
                                         onDelete: {
@@ -80,9 +89,9 @@ struct HSChatRoomView: View {
                         .padding(.bottom, HSLayoutMetrics.chatInputClearance)
                     }
                     .onAppear { scrollToBottom(proxy) }
-                    .onChange(of: messages.count) { _ in scrollToBottom(proxy) }
+                    .onChange(of: viewModel.messages.count) { _ in scrollToBottom(proxy) }
                 }
-                HSMessageInputBar(text: $draft, onSend: send, onAttach: { showAttachmentSheet = true }, onEmoji: { showReactionForMessageID = messages.last?.id }, onVoice: sendVoice)
+                HSMessageInputBar(text: $draft, onSend: send, onAttach: { showAttachmentSheet = true }, onEmoji: { showReactionForMessageID = viewModel.messages.last?.id }, onVoice: sendVoice)
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -93,28 +102,28 @@ struct HSChatRoomView: View {
             Button("链接") { sendAttachment(kind: .link) }
         }
         .sheet(isPresented: $showGroupInfo) {
-            if let conversation {
+            if let conversation = viewModel.conversation {
                 HSGroupInfoSheet(conversation: conversation).presentationDetents([.medium, .large])
             }
         }
     }
 
     private var topBar: some View {
-        HSNavigationBar(title: conversation?.title ?? "聊天", subtitle: conversation?.subtitle) {
+        HSNavigationBar(title: viewModel.title, subtitle: viewModel.subtitle) {
             Button { dismiss() } label: { Image(systemName: "chevron.left").font(.system(size: 20, weight: .semibold)) }
                 .buttonStyle(.plain).foregroundStyle(HSPrototypeTheme.accent)
         } trailing: {
             HStack(spacing: 10) {
-                Button { if let conversation { router.open(.media(conversation.id)) } } label: { Image(systemName: "rectangle.stack") }
+                Button { if let conversation = viewModel.conversation { router.open(.media(conversation.id)) } } label: { Image(systemName: "rectangle.stack") }
                     .buttonStyle(.plain)
                 Button {
-                    if conversation?.isGroup == true {
+                    if viewModel.isGroupChat {
                         showGroupInfo = true
-                    } else if let user = conversation?.participants.first(where: { $0.id != data.currentUser.id }) {
+                    } else if let user = viewModel.profilePeer {
                         router.open(.profile(user.id))
                     }
                 } label: {
-                    if let conversation {
+                    if let conversation = viewModel.conversation {
                         HSAvatarView(initials: conversation.avatarInitials, colorHex: conversation.avatarHex, size: 34, isGroup: conversation.isGroup, isOnline: conversation.participants.contains(where: \.isOnline))
                     }
                 }
@@ -168,11 +177,11 @@ struct HSChatRoomView: View {
             }
     }
 
-    private func groupQuickPanel(_ conversation: Conversation) -> some View {
+    private func groupQuickPanel(_ viewModel: HSChatRoomViewModel) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "megaphone.fill").foregroundStyle(HSPrototypeTheme.accent)
             Text("群公告").font(.caption.weight(.semibold))
-            Text(data.group(id: conversation.groupID ?? UUID())?.announcement ?? "暂无公告").font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText).lineLimit(1)
+            Text(viewModel.groupAnnouncement).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText).lineLimit(1)
             Spacer()
             Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(HSPrototypeTheme.tertiaryText)
         }
@@ -194,19 +203,12 @@ struct HSChatRoomView: View {
     private func sendVoice() { sendAttachment(kind: .voice) }
 
     private func sendAttachment(kind: AttachmentKind) {
-        let attachment = Attachment(
-            id: UUID(),
-            kind: kind,
-            title: kind == .image ? "新图片" : kind == .voice ? "语音消息" : kind == .link ? "hsgram.app" : "设计文档.pdf",
-            subtitle: kind == .voice ? "00:08" : kind == .image ? "960 x 720" : "1.8 MB",
-            previewSystemImage: kind == .image ? "photo" : kind == .voice ? "waveform" : kind == .link ? "link" : "doc.text.fill",
-            accentHex: kind == .voice ? 0x34C759 : kind == .image ? 0x168BFF : 0xFF9500
-        )
+        let attachment = viewModel.makeAttachment(kind: kind)
         data.sendAttachment(attachment, caption: kind == .voice ? "" : "来自附件入口", in: conversationID)
     }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
-        guard let id = messages.last?.id else { return }
+        guard let id = viewModel.messages.last?.id else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { proxy.scrollTo(id, anchor: .bottom) }
         }
