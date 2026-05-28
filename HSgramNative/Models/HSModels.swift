@@ -1124,6 +1124,8 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
     let isMegagroup: Bool
     let isBroadcast: Bool
     let noForwards: Bool
+    let disableSocialActions: Bool
+    let participantsCountHidden: Bool
 
     init(
         id: Int64,
@@ -1135,7 +1137,9 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         role: String,
         isMegagroup: Bool,
         isBroadcast: Bool,
-        noForwards: Bool = false
+        noForwards: Bool = false,
+        disableSocialActions: Bool = false,
+        participantsCountHidden: Bool = false
     ) {
         self.id = id
         self.channelID = channelID
@@ -1147,6 +1151,8 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         self.isMegagroup = isMegagroup
         self.isBroadcast = isBroadcast
         self.noForwards = noForwards
+        self.disableSocialActions = disableSocialActions
+        self.participantsCountHidden = participantsCountHidden
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -1160,6 +1166,8 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         case isMegagroup
         case isBroadcast
         case noForwards
+        case disableSocialActions
+        case participantsCountHidden
     }
 
     init(from decoder: Decoder) throws {
@@ -1174,9 +1182,19 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         isMegagroup = try container.decode(Bool.self, forKey: .isMegagroup)
         isBroadcast = try container.decode(Bool.self, forKey: .isBroadcast)
         noForwards = try container.decodeIfPresent(Bool.self, forKey: .noForwards) ?? false
+        disableSocialActions = try container.decodeIfPresent(Bool.self, forKey: .disableSocialActions) ?? false
+        participantsCountHidden = try container.decodeIfPresent(Bool.self, forKey: .participantsCountHidden) ?? false
     }
 
     func withNoForwards(_ value: Bool) -> HSSupergroup {
+        withFeatureOverrides(noForwards: value)
+    }
+
+    func withFeatureOverrides(
+        noForwards: Bool? = nil,
+        disableSocialActions: Bool? = nil,
+        participantsCountHidden: Bool? = nil
+    ) -> HSSupergroup {
         HSSupergroup(
             id: id,
             channelID: channelID,
@@ -1187,7 +1205,9 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
             role: role,
             isMegagroup: isMegagroup,
             isBroadcast: isBroadcast,
-            noForwards: value
+            noForwards: noForwards ?? self.noForwards,
+            disableSocialActions: disableSocialActions ?? self.disableSocialActions,
+            participantsCountHidden: participantsCountHidden ?? self.participantsCountHidden
         )
     }
 }
@@ -1256,6 +1276,8 @@ struct HSSupergroupSettings: Codable, Hashable {
     var joinToSend: Bool?
     var joinRequest: Bool?
     var noForwards: Bool?
+    var disableSocialActions: Bool?
+    var participantsCountHidden: Bool?
 }
 
 struct HSSupergroupAdminLogEvent: Codable, Identifiable, Hashable {

@@ -770,6 +770,8 @@ private struct HSNativeParsedChat: Equatable {
     let isMegagroup: Bool
     let isBroadcast: Bool
     let noForwards: Bool
+    let disableSocialActions: Bool
+    let participantsCountHidden: Bool
 
     init(
         peer: HSNativePeer,
@@ -781,7 +783,9 @@ private struct HSNativeParsedChat: Equatable {
         role: String,
         isMegagroup: Bool,
         isBroadcast: Bool,
-        noForwards: Bool = false
+        noForwards: Bool = false,
+        disableSocialActions: Bool = false,
+        participantsCountHidden: Bool = false
     ) {
         self.peer = peer
         self.accessHash = accessHash
@@ -793,6 +797,8 @@ private struct HSNativeParsedChat: Equatable {
         self.isMegagroup = isMegagroup
         self.isBroadcast = isBroadcast
         self.noForwards = noForwards
+        self.disableSocialActions = disableSocialActions
+        self.participantsCountHidden = participantsCountHidden
     }
 }
 
@@ -948,6 +954,8 @@ private struct HSNativeParsedChatFull: Equatable {
     let isMegagroup: Bool
     let isBroadcast: Bool
     let noForwards: Bool
+    let disableSocialActions: Bool
+    let participantsCountHidden: Bool
 
     init(
         peer: HSNativePeer,
@@ -956,7 +964,9 @@ private struct HSNativeParsedChatFull: Equatable {
         pendingRequests: Int?,
         isMegagroup: Bool,
         isBroadcast: Bool,
-        noForwards: Bool = false
+        noForwards: Bool = false,
+        disableSocialActions: Bool = false,
+        participantsCountHidden: Bool = false
     ) {
         self.peer = peer
         self.about = about
@@ -965,6 +975,8 @@ private struct HSNativeParsedChatFull: Equatable {
         self.isMegagroup = isMegagroup
         self.isBroadcast = isBroadcast
         self.noForwards = noForwards
+        self.disableSocialActions = disableSocialActions
+        self.participantsCountHidden = participantsCountHidden
     }
 }
 
@@ -1095,6 +1107,8 @@ private struct HSNativeMTProtoAuthKeyStore {
 
 final class HSNativeMTProtoClient {
     static let shared = HSNativeMTProtoClient()
+    private static let disableSocialActionsRequestMessageID: Int32 = -10086
+    private static let participantsCountHiddenRequestMessageID: Int32 = -10088
 
     private let configuration: HSNativeMTProtoConfiguration
     private let transport: HSNativeMTProtoIntermediateTransport
@@ -1511,17 +1525,20 @@ final class HSNativeMTProtoClient {
         guard let base = parsed ?? cached else {
             throw HSAPIError.server(code: "GROUP_NOT_FOUND", message: "服务端返回了详情，但没有带回可解析的群资料。")
         }
+        let memberCount = full.memberCount ?? (full.participantsCountHidden ? 0 : base.memberCount)
         let group = HSSupergroup(
             id: dialogID,
             channelID: base.channelID,
             title: base.title,
             about: full.about,
-            memberCount: full.memberCount ?? base.memberCount,
+            memberCount: memberCount,
             pendingRequests: full.pendingRequests ?? base.pendingRequests,
             role: base.role,
             isMegagroup: parsed?.isMegagroup ?? (base.isMegagroup || full.isMegagroup),
             isBroadcast: parsed?.isBroadcast ?? (full.isBroadcast || base.isBroadcast),
-            noForwards: parsed?.noForwards ?? (full.noForwards || base.noForwards)
+            noForwards: parsed?.noForwards ?? (full.noForwards || base.noForwards),
+            disableSocialActions: full.disableSocialActions,
+            participantsCountHidden: full.participantsCountHidden
         )
         peerCacheQueue.sync {
             cachedGroupsByDialogID[dialogID] = group
@@ -1582,7 +1599,9 @@ final class HSNativeMTProtoClient {
                 role: current.role,
                 isMegagroup: current.isMegagroup,
                 isBroadcast: current.isBroadcast,
-                noForwards: current.noForwards
+                noForwards: current.noForwards,
+                disableSocialActions: current.disableSocialActions,
+                participantsCountHidden: current.participantsCountHidden
             )
             peerCacheQueue.sync {
                 cachedGroupsByDialogID[dialogID] = current
@@ -1734,9 +1753,37 @@ final class HSNativeMTProtoClient {
                 credentials: credentials
             ))
         }
+        if let disableSocialActions = settings.disableSocialActions {
+            try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
+                query: messagesToggleNoForwardsPayload(
+                    peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                    enabled: disableSocialActions,
+                    requestMessageID: Self.disableSocialActionsRequestMessageID
+                ),
+                credentials: credentials
+            ))
+        }
+        if let participantsCountHidden = settings.participantsCountHidden {
+            try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
+                query: messagesToggleNoForwardsPayload(
+                    peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                    enabled: participantsCountHidden,
+                    requestMessageID: Self.participantsCountHiddenRequestMessageID
+                ),
+                credentials: credentials
+            ))
+        }
         var updated = try await group(dialogID: dialogID, session: session)
-        if let noForwards = settings.noForwards, updated.noForwards != noForwards {
-            updated = updated.withNoForwards(noForwards)
+        let needsLocalOverride =
+            (settings.noForwards.map { updated.noForwards != $0 } ?? false) ||
+            (settings.disableSocialActions.map { updated.disableSocialActions != $0 } ?? false) ||
+            (settings.participantsCountHidden.map { updated.participantsCountHidden != $0 } ?? false)
+        if needsLocalOverride {
+            updated = updated.withFeatureOverrides(
+                noForwards: settings.noForwards,
+                disableSocialActions: settings.disableSocialActions,
+                participantsCountHidden: settings.participantsCountHidden
+            )
             peerCacheQueue.sync {
                 cachedGroupsByDialogID[dialogID] = updated
             }
@@ -5397,7 +5444,8 @@ final class HSNativeMTProtoClient {
                 memberCount: memberCount,
                 pendingRequests: pendingRequests,
                 isMegagroup: false,
-                isBroadcast: false
+                isBroadcast: false,
+                disableSocialActions: flags & (1 << 19) != 0
             )
         case HSNativeMTProtoSchema.channelFull:
             let flags = try reader.uint32()
@@ -5458,7 +5506,9 @@ final class HSNativeMTProtoClient {
                 pendingRequests: pendingRequests,
                 isMegagroup: true,
                 isBroadcast: false,
-                noForwards: false
+                noForwards: false,
+                disableSocialActions: flags & (1 << 19) != 0 || flags2 & (1 << 3) != 0,
+                participantsCountHidden: flags2 & (1 << 11) != 0
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported ChatFull constructor 0x\(String(constructor, radix: 16))")
@@ -8252,7 +8302,9 @@ final class HSNativeMTProtoClient {
             role: chat.role,
             isMegagroup: chat.isMegagroup,
             isBroadcast: chat.isBroadcast,
-            noForwards: chat.noForwards
+            noForwards: chat.noForwards,
+            disableSocialActions: chat.disableSocialActions,
+            participantsCountHidden: chat.participantsCountHidden
         )
     }
 
