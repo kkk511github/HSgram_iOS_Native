@@ -52,7 +52,11 @@ private struct HSPrototypeMainShell: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            HSTabBar(selection: $router.selectedTab)
+            if router.path.isEmpty {
+                HSTabBar(selection: $router.selectedTab)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .animation(.easeInOut(duration: 0.18), value: router.path.isEmpty)
     }
 }

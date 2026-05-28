@@ -35,8 +35,17 @@ struct HSNavigationBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.regularMaterial)
-        .overlay(alignment: .bottom) { Rectangle().fill(HSPrototypeTheme.separator.opacity(0.65)).frame(height: 1 / UIScreen.main.scale) }
+        .background {
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                LinearGradient(
+                    colors: [HSPrototypeTheme.glassHighlight.opacity(0.36), HSPrototypeTheme.glassTint.opacity(0.10)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.2)).frame(height: 1 / UIScreen.main.scale) }
     }
 }
 
@@ -56,7 +65,11 @@ struct HSSearchBar: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 38)
-        .background(HSPrototypeTheme.secondarySurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(.white.opacity(0.22), lineWidth: 1 / UIScreen.main.scale)
+        }
     }
 }
 
@@ -390,8 +403,9 @@ struct HSMessageInputBar: View {
             }
             .padding(.leading, 12)
             .padding(.trailing, 4)
-            .background(HSPrototypeTheme.surface, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
-            .overlay { RoundedRectangle(cornerRadius: 19, style: .continuous).stroke(HSPrototypeTheme.separator.opacity(0.7), lineWidth: 1 / UIScreen.main.scale) }
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 19, style: .continuous).stroke(.white.opacity(0.28), lineWidth: 1 / UIScreen.main.scale) }
+            .shadow(color: HSPrototypeTheme.glassShadow.opacity(0.08), radius: 12, x: 0, y: 4)
             Button { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? onVoice() : onSend() } label: {
                 Image(systemName: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "mic.fill" : "arrow.up.circle.fill").font(.system(size: 30, weight: .semibold)).foregroundStyle(HSPrototypeTheme.accent).frame(width: 34, height: 34)
             }
@@ -400,8 +414,8 @@ struct HSMessageInputBar: View {
         .padding(.horizontal, 10)
         .padding(.top, 8)
         .padding(.bottom, 8)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) { Rectangle().fill(HSPrototypeTheme.separator.opacity(0.6)).frame(height: 1 / UIScreen.main.scale) }
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.2)).frame(height: 1 / UIScreen.main.scale) }
     }
 }
 
@@ -466,7 +480,19 @@ struct HSTabBar: View {
             }
         }
         .padding(.top, 6)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) { Rectangle().fill(HSPrototypeTheme.separator.opacity(0.55)).frame(height: 1 / UIScreen.main.scale) }
+        .padding(.horizontal, 10)
+        .padding(.bottom, 2)
+        .background {
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                LinearGradient(
+                    colors: [HSPrototypeTheme.glassTint.opacity(0.06), HSPrototypeTheme.glassHighlight.opacity(0.24)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+        .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.2)).frame(height: 1 / UIScreen.main.scale) }
+        .shadow(color: HSPrototypeTheme.glassShadow.opacity(0.16), radius: 18, x: 0, y: -8)
     }
 }

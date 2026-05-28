@@ -21,6 +21,9 @@ enum HSPrototypeTheme {
     static let incomingBubble = Color.hsDynamic(light: 0xFFFFFF, dark: 0x20242C)
     static let outgoingBubble = Color.hsDynamic(light: 0xDDF4FF, dark: 0x0E4C73)
     static let unreadMuted = Color.hsDynamic(light: 0xB8BEC9, dark: 0x5D6673)
+    static let glassTint = Color.hsDynamic(light: 0xFFFFFF, dark: 0x111823)
+    static let glassHighlight = Color.hsDynamic(light: 0xFFFFFF, dark: 0x2E3947)
+    static let glassShadow = Color.black.opacity(0.14)
 
     static func accentColor(_ config: ThemeConfig) -> Color {
         Color(hex: config.accentHex)
