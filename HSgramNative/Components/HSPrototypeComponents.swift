@@ -1583,6 +1583,7 @@ struct HSTranslucentTabBar: View {
             }
         }
         .padding(5)
+        .background(data.themeConfig.tabBarBackgroundColor.color.opacity(0.86), in: Capsule())
         .background(.ultraThinMaterial, in: Capsule())
         .overlay {
             Capsule()

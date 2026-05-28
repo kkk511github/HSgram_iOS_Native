@@ -14,6 +14,10 @@ struct HSGroupProfileView: View {
         data.group(id: groupID) ?? data.groups[0]
     }
 
+    private var conversation: Conversation? {
+        data.conversations.first { $0.groupID == groupID }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -48,6 +52,11 @@ struct HSGroupProfileView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .confirmationDialog("更多", isPresented: $showMore, titleVisibility: .hidden) {
+            Button(headerMode == .large ? "圆头像模式" : "大图头像模式") {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                    headerMode = headerMode == .large ? .avatar : .large
+                }
+            }
             ForEach(data.themeConfig.availableChatThemes) { theme in
                 Button("壁纸：\(theme.name)") { data.setChatTheme(theme) }
             }
@@ -115,7 +124,9 @@ struct HSGroupProfileView: View {
     private func handleHeaderAction(_ action: String) {
         switch action {
         case "搜索":
-            router.open(.media(groupID))
+            if let conversationID = conversation?.id {
+                router.open(.media(conversationID))
+            }
         case "更多":
             showMore = true
         default:
