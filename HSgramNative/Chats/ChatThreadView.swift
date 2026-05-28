@@ -19,6 +19,7 @@ private struct HSMediaPreviewItem: Identifiable {
 
 private struct HSPendingAttachmentUpload: Identifiable {
     let id: UUID
+    let localMessageID: Int64
     let data: Data
     let fileName: String
     let mimeType: String
@@ -69,9 +70,7 @@ struct ChatThreadView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isShowingCameraCapture = false
     @State private var isShowingFileImporter = false
-    @State private var isSendingAttachment = false
     @State private var pendingAttachmentUpload: HSPendingAttachmentUpload?
-    @State private var attachmentUploadProgress: HSMediaTransferProgress?
     @State private var attachmentUploadFailed = false
     @State private var attachmentUploadTask: Task<Void, Never>?
     @State private var selectedMessageIDs: Set<Int64> = []
@@ -87,6 +86,7 @@ struct ChatThreadView: View {
     @State private var unreadSeparatorMessageID: Int64?
     @State private var shouldScrollToUnreadSeparator = false
     @State private var didResolveInitialUnreadSeparator = false
+    @State private var readOutboxMaxID: Int64
 
     private let pageSize = 50
     private let unreadSeparatorScrollID = "hs-unread-separator"
@@ -107,6 +107,10 @@ struct ChatThreadView: View {
         Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
     }
 
+    private var localOutgoingMessages: [HSMessage] {
+        messages.filter { $0.id < 0 && $0.isOutgoing }
+    }
+
     private var isSelectionMode: Bool {
         !selectedMessageIDs.isEmpty
     }
@@ -117,6 +121,38 @@ struct ChatThreadView: View {
 
     private var selectedMessagesContainText: Bool {
         selectedMessages.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private var messageRows: [ChatThreadMessageRow] {
+        messages.indices.map { index in
+            let message = messages[index]
+            let previousMessage = index > messages.startIndex ? messages[messages.index(before: index)] : nil
+            let nextMessage = index < messages.index(before: messages.endIndex) ? messages[messages.index(after: index)] : nil
+            return ChatThreadMessageRow(
+                message: message,
+                previousMessage: previousMessage,
+                isMergedWithPrevious: canMerge(message, withPrevious: previousMessage),
+                isMergedWithNext: canMerge(message, withNext: nextMessage)
+            )
+        }
+    }
+
+    private var displaysPeerAuthors: Bool {
+        chat.isCircle || chat.peerKind == .chat || (chat.peerKind == .channel && !chat.isBroadcast)
+    }
+
+    private func shouldShowAvatar(for message: HSMessage, row: ChatThreadMessageRow) -> Bool {
+        displaysPeerAuthors && !message.isOutgoing && !row.isMergedWithNext
+    }
+
+    private func displayMessage(_ message: HSMessage) -> HSMessage {
+        guard message.isOutgoing,
+              message.deliveryState == .sent,
+              readOutboxMaxID > 0,
+              message.id <= readOutboxMaxID else {
+            return message
+        }
+        return message.withDeliveryState(.read)
     }
 
     private var threadContact: HSContact {
@@ -139,6 +175,7 @@ struct ChatThreadView: View {
     init(chat: HSChat, mode: HSChatThreadMode = .automatic) {
         self.chat = chat
         self.mode = mode
+        _readOutboxMaxID = State(initialValue: chat.readOutboxMaxID)
     }
 
     var body: some View {
@@ -191,15 +228,22 @@ struct ChatThreadView: View {
                             .disabled(isLoadingOlder)
                             .id("history-loader")
                         }
-                        ForEach(messages) { message in
+                        ForEach(messageRows) { row in
+                            let message = row.message
+                            if shouldShowDateSeparator(for: message, after: row.previousMessage) {
+                                ChatDateSeparatorView(date: message.sentAt)
+                            }
                             if unreadSeparatorMessageID == message.id {
                                 ChatUnreadSeparatorView()
                                     .id(unreadSeparatorScrollID)
                             }
                             MessageBubble(
-                                message: message,
+                                message: displayMessage(message),
                                 replyPreview: message.replyToMessageID.flatMap { messagesByID[$0] },
-                                isGroup: chat.isCircle,
+                                isGroup: displaysPeerAuthors,
+                                showsAvatar: shouldShowAvatar(for: message, row: row),
+                                isMergedWithPrevious: row.isMergedWithPrevious,
+                                isMergedWithNext: row.isMergedWithNext,
                                 isHighlighted: message.id == highlightedSearchMessageID,
                                 isSelecting: isSelectionMode,
                                 isSelected: selectedMessageIDs.contains(message.id),
@@ -213,6 +257,7 @@ struct ChatThreadView: View {
                                 onReact: { reaction in Task { await react(message, reaction: reaction) } },
                                 onPin: { Task { await pin(message) } },
                                 onCopyLink: { Task { await copyLink(message) } },
+                                onRetry: { Task { await retryFailedTextMessage(message) } },
                                 onOpenTextEntity: handleTextEntity,
                                 mediaDownloadState: mediaDownloadStates[message.id],
                                 onOpenMedia: { handleMediaAction(message) }
@@ -249,6 +294,7 @@ struct ChatThreadView: View {
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
+                    applyReadOutboxMaxID(from: notification)
                     guard shouldRefreshThread(for: notification) else {
                         return
                     }
@@ -291,15 +337,6 @@ struct ChatThreadView: View {
                     onOpenResults: { isShowingThreadSearchResults = true }
                 )
             } else {
-                if let pendingAttachmentUpload {
-                    AttachmentUploadBanner(
-                        fileName: pendingAttachmentUpload.fileName,
-                        progress: attachmentUploadProgress,
-                        isFailed: attachmentUploadFailed,
-                        onCancel: cancelAttachmentUpload,
-                        onRetry: retryAttachmentUpload
-                    )
-                }
                 if linkPreview != nil || isLoadingLinkPreview {
                     ChatComposerLinkPreviewBar(
                         preview: linkPreview,
@@ -667,6 +704,14 @@ struct ChatThreadView: View {
         return dialogIDs.contains(chat.id)
     }
 
+    private func applyReadOutboxMaxID(from notification: Notification) {
+        guard let readOutboxMaxIDs = notification.userInfo?["read_outbox_max_ids"] as? [Int64: Int64],
+              let maxID = readOutboxMaxIDs[chat.id] else {
+            return
+        }
+        readOutboxMaxID = max(readOutboxMaxID, maxID)
+    }
+
     private func refresh() async {
         guard let session = authStore.session else {
             return
@@ -674,7 +719,12 @@ struct ChatThreadView: View {
         do {
             preserveMessageID = nil
             shouldScrollToLatest = true
-            let initialPage = try await loadInitialMessages(session: session)
+            async let initialPageTask = loadInitialMessages(session: session)
+            async let readStateTask = authStore.api.dialogReadState(dialogID: chat.id, session: session)
+            let initialPage = try await initialPageTask
+            if let readState = try? await readStateTask {
+                applyReadState(readState)
+            }
             let loaded = initialPage.messages
             if !didResolveInitialUnreadSeparator {
                 unreadSeparatorMessageID = initialUnreadSeparatorMessageID(in: loaded)
@@ -684,8 +734,8 @@ struct ChatThreadView: View {
                     shouldScrollToLatest = false
                 }
             }
-            messages = loaded
-            selectedMessageIDs.formIntersection(Set(loaded.map(\.id)))
+            messages = mergedServerAndLocalMessages(serverMessages: loaded)
+            selectedMessageIDs.formIntersection(Set(messages.map(\.id)))
             restoreDraftReplyTarget()
             hasMoreHistory = initialPage.hasMoreHistory
             errorMessage = nil
@@ -724,6 +774,20 @@ struct ChatThreadView: View {
             preserveMessageID = nil
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func refreshReadState(session: HSUserSession) async {
+        guard let readState = try? await authStore.api.dialogReadState(dialogID: chat.id, session: session) else {
+            return
+        }
+        applyReadState(readState)
+    }
+
+    private func applyReadState(_ readState: HSDialogReadState) {
+        guard readState.dialogID == chat.id else {
+            return
+        }
+        readOutboxMaxID = max(readOutboxMaxID, readState.readOutboxMaxID)
     }
 
     private func openSearchResult(_ result: ChatSearchResult) async {
@@ -828,6 +892,17 @@ struct ChatThreadView: View {
     }
 
     private func handleMediaAction(_ message: HSMessage) {
+        if message.isOutgoing, message.id < 0 {
+            switch message.deliveryState {
+            case .sending:
+                cancelAttachmentUpload()
+            case .failed:
+                retryFailedAttachmentMessage(message)
+            case .sent, .read:
+                break
+            }
+            return
+        }
         if mediaDownloadStates[message.id]?.isDownloading == true {
             cancelMediaDownload(message)
             return
@@ -1113,6 +1188,98 @@ struct ChatThreadView: View {
         return nsText.substring(with: match.range)
     }
 
+    private func localOutgoingMessage(text: String, replyToMessageID: Int64?, session: HSUserSession) -> HSMessage {
+        HSMessage(
+            id: nextLocalMessageID(),
+            dialogID: chat.id,
+            authorID: session.userID,
+            authorName: session.displayName.isEmpty ? "You" : session.displayName,
+            text: text,
+            kind: nil,
+            sentAt: Date(),
+            isOutgoing: true,
+            deliveryState: .sending,
+            replyToMessageID: replyToMessageID
+        )
+    }
+
+    private func nextLocalMessageID() -> Int64 {
+        var candidate = -Int64(Date().timeIntervalSince1970 * 1_000_000)
+        let existingIDs = Set(messages.map(\.id))
+        while existingIDs.contains(candidate) {
+            candidate -= 1
+        }
+        return candidate
+    }
+
+    private func completePendingMessage(localID: Int64, sent: HSMessage) {
+        guard let index = messages.firstIndex(where: { $0.id == localID }) else {
+            return
+        }
+        messages.remove(at: index)
+        guard !messages.contains(where: { $0.id == sent.id }) else {
+            return
+        }
+        messages.append(sent)
+    }
+
+    private func localAttachmentMessage(from pending: HSPendingAttachmentUpload, session: HSUserSession) -> HSMessage {
+        HSMessage(
+            id: pending.localMessageID,
+            dialogID: chat.id,
+            authorID: session.userID,
+            authorName: session.displayName.isEmpty ? "You" : session.displayName,
+            text: pending.caption,
+            kind: "media",
+            sentAt: Date(),
+            isOutgoing: true,
+            deliveryState: .sending,
+            replyToMessageID: pending.replyToMessageID,
+            media: HSMessageMedia(
+                kind: mediaKind(from: pending.mediaKind),
+                fileName: pending.fileName,
+                mimeType: pending.mimeType,
+                size: Int64(pending.data.count),
+                width: nil,
+                height: nil,
+                duration: pending.duration,
+                waveform: pending.waveform
+            )
+        )
+    }
+
+    private func mediaKind(from rawValue: String) -> HSMessageMedia.MediaKind {
+        switch rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "photo", "image":
+            return .photo
+        case "video":
+            return .video
+        case "gif":
+            return .gif
+        case "audio", "music":
+            return .audio
+        case "voice":
+            return .voice
+        case "sticker":
+            return .sticker
+        case "file", "document":
+            return .file
+        default:
+            return .unknown
+        }
+    }
+
+    private func mergedServerAndLocalMessages(serverMessages: [HSMessage]) -> [HSMessage] {
+        let serverIDs = Set(serverMessages.map(\.id))
+        let retainedLocalMessages = localOutgoingMessages.filter { !serverIDs.contains($0.id) }
+        return (serverMessages + retainedLocalMessages).sorted { lhs, rhs in
+            if lhs.sentAt == rhs.sentAt {
+                return lhs.id < rhs.id
+            }
+            return lhs.sentAt < rhs.sentAt
+        }
+    }
+
     private func saveDraft() async {
         guard let session = authStore.session else {
             return
@@ -1134,37 +1301,60 @@ struct ChatThreadView: View {
         guard !text.isEmpty else {
             return
         }
-        let replyMessage = replyingToMessage
         let replyID = activeReplyToMessageID
         let sentWithoutWebPage = dismissedLinkPreviewURL == Self.firstURLString(in: text)
+        let pendingMessage = localOutgoingMessage(
+            text: text,
+            replyToMessageID: replyID,
+            session: session
+        )
         draft = ""
         replyingToMessage = nil
         draftReplyToMessageID = nil
         clearLinkPreviewState()
+        shouldScrollToLatest = true
+        messages.append(pendingMessage)
+
+        await sendPendingTextMessage(pendingMessage, disableWebPagePreview: sentWithoutWebPage)
+    }
+
+    private func sendPendingTextMessage(_ pendingMessage: HSMessage, disableWebPagePreview: Bool) async {
+        guard let session = authStore.session else {
+            replace(messageID: pendingMessage.id, with: pendingMessage.withDeliveryState(.failed))
+            errorMessage = HSAPIError.missingSession.localizedDescription
+            return
+        }
         do {
             let sent = try await authStore.api.sendMessage(
                 dialogID: chat.id,
-                text: text,
-                replyToMessageID: replyID,
-                disableWebPagePreview: sentWithoutWebPage,
+                text: pendingMessage.text,
+                replyToMessageID: pendingMessage.replyToMessageID,
+                disableWebPagePreview: disableWebPagePreview,
                 session: session
             )
-            shouldScrollToLatest = true
-            messages.append(sent)
+            completePendingMessage(localID: pendingMessage.id, sent: sent)
             _ = try? await authStore.api.saveDraft(dialogID: chat.id, text: "", replyToMessageID: nil, session: session)
             errorMessage = nil
             await markRead(messages: messages)
+            await refreshReadState(session: session)
         } catch {
-            draft = text
-            replyingToMessage = replyMessage
-            draftReplyToMessageID = replyID
-            if sentWithoutWebPage {
-                dismissedLinkPreviewURL = Self.firstURLString(in: text)
-            } else {
-                scheduleLinkPreviewRefresh(for: text)
-            }
+            replace(messageID: pendingMessage.id, with: pendingMessage.withDeliveryState(.failed))
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func retryFailedTextMessage(_ message: HSMessage) async {
+        guard message.isOutgoing, message.deliveryState == .failed else {
+            return
+        }
+        if message.kind == "media" {
+            retryFailedAttachmentMessage(message)
+            return
+        }
+        let pendingMessage = message.withDeliveryState(.sending)
+        replace(messageID: message.id, with: pendingMessage)
+        shouldScrollToLatest = true
+        await sendPendingTextMessage(pendingMessage, disableWebPagePreview: false)
     }
 
     private func handleAttachment(_ option: ChatAttachmentOption) {
@@ -1281,6 +1471,7 @@ struct ChatThreadView: View {
         }
         let pending = HSPendingAttachmentUpload(
             id: UUID(),
+            localMessageID: nextLocalMessageID(),
             data: data,
             fileName: fileName,
             mimeType: mimeType,
@@ -1297,13 +1488,21 @@ struct ChatThreadView: View {
     private func beginAttachmentUpload(_ pending: HSPendingAttachmentUpload) {
         pendingAttachmentUpload = pending
         attachmentUploadFailed = false
-        attachmentUploadProgress = HSMediaTransferProgress(completedBytes: 0, totalBytes: Int64(pending.data.count))
-        isSendingAttachment = true
+        mediaDownloadStates[pending.localMessageID] = .downloading(progress: 0)
         statusMessage = nil
         errorMessage = nil
         draft = ""
         replyingToMessage = nil
         draftReplyToMessageID = nil
+        if let session = authStore.session {
+            let localMessage = localAttachmentMessage(from: pending, session: session)
+            if messages.contains(where: { $0.id == pending.localMessageID }) {
+                replace(messageID: pending.localMessageID, with: localMessage)
+            } else {
+                shouldScrollToLatest = true
+                messages.append(localMessage)
+            }
+        }
         let task = Task {
             await performAttachmentUpload(pending)
         }
@@ -1313,16 +1512,17 @@ struct ChatThreadView: View {
     private func performAttachmentUpload(_ pending: HSPendingAttachmentUpload) async {
         guard let session = authStore.session else {
             attachmentUploadFailed = true
-            restoreComposer(from: pending)
+            if let localMessage = messages.first(where: { $0.id == pending.localMessageID }) {
+                replace(messageID: pending.localMessageID, with: localMessage.withDeliveryState(.failed))
+            }
+            mediaDownloadStates[pending.localMessageID] = .failed
             attachmentUploadTask = nil
-            isSendingAttachment = false
             errorMessage = HSAPIError.missingSession.localizedDescription
             return
         }
         defer {
             if pendingAttachmentUpload?.id == pending.id {
                 attachmentUploadTask = nil
-                isSendingAttachment = false
             }
         }
         do {
@@ -1344,29 +1544,31 @@ struct ChatThreadView: View {
                 }
             )
             shouldScrollToLatest = true
-            messages.append(sent)
+            completePendingMessage(localID: pending.localMessageID, sent: sent)
             pendingAttachmentUpload = nil
-            attachmentUploadProgress = nil
+            mediaDownloadStates.removeValue(forKey: pending.localMessageID)
             attachmentUploadFailed = false
             attachmentUploadTask = nil
-            isSendingAttachment = false
             statusMessage = nil
             errorMessage = nil
             _ = try? await authStore.api.saveDraft(dialogID: chat.id, text: "", replyToMessageID: nil, session: session)
             await markRead(messages: messages)
+            await refreshReadState(session: session)
         } catch is CancellationError {
-            restoreComposer(from: pending)
             if pendingAttachmentUpload?.id == pending.id {
+                restoreComposer(from: pending)
                 pendingAttachmentUpload = nil
-                attachmentUploadProgress = nil
+                mediaDownloadStates.removeValue(forKey: pending.localMessageID)
+                messages.removeAll { $0.id == pending.localMessageID }
                 attachmentUploadFailed = false
                 statusMessage = "Media upload canceled."
                 errorMessage = nil
             }
         } catch {
-            restoreComposer(from: pending)
             if pendingAttachmentUpload?.id == pending.id {
                 attachmentUploadFailed = true
+                replace(messageID: pending.localMessageID, with: localAttachmentMessage(from: pending, session: session).withDeliveryState(.failed))
+                mediaDownloadStates[pending.localMessageID] = .failed
             }
             statusMessage = nil
             errorMessage = error.localizedDescription
@@ -1377,11 +1579,15 @@ struct ChatThreadView: View {
         guard pendingAttachmentUpload?.id == uploadID, !attachmentUploadFailed else {
             return
         }
-        attachmentUploadProgress = progress
+        if let localMessageID = pendingAttachmentUpload?.localMessageID {
+            mediaDownloadStates[localMessageID] = .downloading(progress: progress.fractionCompleted)
+        }
     }
 
-    private func retryAttachmentUpload() {
-        guard let pending = pendingAttachmentUpload, attachmentUploadTask == nil else {
+    private func retryFailedAttachmentMessage(_ message: HSMessage) {
+        guard let pending = pendingAttachmentUpload,
+              pending.localMessageID == message.id,
+              attachmentUploadTask == nil else {
             return
         }
         beginAttachmentUpload(pending)
@@ -1395,9 +1601,9 @@ struct ChatThreadView: View {
         attachmentUploadTask = nil
         restoreComposer(from: pending)
         pendingAttachmentUpload = nil
-        attachmentUploadProgress = nil
+        mediaDownloadStates.removeValue(forKey: pending.localMessageID)
+        messages.removeAll { $0.id == pending.localMessageID }
         attachmentUploadFailed = false
-        isSendingAttachment = false
         statusMessage = "Media upload canceled."
         errorMessage = nil
     }
@@ -1411,12 +1617,12 @@ struct ChatThreadView: View {
     private func cancelActiveTransfersOnDisappear() {
         if let pending = pendingAttachmentUpload {
             restoreComposer(from: pending)
+            mediaDownloadStates.removeValue(forKey: pending.localMessageID)
+            messages.removeAll { $0.id == pending.localMessageID }
         }
         attachmentUploadTask?.cancel()
         attachmentUploadTask = nil
-        isSendingAttachment = false
         pendingAttachmentUpload = nil
-        attachmentUploadProgress = nil
         attachmentUploadFailed = false
         mediaDownloadTasks.values.forEach { $0.cancel() }
         mediaDownloadTasks.removeAll()
@@ -1438,7 +1644,7 @@ struct ChatThreadView: View {
     }
 
     private func beginSelection(_ message: HSMessage) {
-        guard message.kind != "service" else {
+        guard message.kind != "service", isServerBackedMessage(message) else {
             return
         }
         endThreadSearch()
@@ -1447,7 +1653,7 @@ struct ChatThreadView: View {
     }
 
     private func toggleSelection(_ message: HSMessage) {
-        guard message.kind != "service" else {
+        guard message.kind != "service", isServerBackedMessage(message) else {
             return
         }
         if selectedMessageIDs.contains(message.id) {
@@ -1461,6 +1667,18 @@ struct ChatThreadView: View {
         selectedMessageIDs.removeAll()
         isShowingSelectionForwardSheet = false
         isShowingSelectionDeleteConfirmation = false
+    }
+
+    private func isServerBackedMessage(_ message: HSMessage) -> Bool {
+        guard message.id > 0 else {
+            return false
+        }
+        switch message.deliveryState {
+        case .sent, .read:
+            return true
+        case .sending, .failed:
+            return false
+        }
     }
 
     private func copySelectedMessages() {
@@ -1524,7 +1742,8 @@ struct ChatThreadView: View {
     }
 
     private func markRead(messages: [HSMessage]) async {
-        guard let session = authStore.session, let last = messages.last else {
+        guard let session = authStore.session,
+              let last = messages.last(where: { $0.id > 0 }) else {
             return
         }
         _ = try? await authStore.api.markDialogRead(dialogID: chat.id, maxMessageID: last.id, session: session)
@@ -1570,12 +1789,50 @@ struct ChatThreadView: View {
         return incomingMessages[firstUnreadOffset].id
     }
 
+    private func shouldShowDateSeparator(for message: HSMessage, after previousMessage: HSMessage?) -> Bool {
+        guard message.sentAt.timeIntervalSince1970 >= 10 else {
+            return false
+        }
+        guard let previousMessage else {
+            return true
+        }
+        return !Calendar.current.isDate(message.sentAt, inSameDayAs: previousMessage.sentAt)
+    }
+
+    private func canMerge(_ message: HSMessage, withPrevious previousMessage: HSMessage?) -> Bool {
+        guard let previousMessage else {
+            return false
+        }
+        return canMerge(previousMessage, withNext: message)
+    }
+
+    private func canMerge(_ message: HSMessage, withNext nextMessage: HSMessage?) -> Bool {
+        guard let nextMessage,
+              message.kind != "service",
+              nextMessage.kind != "service",
+              message.dialogID == nextMessage.dialogID,
+              message.authorID == nextMessage.authorID,
+              message.isOutgoing == nextMessage.isOutgoing,
+              message.authorSignature == nextMessage.authorSignature,
+              Calendar.current.isDate(message.sentAt, inSameDayAs: nextMessage.sentAt),
+              abs(message.sentAt.timeIntervalSince(nextMessage.sentAt)) < 10 * 60 else {
+            return false
+        }
+        return true
+    }
+
     private func beginEdit(_ message: HSMessage) {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         editingMessage = message
         editText = message.text
     }
 
     private func beginReply(_ message: HSMessage) {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         replyingToMessage = message
         draftReplyToMessageID = message.id
     }
@@ -1613,6 +1870,20 @@ struct ChatThreadView: View {
     }
 
     private func delete(_ message: HSMessage) async {
+        guard isServerBackedMessage(message) else {
+            if pendingAttachmentUpload?.localMessageID == message.id {
+                attachmentUploadTask?.cancel()
+                attachmentUploadTask = nil
+                pendingAttachmentUpload = nil
+                attachmentUploadFailed = false
+            }
+            mediaDownloadStates.removeValue(forKey: message.id)
+            messages.removeAll { $0.id == message.id }
+            selectedMessageIDs.remove(message.id)
+            statusMessage = "Message removed."
+            errorMessage = nil
+            return
+        }
         guard let session = authStore.session else {
             return
         }
@@ -1627,6 +1898,9 @@ struct ChatThreadView: View {
     }
 
     private func forward(_ message: HSMessage, to target: HSChat) async {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         guard let session = authStore.session else {
             return
         }
@@ -1641,11 +1915,15 @@ struct ChatThreadView: View {
     }
 
     private func react(_ message: HSMessage, reaction: String) async {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         guard let session = authStore.session else {
             return
         }
         do {
             _ = try await authStore.api.sendReaction(dialogID: chat.id, messageID: message.id, reaction: reaction, session: session)
+            replace(messageID: message.id, with: message.withUpdatedReaction(reaction))
             statusMessage = "Reaction sent."
             errorMessage = nil
         } catch {
@@ -1654,6 +1932,9 @@ struct ChatThreadView: View {
     }
 
     private func pin(_ message: HSMessage) async {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         guard let session = authStore.session else {
             return
         }
@@ -1669,6 +1950,9 @@ struct ChatThreadView: View {
     }
 
     private func copyLink(_ message: HSMessage) async {
+        guard isServerBackedMessage(message) else {
+            return
+        }
         guard let session = authStore.session else {
             return
         }
@@ -1687,6 +1971,17 @@ struct ChatThreadView: View {
             return
         }
         messages[index] = message
+    }
+}
+
+private struct ChatThreadMessageRow: Identifiable {
+    let message: HSMessage
+    let previousMessage: HSMessage?
+    let isMergedWithPrevious: Bool
+    let isMergedWithNext: Bool
+
+    var id: Int64 {
+        message.id
     }
 }
 
@@ -1771,83 +2066,6 @@ private struct ChatComposerLinkPreviewBar: View {
         values
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty }
-    }
-}
-
-private struct AttachmentUploadBanner: View {
-    let fileName: String
-    let progress: HSMediaTransferProgress?
-    let isFailed: Bool
-    let onCancel: () -> Void
-    let onRetry: () -> Void
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: isFailed ? "exclamationmark.circle.fill" : "arrow.up.circle.fill")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(isFailed ? .red : HSTheme.accent)
-                .frame(width: 28, height: 28)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(fileName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(HSTheme.primaryText)
-                    .lineLimit(1)
-                HStack(spacing: 8) {
-                    if !isFailed, let fraction = progress?.fractionCompleted {
-                        ProgressView(value: fraction)
-                            .frame(maxWidth: 120)
-                    } else if !isFailed {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                    Text(statusText)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(isFailed ? .red : HSTheme.secondaryText)
-                        .lineLimit(1)
-                }
-            }
-
-            Spacer(minLength: 8)
-
-            if isFailed {
-                Button(action: onRetry) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 17, weight: .semibold))
-                        .frame(width: 30, height: 30)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(HSTheme.accent)
-                .accessibilityLabel("Retry upload")
-            }
-
-            Button(action: onCancel) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 19, weight: .semibold))
-                    .frame(width: 30, height: 30)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(HSTheme.secondaryText)
-            .accessibilityLabel(isFailed ? "Dismiss upload" : "Cancel upload")
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(HSTheme.Chat.composerBackground)
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(HSTheme.Chat.panelSeparatorColor)
-                .frame(height: 1 / UIScreen.main.scale)
-        }
-    }
-
-    private var statusText: String {
-        if isFailed {
-            return "Upload failed"
-        }
-        if let fraction = progress?.fractionCompleted {
-            return "Uploading \(Int(fraction * 100))%"
-        }
-        return "Uploading"
     }
 }
 
@@ -2050,6 +2268,58 @@ private struct AudioPreviewView: View {
             isPlaying = true
         }
     }
+}
+
+private struct ChatDateSeparatorView: View {
+    let date: Date
+
+    var body: some View {
+        HStack {
+            Spacer()
+            Text(Self.title(for: date))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(HSTheme.Chat.servicePill, in: Capsule())
+                .accessibilityLabel(Self.title(for: date))
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    private static func title(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return relativeDateFormatter.string(from: date)
+        }
+        if calendar.component(.year, from: date) == calendar.component(.year, from: Date()) {
+            return monthDayFormatter.string(from: date)
+        }
+        return fullDateFormatter.string(from: date)
+    }
+
+    private static let monthDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("MMM d")
+        return formatter
+    }()
+
+    private static let relativeDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
+
+    private static let fullDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("y MMM d")
+        return formatter
+    }()
 }
 
 private struct ChatUnreadSeparatorView: View {

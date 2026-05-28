@@ -7,8 +7,8 @@ final class AuthStore: ObservableObject {
         case sendingCode
         case enteringCode(transactionID: String, emailPattern: String, codeLength: Int)
         case verifying
-        case enteringSignUp(email: String, transactionID: String)
-        case signingUp(email: String, transactionID: String)
+        case enteringSignUp(email: String, transactionID: String, termsOfService: HSTermsOfService?)
+        case signingUp(email: String, transactionID: String, termsOfService: HSTermsOfService?)
         case enteringPassword(email: String, hint: String?)
         case verifyingPassword
         case requestingPasswordRecovery(email: String, hint: String?)
@@ -75,7 +75,11 @@ final class AuthStore: ObservableObject {
             self.phase = .enteringPassword(email: normalizedEmail, hint: Self.passwordHint(from: error))
             self.errorMessage = nil
         } catch let error as HSAPIError where error.serverCode == "SIGN_UP_REQUIRED" || error.serverCode == "PHONE_NUMBER_UNOCCUPIED" {
-            self.phase = .enteringSignUp(email: normalizedEmail, transactionID: transactionID)
+            self.phase = .enteringSignUp(
+                email: normalizedEmail,
+                transactionID: transactionID,
+                termsOfService: error.signUpTermsOfService
+            )
             self.errorMessage = nil
         } catch {
             self.errorMessage = Self.loginErrorMessage(error)
@@ -83,7 +87,7 @@ final class AuthStore: ObservableObject {
         }
     }
 
-    func signUp(email: String, transactionID: String, firstName: String, lastName: String, inviteCode: String) async {
+    func signUp(email: String, transactionID: String, termsOfService: HSTermsOfService?, firstName: String, lastName: String, inviteCode: String, avatarData: Data?) async {
         let normalizedEmail = normalizeLoginEmail(email)
         let trimmedFirstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedLastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -93,7 +97,7 @@ final class AuthStore: ObservableObject {
             return
         }
 
-        self.phase = .signingUp(email: normalizedEmail, transactionID: transactionID)
+        self.phase = .signingUp(email: normalizedEmail, transactionID: transactionID, termsOfService: termsOfService)
         self.errorMessage = nil
         do {
             let session = try await api.signUp(
@@ -102,12 +106,15 @@ final class AuthStore: ObservableObject {
                 displayName: [trimmedFirstName, trimmedLastName].filter { !$0.isEmpty }.joined(separator: " "),
                 inviteCode: trimmedInvite
             )
+            if let avatarData {
+                try? await api.uploadProfilePhoto(data: avatarData, session: session)
+            }
             self.session = session
             self.sessionStore.save(session)
             self.savedAccounts = sessionStore.loadAccounts()
         } catch {
             self.errorMessage = Self.loginErrorMessage(error)
-            self.phase = .enteringSignUp(email: normalizedEmail, transactionID: transactionID)
+            self.phase = .enteringSignUp(email: normalizedEmail, transactionID: transactionID, termsOfService: termsOfService)
         }
     }
 
@@ -432,6 +439,9 @@ final class HSSyncStore: ObservableObject {
         ]
         if !difference.changedDialogIDs.isEmpty {
             userInfo["dialog_ids"] = difference.changedDialogIDs
+        }
+        if !difference.readOutboxMaxIDsByDialogID.isEmpty {
+            userInfo["read_outbox_max_ids"] = difference.readOutboxMaxIDsByDialogID
         }
         NotificationCenter.default.post(name: .hsNativeSyncDidChange, object: self, userInfo: userInfo)
     }

@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PhotosUI
 
 struct AuthView: View {
     @EnvironmentObject private var authStore: AuthStore
@@ -12,6 +13,15 @@ struct AuthView: View {
     @State private var inviteCode = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
+    @State private var selectedAvatarItem: PhotosPickerItem?
+    @State private var selectedAvatarImage: UIImage?
+    @State private var selectedAvatarData: Data?
+    @State private var isLoadingAvatar = false
+    @State private var avatarErrorMessage: String?
+    @State private var hasAcceptedTerms = false
+    @State private var currentTermsAcceptanceKey: String?
+    @State private var showingTermsOfService = false
+    @State private var showingTermsDecline = false
 
     enum Field: Hashable {
         case email
@@ -66,15 +76,32 @@ struct AuthView: View {
         .onChange(of: authStore.phase) { phase in
             switch phase {
             case .enteringEmail:
+                selectedAvatarItem = nil
+                selectedAvatarImage = nil
+                selectedAvatarData = nil
+                isLoadingAvatar = false
+                avatarErrorMessage = nil
+                currentTermsAcceptanceKey = nil
+                hasAcceptedTerms = false
+                showingTermsOfService = false
+                showingTermsDecline = false
                 focusedField = .email
             case .sendingCode:
                 focusedField = nil
             case .enteringCode:
                 code = ""
                 focusedField = .code
-            case let .enteringSignUp(email, _):
+            case let .enteringSignUp(email, _, termsOfService):
                 self.email = email
                 code = ""
+                let termsKey = termsAcceptanceKey(email: email, termsOfService: termsOfService)
+                if currentTermsAcceptanceKey != termsKey {
+                    currentTermsAcceptanceKey = termsKey
+                    hasAcceptedTerms = termsOfService == nil
+                }
+                if termsOfService?.isPopup == true && !hasAcceptedTerms {
+                    showingTermsOfService = true
+                }
                 if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     firstName = email.split(separator: "@").first.map(String.init) ?? ""
                 }
@@ -94,6 +121,34 @@ struct AuthView: View {
                 focusedField = .code
             case .verifying, .verifyingPassword, .recoveringPassword:
                 focusedField = nil
+            }
+        }
+        .sheet(isPresented: $showingTermsOfService) {
+            if let termsOfService = currentSignUpContext.termsOfService {
+                HSTermsOfServiceSheet(
+                    termsOfService: termsOfService,
+                    onDecline: {
+                        showingTermsOfService = false
+                        showingTermsDecline = true
+                    },
+                    onAgree: {
+                        hasAcceptedTerms = true
+                        showingTermsOfService = false
+                    }
+                )
+            }
+        }
+        .alert("服务条款", isPresented: $showingTermsDecline) {
+            Button("继续注册", role: .cancel) {}
+            Button("拒绝", role: .destructive) {
+                authStore.resetToEmailEntry()
+            }
+        } message: {
+            Text("很遗憾，如果不同意服务条款，将无法创建 HSgram 账号。")
+        }
+        .onChange(of: selectedAvatarItem) { item in
+            Task {
+                await loadSelectedAvatar(item)
             }
         }
     }
@@ -207,10 +262,16 @@ struct AuthView: View {
     }
 
     private var signUpEntryContent: some View {
+        let context = currentSignUpContext
+
         VStack(spacing: 0) {
-            HSAuthAddPhotoMark()
-                .frame(width: 96, height: 96)
-                .padding(.bottom, 18)
+            PhotosPicker(selection: $selectedAvatarItem, matching: .images) {
+                HSAuthAddPhotoMark(image: selectedAvatarImage, isLoading: isLoadingAvatar)
+                    .frame(width: 96, height: 96)
+            }
+            .buttonStyle(.plain)
+            .disabled(isBusy)
+            .padding(.bottom, 18)
 
             Text("完善你的资料")
                 .font(.system(size: 28, weight: .semibold))
@@ -232,6 +293,25 @@ struct AuthView: View {
                 focusedField: $focusedField
             )
             .padding(.top, 32)
+
+            if let avatarErrorMessage {
+                Text(avatarErrorMessage)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(HSTheme.warning)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 10)
+            }
+
+            if let termsOfService = context.termsOfService {
+                HSAuthTermsOfServiceRow(
+                    termsOfService: termsOfService,
+                    isAccepted: $hasAcceptedTerms,
+                    openTerms: {
+                        showingTermsOfService = true
+                    }
+                )
+                .padding(.top, 18)
+            }
 
             authStatusContent
                 .padding(.top, 16)
@@ -562,7 +642,7 @@ struct AuthView: View {
         case .enteringCode:
             return code.count < currentCodeContext.length
         case .enteringSignUp:
-            return firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (currentSignUpContext.termsOfService != nil && !hasAcceptedTerms)
         case .enteringPassword:
             return password.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .enteringRecoveryCode:
@@ -579,14 +659,14 @@ struct AuthView: View {
         return (maskedEmail(normalizedEmail), 6)
     }
 
-    private var currentSignUpContext: (email: String, transactionID: String) {
-        if case let .enteringSignUp(email, transactionID) = authStore.phase {
-            return (email, transactionID)
+    private var currentSignUpContext: (email: String, transactionID: String, termsOfService: HSTermsOfService?) {
+        if case let .enteringSignUp(email, transactionID, termsOfService) = authStore.phase {
+            return (email, transactionID, termsOfService)
         }
-        if case let .signingUp(email, transactionID) = authStore.phase {
-            return (email, transactionID)
+        if case let .signingUp(email, transactionID, termsOfService) = authStore.phase {
+            return (email, transactionID, termsOfService)
         }
-        return (normalizedEmail, "")
+        return (normalizedEmail, "", nil)
     }
 
     private var currentPasswordContext: (email: String, hint: String?) {
@@ -627,13 +707,15 @@ struct AuthView: View {
             await sendCode()
         case let .enteringCode(transactionID, _, _):
             await authStore.verify(email: email, code: code, transactionID: transactionID, displayName: "")
-        case let .enteringSignUp(email, transactionID):
+        case let .enteringSignUp(email, transactionID, termsOfService):
             await authStore.signUp(
                 email: email,
                 transactionID: transactionID,
+                termsOfService: termsOfService,
                 firstName: firstName,
                 lastName: lastName,
-                inviteCode: inviteCode
+                inviteCode: inviteCode,
+                avatarData: selectedAvatarData
             )
         case let .enteringPassword(email, _):
             await verifyPassword(email: email)
@@ -672,6 +754,46 @@ struct AuthView: View {
         code = String(text.filter(\.isNumber).prefix(length))
     }
 
+    private func loadSelectedAvatar(_ item: PhotosPickerItem?) async {
+        await MainActor.run {
+            avatarErrorMessage = nil
+            isLoadingAvatar = item != nil
+            if item == nil {
+                selectedAvatarImage = nil
+                selectedAvatarData = nil
+            }
+        }
+        guard let item else {
+            return
+        }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data),
+                  let jpegData = Self.compressedAvatarJPEG(from: image) else {
+                await MainActor.run {
+                    avatarErrorMessage = "无法读取头像图片。"
+                    selectedAvatarImage = nil
+                    selectedAvatarData = nil
+                    isLoadingAvatar = false
+                }
+                return
+            }
+            await MainActor.run {
+                selectedAvatarImage = UIImage(data: jpegData) ?? image
+                selectedAvatarData = jpegData
+                isLoadingAvatar = false
+            }
+        } catch {
+            await MainActor.run {
+                avatarErrorMessage = "无法读取头像图片。"
+                selectedAvatarImage = nil
+                selectedAvatarData = nil
+                isLoadingAvatar = false
+            }
+        }
+    }
+
     private func closeTapped() {
         if authStore.phase == .enteringEmail {
             email = ""
@@ -692,6 +814,29 @@ struct AuthView: View {
         }
         let visiblePrefix = text[..<atIndex].prefix(3)
         return "\(visiblePrefix)***\(text[atIndex...])"
+    }
+
+    private static func compressedAvatarJPEG(from image: UIImage) -> Data? {
+        let maxSide: CGFloat = 1024
+        let longestSide = max(image.size.width, image.size.height)
+        let scale = longestSide > maxSide ? maxSide / longestSide : 1
+        let targetSize = CGSize(
+            width: max(1, floor(image.size.width * scale)),
+            height: max(1, floor(image.size.height * scale))
+        )
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let rendered = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        return rendered.jpegData(compressionQuality: 0.7)
+    }
+
+    private func termsAcceptanceKey(email: String, termsOfService: HSTermsOfService?) -> String? {
+        guard let termsOfService else {
+            return nil
+        }
+        return "\(email)|\(termsOfService.id)"
     }
 }
 
@@ -961,6 +1106,94 @@ private struct HSAuthSignUpFormCard: View {
     }
 }
 
+private struct HSAuthTermsOfServiceRow: View {
+    let termsOfService: HSTermsOfService
+    @Binding var isAccepted: Bool
+    let openTerms: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Button {
+                isAccepted.toggle()
+            } label: {
+                Image(systemName: isAccepted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(isAccepted ? HSTheme.accent : HSTheme.secondaryText)
+                    .frame(width: 30, height: 30)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isAccepted ? "取消同意服务条款" : "同意服务条款")
+
+            Button {
+                openTerms()
+            } label: {
+                agreementText
+                    .font(.system(size: 14, weight: .regular))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color(rgb: 0xf7f7f8), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: HSAuthLayout.maximumWidth - 48)
+    }
+
+    private var agreementText: Text {
+        let suffix = termsOfService.minAgeConfirm.map { "，并确认你已满 \($0) 岁。" } ?? "。"
+        let prefix = Text("注册即代表你同意").foregroundColor(HSTheme.secondaryText)
+        let link = Text("服务条款").foregroundColor(HSTheme.accent)
+        let ending = Text(suffix).foregroundColor(HSTheme.secondaryText)
+        return prefix + link + ending
+    }
+}
+
+private struct HSTermsOfServiceSheet: View {
+    let termsOfService: HSTermsOfService
+    let onDecline: () -> Void
+    let onAgree: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                Text(termsOfService.text)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(HSTheme.primaryText)
+                    .lineSpacing(5)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(20)
+
+                if let age = termsOfService.minAgeConfirm {
+                    Text("继续注册表示你确认已满 \(age) 岁。")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(HSTheme.secondaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                }
+            }
+            .navigationTitle("服务条款")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("拒绝", role: .destructive) {
+                        onDecline()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("同意并继续") {
+                        onAgree()
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct HSAuthSignUpField: View {
     let placeholder: String
     @Binding var text: String
@@ -1018,16 +1251,43 @@ private struct HSAuthEnvelopeMark: View {
 }
 
 private struct HSAuthAddPhotoMark: View {
+    let image: UIImage?
+    let isLoading: Bool
+
     var body: some View {
         ZStack {
             Circle()
                 .fill(HSTheme.accent.opacity(0.10))
 
-            Image(systemName: "camera.fill")
-                .font(.system(size: 32, weight: .semibold))
-                .foregroundStyle(HSTheme.accent)
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .clipShape(Circle())
+            } else {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundStyle(HSTheme.accent)
+            }
+
+            if isLoading {
+                ProgressView()
+                    .tint(HSTheme.accent)
+                    .frame(width: 96, height: 96)
+                    .background(.white.opacity(0.72), in: Circle())
+            } else if image != nil {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(HSTheme.accent, in: Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .offset(x: 32, y: 32)
+            }
         }
-        .accessibilityLabel("添加头像")
+        .clipShape(Circle())
+        .contentShape(Circle())
+        .accessibilityLabel(image == nil ? "添加头像" : "更换头像")
     }
 }
 

@@ -3,6 +3,7 @@ import Foundation
 enum HSAPIError: LocalizedError {
     case invalidURL
     case missingSession
+    case signUpRequired(termsOfService: HSTermsOfService?)
     case server(code: String?, message: String)
     case emptyResponse
     case transport(Error)
@@ -13,6 +14,8 @@ enum HSAPIError: LocalizedError {
             return "The server URL is invalid."
         case .missingSession:
             return "Please sign in again."
+        case .signUpRequired:
+            return "该邮箱需要创建账号。"
         case .server(_, let message):
             return message
         case .emptyResponse:
@@ -23,8 +26,18 @@ enum HSAPIError: LocalizedError {
     }
 
     var serverCode: String? {
+        if case .signUpRequired = self {
+            return "SIGN_UP_REQUIRED"
+        }
         if case let .server(code, _) = self {
             return code
+        }
+        return nil
+    }
+
+    var signUpTermsOfService: HSTermsOfService? {
+        if case let .signUpRequired(termsOfService) = self {
+            return termsOfService
         }
         return nil
     }
@@ -132,6 +145,26 @@ final class HSAPIClient {
         throw HSAPIError.server(
             code: "NATIVE_REST_FACADE_NOT_DEPLOYED",
             message: "显式注册必须走现有 MTProto auth.signUp；本地 /v1 测试桥没有这个线上协议。"
+        )
+    }
+
+    func uploadProfilePhoto(data: Data, session: HSUserSession) async throws {
+        guard configuration.allowsNativeRESTFacade else {
+            return try await serverTransport.uploadProfilePhoto(data: data, session: session)
+        }
+        throw HSAPIError.server(
+            code: "NATIVE_REST_FACADE_NOT_DEPLOYED",
+            message: "头像上传必须走现有 MTProto photos.uploadProfilePhoto；本地 /v1 测试桥没有这个线上协议。"
+        )
+    }
+
+    func removeProfilePhoto(session: HSUserSession) async throws {
+        guard configuration.allowsNativeRESTFacade else {
+            return try await serverTransport.removeProfilePhoto(session: session)
+        }
+        throw HSAPIError.server(
+            code: "NATIVE_REST_FACADE_NOT_DEPLOYED",
+            message: "头像移除必须走现有 MTProto photos.updateProfilePhoto；本地 /v1 测试桥没有这个线上协议。"
         )
     }
 
@@ -925,6 +958,10 @@ final class HSAPIClient {
 
     func syncDifference(since state: HSSyncState, session: HSUserSession) async throws -> HSSyncDifference {
         try await serverTransport.syncDifference(since: state, session: session)
+    }
+
+    func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
+        try await serverTransport.dialogReadState(dialogID: dialogID, session: session)
     }
 
     private func request<Response: Decodable, Body: Encodable>(

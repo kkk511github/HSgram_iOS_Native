@@ -19,7 +19,9 @@ enum HSTheme {
     enum Chat {
         static let listBackground = Color(rgb: 0xffffff)
         static let rowBackground = Color(rgb: 0xffffff)
+        static let pinnedRowBackground = Color(rgb: 0xf7f7f7)
         static let dateText = Color(rgb: 0x8e8e93)
+        static let mutedBadge = Color(rgb: 0xbcbcc3)
         static let incomingBubble = Color(rgb: 0xffffff)
         static let outgoingBubble = Color(rgb: 0xe1ffc7)
         static let outgoingSecondary = Color(rgb: 0x008c09).opacity(0.8)
@@ -236,38 +238,83 @@ struct HSChatWallpaper: View {
 
 struct HSChatBubbleShape: Shape {
     let isOutgoing: Bool
+    var isMergedWithPrevious = false
+    var isMergedWithNext = false
 
     func path(in rect: CGRect) -> Path {
         let corner: CGFloat = 17
+        let mergedCorner: CGFloat = 6
         let tail: CGFloat = 7
         var path = Path()
 
         if isOutgoing {
             let bubbleRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width - tail, height: rect.height)
-            path.addRoundedRect(in: bubbleRect, cornerSize: CGSize(width: corner, height: corner))
-            path.move(to: CGPoint(x: bubbleRect.maxX - 6, y: bubbleRect.maxY - 15))
-            path.addQuadCurve(
-                to: CGPoint(x: rect.maxX, y: rect.maxY - 3),
-                control: CGPoint(x: bubbleRect.maxX + 2, y: bubbleRect.maxY - 6)
+            path.addRoundedRect(
+                in: bubbleRect,
+                topLeft: corner,
+                topRight: isMergedWithPrevious ? mergedCorner : corner,
+                bottomRight: isMergedWithNext ? mergedCorner : corner,
+                bottomLeft: corner
             )
-            path.addQuadCurve(
-                to: CGPoint(x: bubbleRect.maxX - 10, y: bubbleRect.maxY - 7),
-                control: CGPoint(x: bubbleRect.maxX - 1, y: bubbleRect.maxY - 1)
-            )
+            if !isMergedWithNext {
+                path.move(to: CGPoint(x: bubbleRect.maxX - 6, y: bubbleRect.maxY - 15))
+                path.addQuadCurve(
+                    to: CGPoint(x: rect.maxX, y: rect.maxY - 3),
+                    control: CGPoint(x: bubbleRect.maxX + 2, y: bubbleRect.maxY - 6)
+                )
+                path.addQuadCurve(
+                    to: CGPoint(x: bubbleRect.maxX - 10, y: bubbleRect.maxY - 7),
+                    control: CGPoint(x: bubbleRect.maxX - 1, y: bubbleRect.maxY - 1)
+                )
+            }
         } else {
             let bubbleRect = CGRect(x: rect.minX + tail, y: rect.minY, width: rect.width - tail, height: rect.height)
-            path.addRoundedRect(in: bubbleRect, cornerSize: CGSize(width: corner, height: corner))
-            path.move(to: CGPoint(x: bubbleRect.minX + 6, y: bubbleRect.maxY - 15))
-            path.addQuadCurve(
-                to: CGPoint(x: rect.minX, y: rect.maxY - 3),
-                control: CGPoint(x: bubbleRect.minX - 2, y: bubbleRect.maxY - 6)
+            path.addRoundedRect(
+                in: bubbleRect,
+                topLeft: isMergedWithPrevious ? mergedCorner : corner,
+                topRight: corner,
+                bottomRight: corner,
+                bottomLeft: isMergedWithNext ? mergedCorner : corner
             )
-            path.addQuadCurve(
-                to: CGPoint(x: bubbleRect.minX + 10, y: bubbleRect.maxY - 7),
-                control: CGPoint(x: bubbleRect.minX + 1, y: bubbleRect.maxY - 1)
-            )
+            if !isMergedWithNext {
+                path.move(to: CGPoint(x: bubbleRect.minX + 6, y: bubbleRect.maxY - 15))
+                path.addQuadCurve(
+                    to: CGPoint(x: rect.minX, y: rect.maxY - 3),
+                    control: CGPoint(x: bubbleRect.minX - 2, y: bubbleRect.maxY - 6)
+                )
+                path.addQuadCurve(
+                    to: CGPoint(x: bubbleRect.minX + 10, y: bubbleRect.maxY - 7),
+                    control: CGPoint(x: bubbleRect.minX + 1, y: bubbleRect.maxY - 1)
+                )
+            }
         }
 
         return path
+    }
+}
+
+private extension Path {
+    mutating func addRoundedRect(
+        in rect: CGRect,
+        topLeft: CGFloat,
+        topRight: CGFloat,
+        bottomRight: CGFloat,
+        bottomLeft: CGFloat
+    ) {
+        let topLeft = min(topLeft, rect.width / 2, rect.height / 2)
+        let topRight = min(topRight, rect.width / 2, rect.height / 2)
+        let bottomRight = min(bottomRight, rect.width / 2, rect.height / 2)
+        let bottomLeft = min(bottomLeft, rect.width / 2, rect.height / 2)
+
+        move(to: CGPoint(x: rect.minX + topLeft, y: rect.minY))
+        addLine(to: CGPoint(x: rect.maxX - topRight, y: rect.minY))
+        addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + topRight), control: CGPoint(x: rect.maxX, y: rect.minY))
+        addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - bottomRight))
+        addQuadCurve(to: CGPoint(x: rect.maxX - bottomRight, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        addLine(to: CGPoint(x: rect.minX + bottomLeft, y: rect.maxY))
+        addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - bottomLeft), control: CGPoint(x: rect.minX, y: rect.maxY))
+        addLine(to: CGPoint(x: rect.minX, y: rect.minY + topLeft))
+        addQuadCurve(to: CGPoint(x: rect.minX + topLeft, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.minY))
+        closeSubpath()
     }
 }

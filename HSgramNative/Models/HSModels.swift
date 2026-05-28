@@ -25,6 +25,13 @@ struct HSPasswordRecoveryResponse: Decodable {
     let codeLength: Int
 }
 
+struct HSTermsOfService: Codable, Equatable {
+    let id: String
+    let text: String
+    let minAgeConfirm: Int?
+    let isPopup: Bool
+}
+
 struct HSLoginPasswordSettings: Codable, Equatable {
     let hasPassword: Bool
     let hasRecovery: Bool
@@ -95,6 +102,22 @@ enum HSChatPeerKind: String, Codable, Hashable {
     case channel
 }
 
+struct HSDialogReadState: Codable, Hashable {
+    let dialogID: Int64
+    let readInboxMaxID: Int64
+    let readOutboxMaxID: Int64
+    let unreadCount: Int
+    let isMarkedUnread: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case dialogID = "dialog_id"
+        case readInboxMaxID = "read_inbox_max_id"
+        case readOutboxMaxID = "read_outbox_max_id"
+        case unreadCount = "unread_count"
+        case isMarkedUnread = "is_marked_unread"
+    }
+}
+
 struct HSChat: Codable, Identifiable, Hashable {
     static let archiveFolderID = 1
 
@@ -102,6 +125,8 @@ struct HSChat: Codable, Identifiable, Hashable {
     let title: String
     let subtitle: String
     let unreadCount: Int
+    let readInboxMaxID: Int64
+    let readOutboxMaxID: Int64
     let isMarkedUnread: Bool
     let isPinned: Bool
     let folderID: Int?
@@ -122,6 +147,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         title: String,
         subtitle: String,
         unreadCount: Int,
+        readInboxMaxID: Int64 = 0,
+        readOutboxMaxID: Int64 = 0,
         isMarkedUnread: Bool = false,
         isPinned: Bool = false,
         folderID: Int? = nil,
@@ -137,6 +164,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         self.title = title
         self.subtitle = subtitle
         self.unreadCount = unreadCount
+        self.readInboxMaxID = readInboxMaxID
+        self.readOutboxMaxID = readOutboxMaxID
         self.isMarkedUnread = isMarkedUnread
         self.isPinned = isPinned
         self.folderID = folderID
@@ -155,6 +184,8 @@ struct HSChat: Codable, Identifiable, Hashable {
             title: title,
             subtitle: subtitle,
             unreadCount: unreadCount,
+            readInboxMaxID: readInboxMaxID,
+            readOutboxMaxID: readOutboxMaxID,
             isMarkedUnread: isMarkedUnread,
             isPinned: isPinned,
             folderID: folderID,
@@ -174,6 +205,8 @@ struct HSChat: Codable, Identifiable, Hashable {
             title: title,
             subtitle: subtitle,
             unreadCount: unreadCount,
+            readInboxMaxID: readInboxMaxID,
+            readOutboxMaxID: readOutboxMaxID,
             isMarkedUnread: isMarkedUnread,
             isPinned: isPinned,
             folderID: folderID,
@@ -192,6 +225,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         case title
         case subtitle
         case unreadCount = "unread_count"
+        case readInboxMaxID = "read_inbox_max_id"
+        case readOutboxMaxID = "read_outbox_max_id"
         case isMarkedUnread = "is_marked_unread"
         case isPinned = "is_pinned"
         case folderID = "folder_id"
@@ -204,22 +239,88 @@ struct HSChat: Codable, Identifiable, Hashable {
         case updatedAt = "updated_at"
     }
 
+    private enum LegacyCodingKeys: String, CodingKey {
+        case id
+        case title
+        case subtitle
+        case unreadCount
+        case readInboxMaxID
+        case readOutboxMaxID
+        case isMarkedUnread
+        case isPinned
+        case folderID
+        case isCircle
+        case peerKind
+        case isBot
+        case isContact
+        case isBroadcast
+        case isMuted
+        case updatedAt
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacyContainer = try decoder.container(keyedBy: LegacyCodingKeys.self)
         id = try container.decode(Int64.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         subtitle = try container.decode(String.self, forKey: .subtitle)
-        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
-        isMarkedUnread = try container.decodeIfPresent(Bool.self, forKey: .isMarkedUnread) ?? false
-        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount)
+            ?? legacyContainer.decodeIfPresent(Int.self, forKey: .unreadCount)
+            ?? 0
+        readInboxMaxID = try container.decodeIfPresent(Int64.self, forKey: .readInboxMaxID)
+            ?? legacyContainer.decodeIfPresent(Int64.self, forKey: .readInboxMaxID)
+            ?? 0
+        readOutboxMaxID = try container.decodeIfPresent(Int64.self, forKey: .readOutboxMaxID)
+            ?? legacyContainer.decodeIfPresent(Int64.self, forKey: .readOutboxMaxID)
+            ?? 0
+        isMarkedUnread = try container.decodeIfPresent(Bool.self, forKey: .isMarkedUnread)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isMarkedUnread)
+            ?? false
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isPinned)
+            ?? false
         folderID = try container.decodeIfPresent(Int.self, forKey: .folderID)
-        isCircle = try container.decodeIfPresent(Bool.self, forKey: .isCircle) ?? false
-        peerKind = try container.decodeIfPresent(HSChatPeerKind.self, forKey: .peerKind) ?? (isCircle ? .chat : .user)
-        isBot = try container.decodeIfPresent(Bool.self, forKey: .isBot) ?? false
-        isContact = try container.decodeIfPresent(Bool.self, forKey: .isContact) ?? false
-        isBroadcast = try container.decodeIfPresent(Bool.self, forKey: .isBroadcast) ?? false
-        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted) ?? false
+            ?? legacyContainer.decodeIfPresent(Int.self, forKey: .folderID)
+        isCircle = try container.decodeIfPresent(Bool.self, forKey: .isCircle)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isCircle)
+            ?? false
+        peerKind = try container.decodeIfPresent(HSChatPeerKind.self, forKey: .peerKind)
+            ?? legacyContainer.decodeIfPresent(HSChatPeerKind.self, forKey: .peerKind)
+            ?? (isCircle ? .chat : .user)
+        isBot = try container.decodeIfPresent(Bool.self, forKey: .isBot)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isBot)
+            ?? false
+        isContact = try container.decodeIfPresent(Bool.self, forKey: .isContact)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isContact)
+            ?? false
+        isBroadcast = try container.decodeIfPresent(Bool.self, forKey: .isBroadcast)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isBroadcast)
+            ?? false
+        isMuted = try container.decodeIfPresent(Bool.self, forKey: .isMuted)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isMuted)
+            ?? false
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+            ?? legacyContainer.decodeIfPresent(Date.self, forKey: .updatedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(subtitle, forKey: .subtitle)
+        try container.encode(unreadCount, forKey: .unreadCount)
+        try container.encode(readInboxMaxID, forKey: .readInboxMaxID)
+        try container.encode(readOutboxMaxID, forKey: .readOutboxMaxID)
+        try container.encode(isMarkedUnread, forKey: .isMarkedUnread)
+        try container.encode(isPinned, forKey: .isPinned)
+        try container.encodeIfPresent(folderID, forKey: .folderID)
+        try container.encode(isCircle, forKey: .isCircle)
+        try container.encode(peerKind, forKey: .peerKind)
+        try container.encode(isBot, forKey: .isBot)
+        try container.encode(isContact, forKey: .isContact)
+        try container.encode(isBroadcast, forKey: .isBroadcast)
+        try container.encode(isMuted, forKey: .isMuted)
+        try container.encodeIfPresent(updatedAt, forKey: .updatedAt)
     }
 }
 
@@ -518,7 +619,37 @@ struct HSSharedMediaCounter: Codable, Identifiable, Hashable {
     }
 }
 
+struct HSMessageReaction: Codable, Identifiable, Hashable {
+    let value: String
+    let count: Int
+    let isSelected: Bool
+    let chosenOrder: Int?
+
+    var id: String {
+        value
+    }
+}
+
+struct HSMessageCounters: Codable, Hashable {
+    let viewCount: Int?
+    let forwardCount: Int?
+    let replyCount: Int
+
+    init(viewCount: Int? = nil, forwardCount: Int? = nil, replyCount: Int = 0) {
+        self.viewCount = viewCount
+        self.forwardCount = forwardCount
+        self.replyCount = replyCount
+    }
+}
+
 struct HSMessage: Codable, Identifiable, Hashable {
+    enum DeliveryState: String, Codable, Hashable {
+        case sending
+        case sent
+        case read
+        case failed
+    }
+
     let id: Int64
     let dialogID: Int64
     let authorID: Int64
@@ -527,8 +658,13 @@ struct HSMessage: Codable, Identifiable, Hashable {
     let kind: String?
     let sentAt: Date
     let isOutgoing: Bool
+    let deliveryState: DeliveryState
     let replyToMessageID: Int64?
     let media: HSMessageMedia?
+    let reactions: [HSMessageReaction]
+    let counters: HSMessageCounters
+    let editDate: Date?
+    let authorSignature: String?
 
     init(
         id: Int64,
@@ -539,8 +675,13 @@ struct HSMessage: Codable, Identifiable, Hashable {
         kind: String?,
         sentAt: Date,
         isOutgoing: Bool,
+        deliveryState: DeliveryState = .sent,
         replyToMessageID: Int64?,
-        media: HSMessageMedia? = nil
+        media: HSMessageMedia? = nil,
+        reactions: [HSMessageReaction] = [],
+        counters: HSMessageCounters = HSMessageCounters(),
+        editDate: Date? = nil,
+        authorSignature: String? = nil
     ) {
         self.id = id
         self.dialogID = dialogID
@@ -550,8 +691,204 @@ struct HSMessage: Codable, Identifiable, Hashable {
         self.kind = kind
         self.sentAt = sentAt
         self.isOutgoing = isOutgoing
+        self.deliveryState = deliveryState
         self.replyToMessageID = replyToMessageID
         self.media = media
+        self.reactions = reactions
+        self.counters = counters
+        self.editDate = editDate
+        self.authorSignature = authorSignature
+    }
+
+    func withDeliveryState(_ deliveryState: DeliveryState) -> HSMessage {
+        HSMessage(
+            id: id,
+            dialogID: dialogID,
+            authorID: authorID,
+            authorName: authorName,
+            text: text,
+            kind: kind,
+            sentAt: sentAt,
+            isOutgoing: isOutgoing,
+            deliveryState: deliveryState,
+            replyToMessageID: replyToMessageID,
+            media: media,
+            reactions: reactions,
+            counters: counters,
+            editDate: editDate,
+            authorSignature: authorSignature
+        )
+    }
+
+    func withUpdatedReaction(_ value: String) -> HSMessage {
+        let cleanValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanValue.isEmpty else {
+            return self
+        }
+        var updated = reactions.map { reaction in
+            HSMessageReaction(
+                value: reaction.value,
+                count: max(0, reaction.count - (reaction.isSelected ? 1 : 0)),
+                isSelected: false,
+                chosenOrder: reaction.chosenOrder
+            )
+        }.filter { $0.count > 0 || $0.value == cleanValue }
+
+        if let index = updated.firstIndex(where: { $0.value == cleanValue }) {
+            let reaction = updated[index]
+            updated[index] = HSMessageReaction(
+                value: reaction.value,
+                count: max(1, reaction.count + 1),
+                isSelected: true,
+                chosenOrder: reaction.chosenOrder ?? 0
+            )
+        } else {
+            updated.append(HSMessageReaction(value: cleanValue, count: 1, isSelected: true, chosenOrder: 0))
+        }
+
+        updated.sort { lhs, rhs in
+            switch (lhs.chosenOrder, rhs.chosenOrder) {
+            case let (left?, right?) where left != right:
+                return left < right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                if lhs.count != rhs.count {
+                    return lhs.count > rhs.count
+                }
+                return lhs.value < rhs.value
+            }
+        }
+
+        return HSMessage(
+            id: id,
+            dialogID: dialogID,
+            authorID: authorID,
+            authorName: authorName,
+            text: text,
+            kind: kind,
+            sentAt: sentAt,
+            isOutgoing: isOutgoing,
+            deliveryState: deliveryState,
+            replyToMessageID: replyToMessageID,
+            media: media,
+            reactions: updated,
+            counters: counters,
+            editDate: editDate,
+            authorSignature: authorSignature
+        )
+    }
+
+    func withCounters(_ counters: HSMessageCounters) -> HSMessage {
+        HSMessage(
+            id: id,
+            dialogID: dialogID,
+            authorID: authorID,
+            authorName: authorName,
+            text: text,
+            kind: kind,
+            sentAt: sentAt,
+            isOutgoing: isOutgoing,
+            deliveryState: deliveryState,
+            replyToMessageID: replyToMessageID,
+            media: media,
+            reactions: reactions,
+            counters: counters,
+            editDate: editDate,
+            authorSignature: authorSignature
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case dialogID = "dialog_id"
+        case authorID = "author_id"
+        case authorName = "author_name"
+        case text
+        case kind
+        case sentAt = "sent_at"
+        case isOutgoing = "is_outgoing"
+        case deliveryState = "delivery_state"
+        case replyToMessageID = "reply_to_message_id"
+        case media
+        case reactions
+        case counters
+        case editDate = "edit_date"
+        case authorSignature = "author_signature"
+    }
+
+    private enum LegacyCodingKeys: String, CodingKey {
+        case id
+        case dialogID
+        case authorID
+        case authorName
+        case text
+        case kind
+        case sentAt
+        case isOutgoing
+        case deliveryState
+        case replyToMessageID
+        case media
+        case reactions
+        case counters
+        case editDate
+        case authorSignature
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacyContainer = try decoder.container(keyedBy: LegacyCodingKeys.self)
+        id = try container.decode(Int64.self, forKey: .id)
+        dialogID = try container.decodeIfPresent(Int64.self, forKey: .dialogID)
+            ?? legacyContainer.decode(Int64.self, forKey: .dialogID)
+        authorID = try container.decodeIfPresent(Int64.self, forKey: .authorID)
+            ?? legacyContainer.decode(Int64.self, forKey: .authorID)
+        authorName = try container.decodeIfPresent(String.self, forKey: .authorName)
+            ?? legacyContainer.decode(String.self, forKey: .authorName)
+        text = try container.decode(String.self, forKey: .text)
+        kind = try container.decodeIfPresent(String.self, forKey: .kind)
+        sentAt = try container.decodeIfPresent(Date.self, forKey: .sentAt)
+            ?? legacyContainer.decode(Date.self, forKey: .sentAt)
+        isOutgoing = try container.decodeIfPresent(Bool.self, forKey: .isOutgoing)
+            ?? legacyContainer.decode(Bool.self, forKey: .isOutgoing)
+        deliveryState = try container.decodeIfPresent(DeliveryState.self, forKey: .deliveryState)
+            ?? legacyContainer.decodeIfPresent(DeliveryState.self, forKey: .deliveryState)
+            ?? .sent
+        replyToMessageID = try container.decodeIfPresent(Int64.self, forKey: .replyToMessageID)
+            ?? legacyContainer.decodeIfPresent(Int64.self, forKey: .replyToMessageID)
+        media = try container.decodeIfPresent(HSMessageMedia.self, forKey: .media)
+            ?? legacyContainer.decodeIfPresent(HSMessageMedia.self, forKey: .media)
+        reactions = try container.decodeIfPresent([HSMessageReaction].self, forKey: .reactions)
+            ?? legacyContainer.decodeIfPresent([HSMessageReaction].self, forKey: .reactions)
+            ?? []
+        counters = try container.decodeIfPresent(HSMessageCounters.self, forKey: .counters)
+            ?? legacyContainer.decodeIfPresent(HSMessageCounters.self, forKey: .counters)
+            ?? HSMessageCounters()
+        editDate = try container.decodeIfPresent(Date.self, forKey: .editDate)
+            ?? legacyContainer.decodeIfPresent(Date.self, forKey: .editDate)
+        authorSignature = try container.decodeIfPresent(String.self, forKey: .authorSignature)
+            ?? legacyContainer.decodeIfPresent(String.self, forKey: .authorSignature)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(dialogID, forKey: .dialogID)
+        try container.encode(authorID, forKey: .authorID)
+        try container.encode(authorName, forKey: .authorName)
+        try container.encode(text, forKey: .text)
+        try container.encodeIfPresent(kind, forKey: .kind)
+        try container.encode(sentAt, forKey: .sentAt)
+        try container.encode(isOutgoing, forKey: .isOutgoing)
+        try container.encode(deliveryState, forKey: .deliveryState)
+        try container.encodeIfPresent(replyToMessageID, forKey: .replyToMessageID)
+        try container.encodeIfPresent(media, forKey: .media)
+        try container.encode(reactions, forKey: .reactions)
+        try container.encode(counters, forKey: .counters)
+        try container.encodeIfPresent(editDate, forKey: .editDate)
+        try container.encodeIfPresent(authorSignature, forKey: .authorSignature)
     }
 }
 
@@ -575,12 +912,115 @@ struct HSSyncDifference: Codable, Hashable {
     let state: HSSyncState
     let messages: [HSMessage]
     let changedDialogIDs: [Int64]
+    let readOutboxMaxIDsByDialogID: [Int64: Int64]
     let affectsAllDialogs: Bool
     let isTooLong: Bool
     let isSlice: Bool
 
     var requiresRefresh: Bool {
-        isTooLong || affectsAllDialogs || !messages.isEmpty || !changedDialogIDs.isEmpty
+        isTooLong || affectsAllDialogs || !messages.isEmpty || !changedDialogIDs.isEmpty || !readOutboxMaxIDsByDialogID.isEmpty
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case messages
+        case changedDialogIDs = "changed_dialog_ids"
+        case readOutboxMaxIDsByDialogID = "read_outbox_max_ids_by_dialog_id"
+        case affectsAllDialogs = "affects_all_dialogs"
+        case isTooLong = "is_too_long"
+        case isSlice = "is_slice"
+    }
+
+    private enum LegacyCodingKeys: String, CodingKey {
+        case state
+        case messages
+        case changedDialogIDs
+        case readOutboxMaxIDsByDialogID
+        case affectsAllDialogs
+        case isTooLong
+        case isSlice
+    }
+
+    init(
+        state: HSSyncState,
+        messages: [HSMessage],
+        changedDialogIDs: [Int64],
+        readOutboxMaxIDsByDialogID: [Int64: Int64] = [:],
+        affectsAllDialogs: Bool,
+        isTooLong: Bool,
+        isSlice: Bool
+    ) {
+        self.state = state
+        self.messages = messages
+        self.changedDialogIDs = changedDialogIDs
+        self.readOutboxMaxIDsByDialogID = readOutboxMaxIDsByDialogID
+        self.affectsAllDialogs = affectsAllDialogs
+        self.isTooLong = isTooLong
+        self.isSlice = isSlice
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let legacyContainer = try decoder.container(keyedBy: LegacyCodingKeys.self)
+        state = try container.decodeIfPresent(HSSyncState.self, forKey: .state)
+            ?? legacyContainer.decode(HSSyncState.self, forKey: .state)
+        messages = try container.decodeIfPresent([HSMessage].self, forKey: .messages)
+            ?? legacyContainer.decodeIfPresent([HSMessage].self, forKey: .messages)
+            ?? []
+        changedDialogIDs = try container.decodeIfPresent([Int64].self, forKey: .changedDialogIDs)
+            ?? legacyContainer.decodeIfPresent([Int64].self, forKey: .changedDialogIDs)
+            ?? []
+        readOutboxMaxIDsByDialogID = Self.decodeReadOutboxMaxIDs(from: container, key: .readOutboxMaxIDsByDialogID)
+            ?? Self.decodeReadOutboxMaxIDs(from: legacyContainer, key: .readOutboxMaxIDsByDialogID)
+            ?? [:]
+        affectsAllDialogs = try container.decodeIfPresent(Bool.self, forKey: .affectsAllDialogs)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .affectsAllDialogs)
+            ?? false
+        isTooLong = try container.decodeIfPresent(Bool.self, forKey: .isTooLong)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isTooLong)
+            ?? false
+        isSlice = try container.decodeIfPresent(Bool.self, forKey: .isSlice)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isSlice)
+            ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(state, forKey: .state)
+        try container.encode(messages, forKey: .messages)
+        try container.encode(changedDialogIDs, forKey: .changedDialogIDs)
+        try container.encode(Self.stringKeyedReadOutboxMaxIDs(from: readOutboxMaxIDsByDialogID), forKey: .readOutboxMaxIDsByDialogID)
+        try container.encode(affectsAllDialogs, forKey: .affectsAllDialogs)
+        try container.encode(isTooLong, forKey: .isTooLong)
+        try container.encode(isSlice, forKey: .isSlice)
+    }
+
+    private static func decodeReadOutboxMaxIDs<Key: CodingKey>(
+        from container: KeyedDecodingContainer<Key>,
+        key: Key
+    ) -> [Int64: Int64]? {
+        if let stringMap = try? container.decodeIfPresent([String: Int64].self, forKey: key) {
+            return intKeyedReadOutboxMaxIDs(from: stringMap)
+        }
+        if let intMap = try? container.decodeIfPresent([Int64: Int64].self, forKey: key) {
+            return intMap
+        }
+        return nil
+    }
+
+    private static func intKeyedReadOutboxMaxIDs(from stringMap: [String: Int64]) -> [Int64: Int64] {
+        var result: [Int64: Int64] = [:]
+        for (key, value) in stringMap {
+            guard let dialogID = Int64(key) else {
+                continue
+            }
+            result[dialogID] = value
+        }
+        return result
+    }
+
+    private static func stringKeyedReadOutboxMaxIDs(from intMap: [Int64: Int64]) -> [String: Int64] {
+        Dictionary(uniqueKeysWithValues: intMap.map { (String($0.key), $0.value) })
     }
 
     func withState(_ state: HSSyncState) -> HSSyncDifference {
@@ -588,6 +1028,7 @@ struct HSSyncDifference: Codable, Hashable {
             state: state,
             messages: messages,
             changedDialogIDs: changedDialogIDs,
+            readOutboxMaxIDsByDialogID: readOutboxMaxIDsByDialogID,
             affectsAllDialogs: affectsAllDialogs,
             isTooLong: isTooLong,
             isSlice: isSlice

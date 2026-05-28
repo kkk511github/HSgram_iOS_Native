@@ -490,6 +490,8 @@ struct ChatListView: View {
                     title: item.title,
                     subtitle: item.subtitle,
                     unreadCount: 0,
+                    readInboxMaxID: item.readInboxMaxID,
+                    readOutboxMaxID: item.readOutboxMaxID,
                     isMarkedUnread: false,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -511,6 +513,8 @@ struct ChatListView: View {
                     title: item.title,
                     subtitle: item.subtitle,
                     unreadCount: 0,
+                    readInboxMaxID: item.readInboxMaxID,
+                    readOutboxMaxID: item.readOutboxMaxID,
                     isMarkedUnread: false,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -544,6 +548,8 @@ struct ChatListView: View {
                     title: item.title,
                     subtitle: item.subtitle,
                     unreadCount: item.unreadCount,
+                    readInboxMaxID: item.readInboxMaxID,
+                    readOutboxMaxID: item.readOutboxMaxID,
                     isMarkedUnread: true,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -565,6 +571,8 @@ struct ChatListView: View {
                     title: item.title,
                     subtitle: item.subtitle,
                     unreadCount: item.unreadCount,
+                    readInboxMaxID: item.readInboxMaxID,
+                    readOutboxMaxID: item.readOutboxMaxID,
                     isMarkedUnread: true,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -1248,24 +1256,26 @@ private struct ChatListRow: View {
     let isSavedMessages: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             HSClassicAvatar(title: chat.title, icon: icon, tint: tint, size: 60)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(chat.title)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(HSTheme.primaryText)
-                        .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(chat.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(HSTheme.primaryText)
+                            .lineLimit(1)
+
+                        if chat.isMuted {
+                            Image(systemName: "bell.slash.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(HSTheme.secondaryText)
+                                .accessibilityLabel("Muted")
+                        }
+                    }
 
                     Spacer(minLength: 8)
-
-                    if chat.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(HSTheme.secondaryText)
-                            .accessibilityLabel("Pinned")
-                    }
 
                     if !dateText.isEmpty {
                         Text(dateText)
@@ -1275,7 +1285,7 @@ private struct ChatListRow: View {
                     }
                 }
 
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .bottom, spacing: 8) {
                     Group {
                         if let subtitlePrefix {
                             Text(subtitlePrefix)
@@ -1288,34 +1298,48 @@ private struct ChatListRow: View {
                     .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(HSTheme.secondaryText)
                     .lineLimit(1)
+                    .frame(minHeight: 22, alignment: .topLeading)
 
                     Spacer(minLength: 8)
 
-                    if chat.unreadCount > 0 {
-                        HSClassicUnreadBadge(count: chat.unreadCount)
-                    } else if chat.isMarkedUnread {
-                        Circle()
-                            .fill(HSTheme.accent)
-                            .frame(width: 10, height: 10)
-                            .accessibilityLabel("Marked unread")
-                    } else if isSavedMessages {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(HSTheme.disclosure)
+                    HStack(spacing: 6) {
+                        if chat.unreadCount > 0 {
+                            HSClassicUnreadBadge(count: chat.unreadCount, muted: chat.isMuted)
+                        } else if chat.isMarkedUnread {
+                            Circle()
+                                .fill(chat.isMuted ? HSTheme.Chat.mutedBadge : HSTheme.accent)
+                                .frame(width: 10, height: 10)
+                                .accessibilityLabel("Marked unread")
+                        } else if chat.isPinned {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(HSTheme.secondaryText)
+                                .frame(width: 20, height: 20)
+                                .accessibilityLabel("Pinned")
+                        } else if isSavedMessages {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(HSTheme.disclosure)
+                        }
                     }
+                    .frame(minWidth: trailingAccessoryMinWidth, alignment: .trailing)
                 }
             }
         }
-        .padding(.leading, 12)
-        .padding(.trailing, 14)
-        .frame(height: 76)
-        .background(HSTheme.Chat.rowBackground)
+        .padding(.leading, 10)
+        .padding(.trailing, 10)
+        .frame(height: 75)
+        .background(chat.isPinned ? HSTheme.Chat.pinnedRowBackground : HSTheme.Chat.rowBackground)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(HSTheme.separator.opacity(0.75))
                 .frame(height: 1 / UIScreen.main.scale)
-                .padding(.leading, 84)
+                .padding(.leading, 80)
         }
         .contentShape(Rectangle())
+    }
+
+    private var trailingAccessoryMinWidth: CGFloat {
+        chat.unreadCount > 99 ? 34 : 22
     }
 }

@@ -44,6 +44,22 @@ final class HSNativeServerTransport: HSServerTransport {
         }
     }
 
+    func uploadProfilePhoto(data: Data, session: HSUserSession) async throws {
+        do {
+            try await mtProtoClient.uploadProfilePhoto(data: data, session: session)
+        } catch let error as HSNativeMTProtoError {
+            throw apiError(from: error)
+        }
+    }
+
+    func removeProfilePhoto(session: HSUserSession) async throws {
+        do {
+            try await mtProtoClient.removeProfilePhoto(session: session)
+        } catch let error as HSNativeMTProtoError {
+            throw apiError(from: error)
+        }
+    }
+
     func verifyLoginPassword(email: String, password: String) async throws -> HSUserSession {
         do {
             return try await mtProtoClient.verifyPassword(email: email, password: password)
@@ -228,6 +244,14 @@ final class HSNativeServerTransport: HSServerTransport {
         }
     }
 
+    func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
+        do {
+            return try await mtProtoClient.dialogReadState(dialogID: dialogID, session: session)
+        } catch let error as HSNativeMTProtoError {
+            throw apiError(from: error)
+        }
+    }
+
     func request<Response: Decodable, Body: Encodable>(
         _ path: String,
         method: String,
@@ -241,6 +265,9 @@ final class HSNativeServerTransport: HSServerTransport {
         }
         do {
             switch operation {
+            case .workspaceSummary:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.workspaceSummary(session: session))
             case .messagesGetDialogs:
                 let session = try requireSession(session)
                 if route.parts.indices.contains(1), route.parts[1] == "channels" {

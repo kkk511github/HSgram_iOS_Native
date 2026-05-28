@@ -31,6 +31,9 @@ struct MessageBubble: View {
     let message: HSMessage
     let replyPreview: HSMessage?
     let isGroup: Bool
+    let showsAvatar: Bool
+    let isMergedWithPrevious: Bool
+    let isMergedWithNext: Bool
     let isHighlighted: Bool
     let isSelecting: Bool
     let isSelected: Bool
@@ -44,6 +47,7 @@ struct MessageBubble: View {
     let onReact: (String) -> Void
     let onPin: () -> Void
     let onCopyLink: () -> Void
+    let onRetry: () -> Void
     let onOpenTextEntity: (MessageTextEntityAction) -> Void
     let mediaDownloadState: HSMediaDownloadState?
     let onOpenMedia: () -> Void
@@ -72,7 +76,7 @@ struct MessageBubble: View {
         .simultaneousGesture(
             DragGesture(minimumDistance: 20)
                 .updating($swipeOffset) { value, state, _ in
-                    guard !isSelecting else {
+                    guard !isSelecting, canUseServerActions else {
                         return
                     }
                     guard value.translation.width < 0, abs(value.translation.height) < 32 else {
@@ -81,7 +85,7 @@ struct MessageBubble: View {
                     state = max(value.translation.width / 3, -28)
                 }
                 .onEnded { value in
-                    guard !isSelecting else {
+                    guard !isSelecting, canUseServerActions else {
                         return
                     }
                     guard value.translation.width < -64, abs(value.translation.height) < 40 else {
@@ -101,14 +105,38 @@ struct MessageBubble: View {
 
             if message.isOutgoing {
                 Spacer(minLength: 52)
+            } else if reservesIncomingAvatarColumn {
+                incomingAvatarColumn
             }
 
             bubbleContent
+                .padding(.top, isMergedWithPrevious ? -2 : 0)
+                .padding(.bottom, isMergedWithNext ? -2 : 0)
 
             if !message.isOutgoing {
                 Spacer(minLength: 52)
             }
         }
+    }
+
+    private var reservesIncomingAvatarColumn: Bool {
+        !message.isOutgoing && isGroup
+    }
+
+    private var incomingAvatarColumn: some View {
+        Group {
+            if showsAvatar {
+                HSClassicAvatar(
+                    title: message.authorName,
+                    icon: "person.fill",
+                    tint: avatarTint,
+                    size: 30
+                )
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: 30, height: 30)
     }
 
     private var serviceMessageBody: some View {
@@ -140,8 +168,8 @@ struct MessageBubble: View {
 
     private var bubbleContent: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if !message.isOutgoing && isGroup {
-                Text(message.authorName)
+            if !isMergedWithPrevious, let authorHeaderText {
+                Text(authorHeaderText)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(HSTheme.accent)
                     .lineLimit(1)
@@ -165,6 +193,7 @@ struct MessageBubble: View {
                     media: message.media,
                     caption: message.text,
                     isOutgoing: message.isOutgoing,
+                    deliveryState: message.deliveryState,
                     downloadState: mediaDownloadState,
                     onOpenMedia: onOpenMedia
                 )
@@ -180,23 +209,33 @@ struct MessageBubble: View {
             }
 
             HStack(spacing: 4) {
+                if message.counters.replyCount > 0 {
+                    MessageMetricLabel(systemImage: "bubble.left.fill", value: message.counters.replyCount)
+                }
+                if let viewCount = message.counters.viewCount, viewCount > 0 {
+                    MessageMetricLabel(systemImage: "eye.fill", value: viewCount)
+                }
                 Spacer(minLength: 16)
-                Text(Self.timeFormatter.string(from: message.sentAt))
+                Text(statusTimestampText)
                     .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(message.isOutgoing ? HSTheme.Chat.outgoingSecondary : HSTheme.secondaryText)
                 if message.isOutgoing {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(HSTheme.Chat.outgoingSecondary)
+                    MessageDeliveryStatusView(state: message.deliveryState)
+                }
+            }
+
+            if !message.reactions.isEmpty {
+                MessageReactionStrip(reactions: message.reactions, isOutgoing: message.isOutgoing) { reaction in
+                    onReact(reaction.value)
                 }
             }
         }
         .padding(.leading, message.isOutgoing ? 12 : 16)
         .padding(.trailing, message.isOutgoing ? 16 : 12)
         .padding(.vertical, 8)
-        .background(message.isOutgoing ? HSTheme.Chat.outgoingBubble : HSTheme.Chat.incomingBubble, in: HSChatBubbleShape(isOutgoing: message.isOutgoing))
+        .background(message.isOutgoing ? HSTheme.Chat.outgoingBubble : HSTheme.Chat.incomingBubble, in: bubbleShape)
         .overlay {
-            HSChatBubbleShape(isOutgoing: message.isOutgoing)
+            bubbleShape
                 .stroke(isHighlighted || isSelected ? selectionStrokeColor : Color.black.opacity(0.08), lineWidth: isHighlighted || isSelected ? 2 : 0.5)
         }
         .shadow(color: .black.opacity(0.06), radius: 1, x: 0, y: 1)
@@ -232,42 +271,52 @@ struct MessageBubble: View {
             }
         }
 
-        Button {
-            onReply()
-        } label: {
-            Label("回复", systemImage: "arrowshape.turn.up.left")
-        }
-
-        Button {
-            onReact("👍")
-        } label: {
-            Label("回应", systemImage: "hand.thumbsup")
-        }
-
-        Button {
-            onForward()
-        } label: {
-            Label("转发", systemImage: "arrowshape.turn.up.right")
-        }
-
-        if message.isOutgoing {
+        if message.isOutgoing && message.deliveryState == .failed {
             Button {
-                onEdit()
+                onRetry()
             } label: {
-                Label("编辑", systemImage: "pencil")
+                Label("重试", systemImage: "arrow.clockwise")
             }
         }
 
-        if isGroup {
+        if canUseServerActions {
             Button {
-                onPin()
+                onReply()
             } label: {
-                Label("置顶", systemImage: "pin")
+                Label("回复", systemImage: "arrowshape.turn.up.left")
             }
+
             Button {
-                onCopyLink()
+                onReact("👍")
             } label: {
-                Label("复制链接", systemImage: "link")
+                Label("回应", systemImage: "hand.thumbsup")
+            }
+
+            Button {
+                onForward()
+            } label: {
+                Label("转发", systemImage: "arrowshape.turn.up.right")
+            }
+
+            if message.isOutgoing {
+                Button {
+                    onEdit()
+                } label: {
+                    Label("编辑", systemImage: "pencil")
+                }
+            }
+
+            if isGroup {
+                Button {
+                    onPin()
+                } label: {
+                    Label("置顶", systemImage: "pin")
+                }
+                Button {
+                    onCopyLink()
+                } label: {
+                    Label("复制链接", systemImage: "link")
+                }
             }
         }
 
@@ -279,7 +328,54 @@ struct MessageBubble: View {
     }
 
     private var isSelectable: Bool {
-        message.kind != "service"
+        message.kind != "service" && canUseServerActions
+    }
+
+    private var bubbleShape: HSChatBubbleShape {
+        HSChatBubbleShape(
+            isOutgoing: message.isOutgoing,
+            isMergedWithPrevious: isMergedWithPrevious,
+            isMergedWithNext: isMergedWithNext
+        )
+    }
+
+    private var authorHeaderText: String? {
+        if let signature = message.authorSignature?.trimmingCharacters(in: .whitespacesAndNewlines), !signature.isEmpty {
+            return signature
+        }
+        if !message.isOutgoing && isGroup {
+            return message.authorName
+        }
+        return nil
+    }
+
+    private var avatarTint: Color {
+        let colors = [
+            HSTheme.accent,
+            HSTheme.circle,
+            HSTheme.trust,
+            Color(rgb: 0xaf52de),
+            Color(rgb: 0xff3b30),
+            Color(rgb: 0x5856d6)
+        ]
+        return colors[Int(UInt64(bitPattern: message.authorID) % UInt64(colors.count))]
+    }
+
+    private var statusTimestampText: String {
+        let time = Self.timeFormatter.string(from: message.sentAt)
+        guard message.editDate != nil else {
+            return time
+        }
+        return "edited \(time)"
+    }
+
+    private var canUseServerActions: Bool {
+        switch message.deliveryState {
+        case .sending, .failed:
+            return false
+        case .sent, .read:
+            return true
+        }
     }
 
     private var selectionStrokeColor: Color {
@@ -300,12 +396,185 @@ struct MessageBubble: View {
     }()
 }
 
+private struct MessageDeliveryStatusView: View {
+    let state: HSMessage.DeliveryState
+
+    var body: some View {
+        Group {
+            switch state {
+            case .sending:
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(HSTheme.Chat.outgoingSecondary)
+                    .frame(width: 13, height: 13)
+            case .failed:
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.red.opacity(0.9))
+                    .frame(width: 14, height: 12)
+            case .sent:
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(HSTheme.Chat.outgoingSecondary)
+                    .frame(width: 12, height: 12)
+            case .read:
+                DoubleCheckmarkView(color: HSTheme.Chat.outgoingSecondary)
+                    .frame(width: 17, height: 12)
+            }
+        }
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        switch state {
+        case .sending:
+            return "Sending"
+        case .sent:
+            return "Sent"
+        case .read:
+            return "Read"
+        case .failed:
+            return "Failed to send"
+        }
+    }
+}
+
+private struct DoubleCheckmarkView: View {
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "checkmark")
+                .font(.system(size: 10, weight: .bold))
+                .offset(x: -2)
+            Image(systemName: "checkmark")
+                .font(.system(size: 10, weight: .bold))
+                .offset(x: 3)
+        }
+        .foregroundStyle(color)
+    }
+}
+
+private struct MessageMetricLabel: View {
+    let systemImage: String
+    let value: Int
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: systemImage)
+                .font(.system(size: 9, weight: .semibold))
+            Text(Self.format(value))
+                .font(.system(size: 11, weight: .semibold))
+                .monospacedDigit()
+        }
+        .foregroundStyle(HSTheme.secondaryText)
+        .accessibilityLabel("\(value)")
+    }
+
+    private static func format(_ value: Int) -> String {
+        if value >= 1_000_000 {
+            return "\(value / 1_000_000)M"
+        }
+        if value >= 1_000 {
+            return "\(value / 1_000)K"
+        }
+        return "\(value)"
+    }
+}
+
+private struct MessageReactionStrip: View {
+    let reactions: [HSMessageReaction]
+    let isOutgoing: Bool
+    let onSelect: (HSMessageReaction) -> Void
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(visibleReactions) { reaction in
+                Button {
+                    onSelect(reaction)
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(displayValue(for: reaction))
+                            .font(.system(size: 14))
+                            .lineLimit(1)
+                        if reaction.count > 1 {
+                            Text("\(reaction.count)")
+                                .font(.system(size: 12, weight: .semibold))
+                                .monospacedDigit()
+                        }
+                    }
+                    .foregroundStyle(reaction.isSelected ? Color.white : reactionTextColor)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(reactionBackground(for: reaction), in: Capsule())
+                    .overlay {
+                        Capsule()
+                            .stroke(reactionBorderColor(for: reaction), lineWidth: 0.5)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(displayValue(for: reaction)) \(reaction.count)")
+            }
+        }
+        .frame(maxWidth: min(UIScreen.main.bounds.width * 0.72, 520), alignment: .leading)
+        .padding(.top, 1)
+    }
+
+    private var visibleReactions: [HSMessageReaction] {
+        reactions
+            .filter { $0.count > 0 && !$0.value.isEmpty }
+            .sorted { lhs, rhs in
+                switch (lhs.chosenOrder, rhs.chosenOrder) {
+                case let (left?, right?) where left != right:
+                    return left < right
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    if lhs.count != rhs.count {
+                        return lhs.count > rhs.count
+                    }
+                    return lhs.value < rhs.value
+                }
+            }
+            .prefix(6)
+            .map { $0 }
+    }
+
+    private var reactionTextColor: Color {
+        isOutgoing ? HSTheme.Chat.outgoingSecondary : HSTheme.primaryText
+    }
+
+    private func reactionBackground(for reaction: HSMessageReaction) -> Color {
+        if reaction.isSelected {
+            return HSTheme.accent
+        }
+        return isOutgoing ? Color.white.opacity(0.16) : HSTheme.accent.opacity(0.1)
+    }
+
+    private func reactionBorderColor(for reaction: HSMessageReaction) -> Color {
+        if reaction.isSelected {
+            return HSTheme.accent.opacity(0.85)
+        }
+        return isOutgoing ? Color.white.opacity(0.2) : HSTheme.accent.opacity(0.18)
+    }
+
+    private func displayValue(for reaction: HSMessageReaction) -> String {
+        if reaction.value.hasPrefix("custom:") {
+            return "✨"
+        }
+        return reaction.value
+    }
+}
+
 private struct MediaMessageCard: View {
     @Environment(\.openURL) private var openURL
 
     let media: HSMessageMedia?
     let caption: String
     let isOutgoing: Bool
+    let deliveryState: HSMessage.DeliveryState
     let downloadState: HSMediaDownloadState?
     let onOpenMedia: () -> Void
 
@@ -517,6 +786,14 @@ private struct MediaMessageCard: View {
     }
 
     private var canOpenMedia: Bool {
+        if isOutgoing {
+            switch deliveryState {
+            case .sending, .failed:
+                return true
+            case .sent, .read:
+                break
+            }
+        }
         if media?.kind == .webpage {
             return webPageURL != nil
         }
@@ -524,6 +801,16 @@ private struct MediaMessageCard: View {
     }
 
     private var actionIconName: String {
+        if isOutgoing {
+            switch deliveryState {
+            case .sending:
+                return "xmark.circle.fill"
+            case .failed:
+                return "arrow.clockwise"
+            case .sent, .read:
+                break
+            }
+        }
         switch downloadState {
         case .downloaded:
             if media?.kind == .webpage {
@@ -546,16 +833,26 @@ private struct MediaMessageCard: View {
     }
 
     private var actionIconColor: Color {
-        if downloadState == .failed {
+        if deliveryState == .failed || downloadState == .failed {
             return .red
         }
-        if downloadState?.isDownloading == true {
+        if deliveryState == .sending || downloadState?.isDownloading == true {
             return HSTheme.secondaryText
         }
         return iconColor
     }
 
     private var actionAccessibilityLabel: String {
+        if isOutgoing {
+            switch deliveryState {
+            case .sending:
+                return "Cancel upload"
+            case .failed:
+                return "Retry upload"
+            case .sent, .read:
+                break
+            }
+        }
         switch downloadState {
         case .downloaded:
             if media?.kind == .webpage {
@@ -572,6 +869,19 @@ private struct MediaMessageCard: View {
     }
 
     private var transferStatusText: String? {
+        if isOutgoing {
+            switch deliveryState {
+            case .sending:
+                if let progress = downloadState?.progress {
+                    return "Uploading \(Int(progress * 100))%"
+                }
+                return "Uploading"
+            case .failed:
+                return "Upload failed"
+            case .sent, .read:
+                break
+            }
+        }
         switch downloadState {
         case .downloading(let progress):
             if let progress {
@@ -586,7 +896,7 @@ private struct MediaMessageCard: View {
     }
 
     private var transferStatusColor: Color {
-        downloadState == .failed ? .red : secondaryColor
+        deliveryState == .failed || downloadState == .failed ? .red : secondaryColor
     }
 
     private var secondaryColor: Color {

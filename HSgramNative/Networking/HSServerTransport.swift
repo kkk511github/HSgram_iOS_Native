@@ -4,6 +4,8 @@ protocol HSServerTransport {
     func sendEmailCode(email: String) async throws -> HSEmailStartResponse
     func verifyEmailCode(email: String, code: String, transactionID: String, displayName: String) async throws -> HSUserSession
     func signUp(email: String, transactionID: String, displayName: String, inviteCode: String) async throws -> HSUserSession
+    func uploadProfilePhoto(data: Data, session: HSUserSession) async throws
+    func removeProfilePhoto(session: HSUserSession) async throws
     func verifyLoginPassword(email: String, password: String) async throws -> HSUserSession
     func requestPasswordRecovery(email: String) async throws -> HSPasswordRecoveryResponse
     func recoverPassword(email: String, code: String) async throws -> HSUserSession
@@ -52,6 +54,7 @@ protocol HSServerTransport {
     ) async throws -> [HSSharedMediaCounter]
     func syncState(session: HSUserSession) async throws -> HSSyncState
     func syncDifference(since state: HSSyncState, session: HSUserSession) async throws -> HSSyncDifference
+    func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState
 
     func request<Response: Decodable, Body: Encodable>(
         _ path: String,
@@ -88,6 +91,14 @@ final class HSDeployedServerTransport: HSServerTransport {
             displayName: displayName,
             inviteCode: inviteCode
         )
+    }
+
+    func uploadProfilePhoto(data: Data, session: HSUserSession) async throws {
+        try await nativeTransport.uploadProfilePhoto(data: data, session: session)
+    }
+
+    func removeProfilePhoto(session: HSUserSession) async throws {
+        try await nativeTransport.removeProfilePhoto(session: session)
     }
 
     func verifyLoginPassword(email: String, password: String) async throws -> HSUserSession {
@@ -212,6 +223,10 @@ final class HSDeployedServerTransport: HSServerTransport {
 
     func syncDifference(since state: HSSyncState, session: HSUserSession) async throws -> HSSyncDifference {
         try await nativeTransport.syncDifference(since: state, session: session)
+    }
+
+    func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
+        try await nativeTransport.dialogReadState(dialogID: dialogID, session: session)
     }
 
     func request<Response: Decodable, Body: Encodable>(

@@ -4,6 +4,15 @@ import Network
 import Security
 import zlib
 
+struct HSNativeMTProtoEndpoint: Equatable {
+    let host: String
+    let port: UInt16
+
+    var displayName: String {
+        "\(host):\(port)"
+    }
+}
+
 struct HSNativeMTProtoConfiguration: Equatable {
     let apiID: Int32
     let apiHash: String
@@ -12,16 +21,82 @@ struct HSNativeMTProtoConfiguration: Equatable {
     let host: String
     let port: UInt16
     let deviceModel: String
+    let fallbackEndpoints: [HSNativeMTProtoEndpoint]
 
-    static let production = HSNativeMTProtoConfiguration(
-        apiID: 24547280,
-        apiHash: "3ae3c1b4aa1af9954e28ac446ec6dbf2",
-        layer: 223,
-        datacenterID: 1,
-        host: "124.220.11.177",
-        port: 5222,
-        deviceModel: "iPhone"
-    )
+    init(
+        apiID: Int32,
+        apiHash: String,
+        layer: Int32,
+        datacenterID: Int,
+        host: String,
+        port: UInt16,
+        deviceModel: String,
+        fallbackEndpoints: [HSNativeMTProtoEndpoint] = []
+    ) {
+        self.apiID = apiID
+        self.apiHash = apiHash
+        self.layer = layer
+        self.datacenterID = datacenterID
+        self.host = host
+        self.port = port
+        self.deviceModel = deviceModel
+        self.fallbackEndpoints = fallbackEndpoints
+    }
+
+    var endpoints: [HSNativeMTProtoEndpoint] {
+        var seen = Set<String>()
+        return ([HSNativeMTProtoEndpoint(host: host, port: port)] + fallbackEndpoints).filter { endpoint in
+            seen.insert(endpoint.displayName).inserted
+        }
+    }
+
+    static var production: HSNativeMTProtoConfiguration {
+        let environment = ProcessInfo.processInfo.environment
+        let primaryHost = environment["HS_NATIVE_MTPROTO_HOST"] ?? "43.134.228.34"
+        let primaryPort = parsePort(environment["HS_NATIVE_MTPROTO_PORT"]) ?? 11443
+        let fallbackEndpoints = parseEndpoints(environment["HS_NATIVE_MTPROTO_FALLBACKS"]) ?? [
+            HSNativeMTProtoEndpoint(host: "124.220.11.177", port: 5222)
+        ]
+
+        return HSNativeMTProtoConfiguration(
+            apiID: 24547280,
+            apiHash: "3ae3c1b4aa1af9954e28ac446ec6dbf2",
+            layer: 223,
+            datacenterID: 1,
+            host: primaryHost,
+            port: primaryPort,
+            deviceModel: "iPhone",
+            fallbackEndpoints: fallbackEndpoints
+        )
+    }
+
+    private static func parsePort(_ value: String?) -> UInt16? {
+        guard let value, let port = UInt16(value), port > 0 else {
+            return nil
+        }
+        return port
+    }
+
+    private static func parseEndpoints(_ value: String?) -> [HSNativeMTProtoEndpoint]? {
+        guard let value else {
+            return nil
+        }
+        let endpoints = value
+            .split(separator: ",")
+            .compactMap { parseEndpoint(String($0)) }
+        return endpoints.isEmpty ? nil : endpoints
+    }
+
+    private static func parseEndpoint(_ value: String) -> HSNativeMTProtoEndpoint? {
+        let parts = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(separator: ":", maxSplits: 1)
+        guard parts.count == 2, let port = UInt16(parts[1]), port > 0 else {
+            return nil
+        }
+        let host = String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return host.isEmpty ? nil : HSNativeMTProtoEndpoint(host: host, port: port)
+    }
 }
 
 enum HSNativeMTProtoError: LocalizedError {
@@ -85,6 +160,10 @@ enum HSNativeMTProtoSchema {
     static let authSignInCode: UInt32 = 0xbcd51581
     static let authSignUp: UInt32 = 0xaac7b717
     static let authSignUpLegacy: UInt32 = 0x80eee427
+    static let photosUpdateProfilePhoto: UInt32 = 0x09e82039
+    static let photosUploadProfilePhoto: UInt32 = 0x89f30f69
+    static let photosPhoto: UInt32 = 0x20212ca8
+    static let inputPhotoEmpty: UInt32 = 0x1cd7bf0d
     static let authCheckPassword: UInt32 = 0xd18b4d16
     static let authRequestPasswordRecovery: UInt32 = 0xd897bc66
     static let authRecoverPassword: UInt32 = 0x37096c70
@@ -96,6 +175,9 @@ enum HSNativeMTProtoSchema {
     static let accountDeleteAccount: UInt32 = 0xa2c0cf74
     static let accountUpdateProfile: UInt32 = 0x78515775
     static let accountUpdateUsername: UInt32 = 0x3e0bdd7c
+    static let usersGetFullUser: UInt32 = 0xb60f5918
+    static let usersUserFull: UInt32 = 0x3b6d152e
+    static let userFull: UInt32 = 0xa02bc13e
     static let accountGetAuthorizations: UInt32 = 0xe320c158
     static let accountResetAuthorization: UInt32 = 0xdf77f3bc
     static let accountGetPrivacy: UInt32 = 0xdadbc950
@@ -138,10 +220,13 @@ enum HSNativeMTProtoSchema {
     static let authSentCodeTypeEmailCodeV2: UInt32 = 0x5a159841
     static let authAuthorization: UInt32 = 0x2ea2c0d4
     static let authAuthorizationSignUpRequired: UInt32 = 0x44747e9a
+    static let helpTermsOfService: UInt32 = 0x780a0310
+    static let dataJSON: UInt32 = 0x7d748d04
     static let authPasswordRecovery: UInt32 = 0x137948a5
     static let updatesGetState: UInt32 = 0xedd4882a
     static let updatesGetDifference: UInt32 = 0x19c2f763
     static let messagesGetDialogs: UInt32 = 0xa0f4cb4f
+    static let messagesGetPeerDialogs: UInt32 = 0xe470bcfd
     static let messagesGetHistory: UInt32 = 0x4423e6c5
     static let messagesReadHistory: UInt32 = 0x0e306d3a
     static let messagesMarkDialogUnread: UInt32 = 0x8c5006f8
@@ -213,6 +298,7 @@ enum HSNativeMTProtoSchema {
     static let dialogPeer: UInt32 = 0xe56dbf05
     static let dialogPeerFolder: UInt32 = 0x514519e2
     static let folderPeer: UInt32 = 0xe9baa668
+    static let inputUserSelf: UInt32 = 0xf7c1b13f
     static let inputUser: UInt32 = 0xf21158c6
     static let inputNotifyUsers: UInt32 = 0x193b4417
     static let inputNotifyChats: UInt32 = 0x4a95e84e
@@ -298,6 +384,7 @@ enum HSNativeMTProtoSchema {
     static let stickerSetMultiCovered: UInt32 = 0x3407e51b
     static let stickerSetNoCovered: UInt32 = 0x77b15d1c
     static let messagesDialogs: UInt32 = 0x15ba6c40
+    static let messagesPeerDialogs: UInt32 = 0x3371c354
     static let messagesDialogsSlice: UInt32 = 0x71e094f3
     static let messagesDialogsNotModified: UInt32 = 0xf0e3e596
     static let messagesMessages: UInt32 = 0x1d73e7ea
@@ -632,6 +719,16 @@ private struct HSNativeParsedUser: Equatable {
     }
 }
 
+private struct HSNativeParsedUserFull: Equatable {
+    let id: Int64
+    let about: String
+}
+
+private struct HSNativeParsedUserFullPayload: Equatable {
+    let full: HSNativeParsedUserFull
+    let users: [HSNativeParsedUser]
+}
+
 private struct HSNativeParsedChat: Equatable {
     let peer: HSNativePeer
     let accessHash: Int64?
@@ -647,6 +744,8 @@ private struct HSNativeParsedChat: Equatable {
 private struct HSNativeParsedDialog: Equatable {
     let peer: HSNativePeer
     let topMessageID: Int32
+    let readInboxMaxID: Int32
+    let readOutboxMaxID: Int32
     let unreadCount: Int32
     let isMarkedUnread: Bool
     let isPinned: Bool
@@ -664,12 +763,17 @@ private struct HSNativeParsedMessage: Equatable {
     let media: HSMessageMedia?
     let isOutgoing: Bool
     let replyToMessageID: Int64?
+    let reactions: [HSMessageReaction]
+    let counters: HSMessageCounters
+    let editDate: Int32?
+    let authorSignature: String?
 }
 
 private struct HSNativeSyncDifferencePayload: Equatable {
     let state: HSSyncState
     let messages: [HSNativeParsedMessage]
     let affectedDialogIDs: [Int64]
+    let readOutboxMaxIDsByDialogID: [Int64: Int64]
     let affectsAllDialogs: Bool
     let chats: [HSNativeParsedChat]
     let users: [HSNativeParsedUser]
@@ -680,7 +784,20 @@ private struct HSNativeSyncDifferencePayload: Equatable {
 private struct HSNativeParsedDifferenceUpdate: Equatable {
     let message: HSNativeParsedMessage?
     let affectedDialogIDs: [Int64]
+    let readOutboxMaxIDsByDialogID: [Int64: Int64]
     let affectsAllDialogs: Bool
+
+    init(
+        message: HSNativeParsedMessage?,
+        affectedDialogIDs: [Int64],
+        readOutboxMaxIDsByDialogID: [Int64: Int64] = [:],
+        affectsAllDialogs: Bool
+    ) {
+        self.message = message
+        self.affectedDialogIDs = affectedDialogIDs
+        self.readOutboxMaxIDsByDialogID = readOutboxMaxIDsByDialogID
+        self.affectsAllDialogs = affectsAllDialogs
+    }
 }
 
 private struct HSNativeParsedMediaSize: Equatable {
@@ -962,6 +1079,30 @@ final class HSNativeMTProtoClient {
         return session
     }
 
+    func uploadProfilePhoto(data: Data, session: HSUserSession) async throws {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputFile = try await uploadFile(
+            data: data,
+            fileName: "profile.jpg",
+            credentials: credentials,
+            progress: nil
+        )
+        let result = try await sendEncryptedRPC(
+            query: photosUploadProfilePhotoPayload(file: inputFile),
+            credentials: credentials
+        )
+        try Self.parsePhotosPhotoResult(result)
+    }
+
+    func removeProfilePhoto(session: HSUserSession) async throws {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: photosUpdateProfilePhotoPayload(id: inputPhotoEmptyPayload()),
+            credentials: credentials
+        )
+        try Self.parsePhotosPhotoResult(result)
+    }
+
     func verifyPassword(email: String, password: String) async throws -> HSUserSession {
         let authKey = try await pendingAuthKey(email: email, transactionID: "")
         let passwordData = try await sendEncryptedRPC(query: accountGetPasswordPayload(), authKey: authKey)
@@ -1111,6 +1252,7 @@ final class HSNativeMTProtoClient {
                 state: resetState,
                 messages: [],
                 changedDialogIDs: [],
+                readOutboxMaxIDsByDialogID: [:],
                 affectsAllDialogs: true,
                 isTooLong: true,
                 isSlice: false
@@ -1132,6 +1274,7 @@ final class HSNativeMTProtoClient {
             state: payload.state,
             messages: messages,
             changedDialogIDs: changedDialogIDs,
+            readOutboxMaxIDsByDialogID: payload.readOutboxMaxIDsByDialogID,
             affectsAllDialogs: payload.affectsAllDialogs,
             isTooLong: payload.isTooLong,
             isSlice: payload.isSlice
@@ -1163,6 +1306,8 @@ final class HSNativeMTProtoClient {
                 title: peerTitle(dialog.peer, users: payload.users, chats: payload.chats),
                 subtitle: topMessage.map(Self.messageListText) ?? "No messages yet.",
                 unreadCount: Int(dialog.unreadCount),
+                readInboxMaxID: Int64(dialog.readInboxMaxID),
+                readOutboxMaxID: Int64(dialog.readOutboxMaxID),
                 isMarkedUnread: dialog.isMarkedUnread,
                 isPinned: dialog.isPinned,
                 folderID: dialog.folderID,
@@ -1807,6 +1952,27 @@ final class HSNativeMTProtoClient {
         return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: maxMessageID)
     }
 
+    func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetPeerDialogsPayload(peer: inputPeer),
+            credentials: credentials
+        )
+        let payload = try Self.parsePeerDialogsResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        guard let dialog = payload.dialogs.first(where: { $0.peer.dialogID == dialogID }) ?? payload.dialogs.first else {
+            throw HSAPIError.server(code: "DIALOG_READ_STATE_NOT_FOUND", message: "Server did not return read state for this dialog.")
+        }
+        return HSDialogReadState(
+            dialogID: dialog.peer.dialogID,
+            readInboxMaxID: Int64(dialog.readInboxMaxID),
+            readOutboxMaxID: Int64(dialog.readOutboxMaxID),
+            unreadCount: Int(dialog.unreadCount),
+            isMarkedUnread: dialog.isMarkedUnread
+        )
+    }
+
     func markUnread(dialogID: Int64, unread: Bool, session: HSUserSession) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
         let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
@@ -2073,14 +2239,23 @@ final class HSNativeMTProtoClient {
     }
 
     func accountProfile(session: HSUserSession) async throws -> HSAccountProfile {
-        let parts = Self.displayNameParts(displayName: session.displayName, email: session.email)
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: usersGetFullUserPayload(id: inputUserSelfPayload()),
+            credentials: credentials
+        )
+        let payload = try Self.parseUsersUserFullResult(result)
+        cache(users: payload.users, chats: [])
+        let user = payload.users.first { $0.id == payload.full.id } ?? payload.users.first
+        let displayName = user?.title ?? session.displayName
+        let parts = Self.displayNameParts(displayName: displayName, email: session.email)
         return HSAccountProfile(
             userID: session.userID,
-            displayName: session.displayName,
+            displayName: displayName,
             firstName: parts.first,
             lastName: parts.last,
-            username: nil,
-            about: "",
+            username: user?.username,
+            about: payload.full.about,
             email: session.email
         )
     }
@@ -2125,6 +2300,26 @@ final class HSNativeMTProtoClient {
         let credentials = try authorizedAuthKey(for: session)
         let result = try await sendEncryptedRPC(query: accountGetAuthorizationsPayload(), credentials: credentials)
         return try Self.parseAuthorizationsResult(result)
+    }
+
+    func workspaceSummary(session: HSUserSession) async throws -> HSWorkspaceSummary {
+        let credentials = try authorizedAuthKey(for: session)
+        async let dialogsTask = dialogs(limit: 80, session: session)
+        async let contactsTask = contacts(session: session)
+        async let authorizationsTask = sendEncryptedRPC(query: accountGetAuthorizationsPayload(), credentials: credentials)
+
+        let dialogs = try await dialogsTask
+        let contacts = try await contactsTask
+        let authorizationsData = try await authorizationsTask
+        let authorizations = try Self.parseAuthorizationsPayloadResult(authorizationsData)
+
+        return Self.workspaceSummary(
+            session: session,
+            dialogs: dialogs,
+            contacts: contacts,
+            activeSessions: max(authorizations.devices.count, 1),
+            unconfirmedSessions: authorizations.unconfirmedCount
+        )
     }
 
     func resetDevice(id: Int64, session: HSUserSession) async throws -> HSMessageAction {
@@ -2552,6 +2747,19 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func usersGetFullUserPayload(id: Data) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.usersGetFullUser)
+        writer.raw(id)
+        return writer.data
+    }
+
+    func inputUserSelfPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputUserSelf)
+        return writer.data
+    }
+
     func accountGetAuthorizationsPayload() -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.accountGetAuthorizations)
@@ -2857,6 +3065,16 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func messagesGetPeerDialogsPayload(peer: Data) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetPeerDialogs)
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(1)
+        writer.constructor(HSNativeMTProtoSchema.inputDialogPeer)
+        writer.raw(peer)
+        return writer.data
+    }
+
     func messagesMarkDialogUnreadPayload(peer: Data, unread: Bool) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.messagesMarkDialogUnread)
@@ -3087,6 +3305,28 @@ final class HSNativeMTProtoClient {
             writer.string(Self.safeFileName(fileName))
             writer.string(Self.md5Hex(data))
         }
+        return writer.data
+    }
+
+    func photosUploadProfilePhotoPayload(file: Data) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.photosUploadProfilePhoto)
+        writer.int32(1 << 0)
+        writer.raw(file)
+        return writer.data
+    }
+
+    func photosUpdateProfilePhotoPayload(id: Data) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.photosUpdateProfilePhoto)
+        writer.int32(0)
+        writer.raw(id)
+        return writer.data
+    }
+
+    func inputPhotoEmptyPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputPhotoEmpty)
         return writer.data
     }
 
@@ -4220,10 +4460,8 @@ final class HSNativeMTProtoClient {
             throw try parseRPCError(reader: &reader)
         case HSNativeMTProtoSchema.authAuthorizationSignUpRequired:
             let flags = try reader.uint32()
-            if flags & 1 != 0 {
-                try skipUnsupportedObject(reader: &reader, name: "help.TermsOfService")
-            }
-            throw HSAPIError.server(code: "SIGN_UP_REQUIRED", message: "该邮箱需要创建账号。")
+            let termsOfService = flags & 1 != 0 ? try parseTermsOfService(reader: &reader) : nil
+            throw HSAPIError.signUpRequired(termsOfService: termsOfService)
         case HSNativeMTProtoSchema.authAuthorization:
             let flags = try reader.uint32()
             if flags & (1 << 1) != 0 {
@@ -4239,6 +4477,24 @@ final class HSNativeMTProtoClient {
         default:
             throw HSNativeMTProtoError.malformedPacket("expected auth.Authorization, got 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseTermsOfService(reader: inout HSTLReader) throws -> HSTermsOfService {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.helpTermsOfService else {
+            throw HSNativeMTProtoError.malformedPacket("expected help.TermsOfService, got 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let id = try parseDataJSON(reader: &reader)
+        let text = try reader.string()
+        try skipObjectVector(reader: &reader, name: "MessageEntity")
+        let minAgeConfirm = flags & (1 << 1) != 0 ? Int(try reader.int32()) : nil
+        return HSTermsOfService(
+            id: id,
+            text: text,
+            minAgeConfirm: minAgeConfirm,
+            isPopup: flags & 1 != 0
+        )
     }
 
     private static func parseUserResult(_ result: Data) throws -> HSNativeParsedUser {
@@ -4344,6 +4600,24 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private static func parsePeerDialogsResult(_ result: Data) throws -> HSNativeDialogsPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesPeerDialogs:
+            let dialogs = try parseVector(reader: &reader, elementName: "Dialog", parseDialog)
+            let messages = try parseVector(reader: &reader, elementName: "Message", parseMessage)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            _ = try parseSyncState(reader: &reader)
+            return HSNativeDialogsPayload(dialogs: dialogs, messages: messages, chats: chats, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.PeerDialogs, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parseDialogFiltersResult(_ result: Data, sessionUserID: Int64) throws -> HSChatListFiltersState {
         var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
         let constructor = try reader.uint32()
@@ -4406,6 +4680,7 @@ final class HSNativeMTProtoClient {
                 state: state,
                 messages: [],
                 affectedDialogIDs: [],
+                readOutboxMaxIDsByDialogID: [:],
                 affectsAllDialogs: false,
                 chats: [],
                 users: [],
@@ -4418,6 +4693,12 @@ final class HSNativeMTProtoClient {
             let updates = try parseVector(reader: &reader, elementName: "Update", parseDifferenceUpdate)
             let updateMessages = updates.compactMap(\.message)
             let affectedDialogIDs = Array(Set(updates.flatMap(\.affectedDialogIDs))).sorted()
+            var readOutboxMaxIDsByDialogID: [Int64: Int64] = [:]
+            for update in updates {
+                for (dialogID, maxID) in update.readOutboxMaxIDsByDialogID {
+                    readOutboxMaxIDsByDialogID[dialogID] = max(readOutboxMaxIDsByDialogID[dialogID] ?? 0, maxID)
+                }
+            }
             let affectsAllDialogs = updates.contains { $0.affectsAllDialogs }
             let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
             let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
@@ -4426,6 +4707,7 @@ final class HSNativeMTProtoClient {
                 state: state,
                 messages: newMessages + updateMessages,
                 affectedDialogIDs: affectedDialogIDs,
+                readOutboxMaxIDsByDialogID: readOutboxMaxIDsByDialogID,
                 affectsAllDialogs: affectsAllDialogs,
                 chats: chats,
                 users: users,
@@ -4445,6 +4727,7 @@ final class HSNativeMTProtoClient {
                 state: state,
                 messages: [],
                 affectedDialogIDs: [],
+                readOutboxMaxIDsByDialogID: [:],
                 affectsAllDialogs: true,
                 chats: [],
                 users: [],
@@ -4572,6 +4855,75 @@ final class HSNativeMTProtoClient {
             return .music
         default:
             return nil
+        }
+    }
+
+    private static func parseUsersUserFullResult(_ result: Data) throws -> HSNativeParsedUserFullPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.usersUserFull:
+            let full = try parseUserFullSummary(reader: &reader)
+            _ = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeParsedUserFullPayload(full: full, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected users.UserFull, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseUserFullSummary(reader: inout HSTLReader) throws -> HSNativeParsedUserFull {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.userFull:
+            let flags = try reader.uint32()
+            let flags2 = try reader.uint32()
+            let id = try reader.int64()
+            let about = flags & (1 << 1) == 0 ? "" : try reader.string()
+            try skipPeerSettings(reader: &reader)
+            if flags & (1 << 21) != 0 { try skipPhoto(reader: &reader) }
+            if flags & (1 << 2) != 0 { try skipPhoto(reader: &reader) }
+            if flags & (1 << 22) != 0 { try skipPhoto(reader: &reader) }
+            try skipPeerNotifySettings(reader: &reader)
+            if flags & (1 << 3) != 0 { try skipBotInfo(reader: &reader) }
+            if flags & (1 << 6) != 0 { _ = try reader.int32() }
+            _ = try reader.int32()
+            if flags & (1 << 11) != 0 { _ = try reader.int32() }
+            if flags & (1 << 14) != 0 { _ = try reader.int32() }
+            if flags & (1 << 15) != 0 { try skipChatTheme(reader: &reader) }
+            if flags & (1 << 16) != 0 { _ = try reader.string() }
+            if flags & (1 << 17) != 0 { try skipChatAdminRights(reader: &reader) }
+            if flags & (1 << 18) != 0 { try skipChatAdminRights(reader: &reader) }
+            if flags & (1 << 24) != 0 { try skipWallPaper(reader: &reader) }
+            if flags & (1 << 25) != 0 { try skipPeerStories(reader: &reader) }
+            if flags2 & (1 << 0) != 0 { try skipBusinessWorkHours(reader: &reader) }
+            if flags2 & (1 << 1) != 0 { try skipBusinessLocation(reader: &reader) }
+            if flags2 & (1 << 2) != 0 { try skipBusinessGreetingMessage(reader: &reader) }
+            if flags2 & (1 << 3) != 0 { try skipBusinessAwayMessage(reader: &reader) }
+            if flags2 & (1 << 4) != 0 { try skipBusinessIntro(reader: &reader) }
+            if flags2 & (1 << 5) != 0 { try skipBirthday(reader: &reader) }
+            if flags2 & (1 << 6) != 0 {
+                _ = try reader.int64()
+                _ = try reader.int32()
+            }
+            if flags2 & (1 << 8) != 0 { _ = try reader.int32() }
+            if flags2 & (1 << 11) != 0 { try skipStarRefProgram(reader: &reader) }
+            if flags2 & (1 << 12) != 0 { try skipBotVerification(reader: &reader) }
+            if flags2 & (1 << 14) != 0 { _ = try reader.int64() }
+            if flags2 & (1 << 15) != 0 { try skipDisallowedGiftsSettings(reader: &reader) }
+            if flags2 & (1 << 17) != 0 { try skipStarsRating(reader: &reader) }
+            if flags2 & (1 << 18) != 0 {
+                try skipStarsRating(reader: &reader)
+                _ = try reader.int32()
+            }
+            if flags2 & (1 << 20) != 0 { try skipProfileTab(reader: &reader) }
+            if flags2 & (1 << 21) != 0 { try skipDocument(reader: &reader) }
+            if flags2 & (1 << 22) != 0 { try skipTextWithEntities(reader: &reader) }
+            return HSNativeParsedUserFull(id: id, about: about)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported UserFull constructor 0x\(String(constructor, radix: 16))")
         }
     }
 
@@ -4990,6 +5342,20 @@ final class HSNativeMTProtoClient {
             throw HSNativeMTProtoError.malformedPacket("upload.fileCdnRedirect is not yet supported by the native media downloader")
         default:
             throw HSNativeMTProtoError.malformedPacket("expected upload.File, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parsePhotosPhotoResult(_ result: Data) throws {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.photosPhoto:
+            try skipPhoto(reader: &reader)
+            _ = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected photos.Photo, got 0x\(String(constructor, radix: 16))")
         }
     }
 
@@ -5679,6 +6045,80 @@ final class HSNativeMTProtoClient {
         count == 1 ? "1 \(singular)" : "\(count) \(plural)"
     }
 
+    private static func workspaceSummary(
+        session: HSUserSession,
+        dialogs: [HSChat],
+        contacts: [HSContact],
+        activeSessions: Int,
+        unconfirmedSessions: Int
+    ) -> HSWorkspaceSummary {
+        let unreadDialogs = dialogs.filter { $0.unreadCount > 0 || $0.isMarkedUnread }
+        let contactRequests = contacts.filter { contact in
+            let status = contact.status.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return status == "request" || status == "requested" || status == "pending"
+        }
+        let trustEvents = Int64(unconfirmedSessions)
+        var actions: [HSWorkspaceAction] = []
+
+        if !unreadDialogs.isEmpty {
+            actions.append(HSWorkspaceAction(
+                id: "unread_dialogs",
+                kind: "dialog",
+                title: "Unread Chats",
+                subtitle: countSubtitle(Int64(unreadDialogs.count), singular: "chat needs attention", plural: "chats need attention"),
+                badge: "\(unreadDialogs.count)",
+                count: Int64(unreadDialogs.count),
+                route: "/chats?filter=unread",
+                groupID: nil,
+                peerID: nil,
+                peerNamespace: nil
+            ))
+        }
+
+        if !contactRequests.isEmpty {
+            actions.append(HSWorkspaceAction(
+                id: "contact_requests",
+                kind: "contact_request",
+                title: "Contact Requests",
+                subtitle: countSubtitle(Int64(contactRequests.count), singular: "request waiting", plural: "requests waiting"),
+                badge: "\(contactRequests.count)",
+                count: Int64(contactRequests.count),
+                route: "/contacts/requests",
+                groupID: nil,
+                peerID: nil,
+                peerNamespace: nil
+            ))
+        }
+
+        if unconfirmedSessions > 0 {
+            actions.append(HSWorkspaceAction(
+                id: "unconfirmed_sessions",
+                kind: "trust",
+                title: "Review Devices",
+                subtitle: countSubtitle(Int64(unconfirmedSessions), singular: "unconfirmed session", plural: "unconfirmed sessions"),
+                badge: "\(unconfirmedSessions)",
+                count: Int64(unconfirmedSessions),
+                route: "/settings/devices",
+                groupID: nil,
+                peerID: nil,
+                peerNamespace: nil
+            ))
+        }
+
+        return HSWorkspaceSummary(
+            userID: session.userID,
+            source: "mtproto",
+            generatedAt: Int64(Date().timeIntervalSince1970),
+            counts: HSWorkspaceCounts(
+                joinRequests: 0,
+                ruleAcks: 0,
+                trustEvents: trustEvents,
+                contactRequests: Int64(contactRequests.count)
+            ),
+            actions: actions
+        )
+    }
+
     private static let serverEntitlements: [HSEntitlement] = [
         HSEntitlement(id: "advanced_identity", title: "Advanced Identity", subtitle: "Profile, username, and account-level controls", category: "profile", state: "included", included: true),
         HSEntitlement(id: "premium_assets", title: "Premium Assets", subtitle: "Premium reactions, stickers, emoji, and profile assets", category: "assets", state: "included", included: true),
@@ -6266,8 +6706,8 @@ final class HSNativeMTProtoClient {
         let flags = try reader.uint32()
         let peer = try parsePeer(reader: &reader)
         let topMessage = try reader.int32()
-        _ = try reader.int32()
-        _ = try reader.int32()
+        let readInboxMaxID = try reader.int32()
+        let readOutboxMaxID = try reader.int32()
         let unreadCount = try reader.int32()
         _ = try reader.int32()
         _ = try reader.int32()
@@ -6285,6 +6725,8 @@ final class HSNativeMTProtoClient {
         return HSNativeParsedDialog(
             peer: peer,
             topMessageID: topMessage,
+            readInboxMaxID: readInboxMaxID,
+            readOutboxMaxID: readOutboxMaxID,
             unreadCount: unreadCount,
             isMarkedUnread: flags & (1 << 3) != 0,
             isPinned: flags & (1 << 2) != 0,
@@ -6341,7 +6783,7 @@ final class HSNativeMTProtoClient {
             let flags = try reader.uint32()
             let id = try reader.int32()
             let peer = flags & 1 == 0 ? nil : try parsePeer(reader: &reader)
-            return HSNativeParsedMessage(id: id, peer: peer, fromPeer: nil, date: nil, text: "", kind: "service", media: nil, isOutgoing: false, replyToMessageID: nil)
+            return HSNativeParsedMessage(id: id, peer: peer, fromPeer: nil, date: nil, text: "", kind: "service", media: nil, isOutgoing: false, replyToMessageID: nil, reactions: [], counters: HSMessageCounters(), editDate: nil, authorSignature: nil)
         case HSNativeMTProtoSchema.message:
             let flags = try reader.uint32()
             let flags2 = try reader.uint32()
@@ -6377,25 +6819,25 @@ final class HSNativeMTProtoClient {
             if flags & (1 << 7) != 0 {
                 try skipObjectVector(reader: &reader, name: "MessageEntity")
             }
+            var counters = HSMessageCounters()
             if flags & (1 << 10) != 0 {
-                _ = try reader.int32()
-                _ = try reader.int32()
+                let viewCount = Int(try reader.int32())
+                let forwardCount = Int(try reader.int32())
+                counters = HSMessageCounters(viewCount: viewCount, forwardCount: forwardCount, replyCount: counters.replyCount)
             }
             if flags & (1 << 23) != 0 {
-                try skipMessageReplies(reader: &reader)
+                counters = HSMessageCounters(
+                    viewCount: counters.viewCount,
+                    forwardCount: counters.forwardCount,
+                    replyCount: try parseMessageRepliesCount(reader: &reader)
+                )
             }
-            if flags & (1 << 15) != 0 {
-                _ = try reader.int32()
-            }
-            if flags & (1 << 16) != 0 {
-                _ = try reader.string()
-            }
+            let editDate = flags & (1 << 15) == 0 ? nil : try reader.int32()
+            let authorSignature = flags & (1 << 16) == 0 ? nil : try reader.string()
             if flags & (1 << 17) != 0 {
                 _ = try reader.int64()
             }
-            if flags & (1 << 20) != 0 {
-                try skipMessageReactions(reader: &reader)
-            }
+            let reactions = flags & (1 << 20) == 0 ? [] : try parseMessageReactions(reader: &reader)
             if flags & (1 << 22) != 0 {
                 try skipRestrictionReasons(reader: &reader)
             }
@@ -6435,7 +6877,11 @@ final class HSNativeMTProtoClient {
                 kind: hasMedia ? "media" : nil,
                 media: media,
                 isOutgoing: flags & (1 << 1) != 0,
-                replyToMessageID: replyTo
+                replyToMessageID: replyTo,
+                reactions: reactions,
+                counters: counters,
+                editDate: editDate,
+                authorSignature: authorSignature
             )
         case HSNativeMTProtoSchema.messageService:
             let flags = try reader.uint32()
@@ -6448,9 +6894,7 @@ final class HSNativeMTProtoClient {
             let replyTo = flags & (1 << 3) == 0 ? nil : try parseMessageReplyHeader(reader: &reader)
             let date = try reader.int32()
             try skipMessageAction(reader: &reader)
-            if flags & (1 << 20) != 0 {
-                try skipMessageReactions(reader: &reader)
-            }
+            let reactions = flags & (1 << 20) == 0 ? [] : try parseMessageReactions(reader: &reader)
             if flags & (1 << 25) != 0 {
                 _ = try reader.int32()
             }
@@ -6463,7 +6907,11 @@ final class HSNativeMTProtoClient {
                 kind: "service",
                 media: nil,
                 isOutgoing: flags & (1 << 1) != 0,
-                replyToMessageID: replyTo
+                replyToMessageID: replyTo,
+                reactions: reactions,
+                counters: HSMessageCounters(),
+                editDate: nil,
+                authorSignature: nil
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported Message constructor 0x\(String(constructor, radix: 16))")
@@ -6801,10 +7249,15 @@ final class HSNativeMTProtoClient {
             return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [peer.dialogID], affectsAllDialogs: false)
         case HSNativeMTProtoSchema.updateReadHistoryOutbox:
             let peer = try parsePeer(reader: &reader)
+            let maxID = try reader.int32()
             _ = try reader.int32()
             _ = try reader.int32()
-            _ = try reader.int32()
-            return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [peer.dialogID], affectsAllDialogs: false)
+            return HSNativeParsedDifferenceUpdate(
+                message: nil,
+                affectedDialogIDs: [peer.dialogID],
+                readOutboxMaxIDsByDialogID: [peer.dialogID: Int64(maxID)],
+                affectsAllDialogs: false
+            )
         case HSNativeMTProtoSchema.updateReadMessagesContents:
             let flags = try reader.uint32()
             try skipInt32Vector(reader: &reader)
@@ -6822,8 +7275,14 @@ final class HSNativeMTProtoClient {
             return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [HSNativePeer.channel(channelID).dialogID], affectsAllDialogs: false)
         case HSNativeMTProtoSchema.updateReadChannelOutbox:
             let channelID = try reader.int64()
-            _ = try reader.int32()
-            return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [HSNativePeer.channel(channelID).dialogID], affectsAllDialogs: false)
+            let maxID = try reader.int32()
+            let dialogID = HSNativePeer.channel(channelID).dialogID
+            return HSNativeParsedDifferenceUpdate(
+                message: nil,
+                affectedDialogIDs: [dialogID],
+                readOutboxMaxIDsByDialogID: [dialogID: Int64(maxID)],
+                affectsAllDialogs: false
+            )
         case HSNativeMTProtoSchema.updateDeleteChannelMessages:
             let channelID = try reader.int64()
             try skipInt32Vector(reader: &reader)
@@ -7279,8 +7738,19 @@ final class HSNativeMTProtoClient {
             sentAt: Date(timeIntervalSince1970: TimeInterval(message.date ?? Int32(Date().timeIntervalSince1970))),
             isOutgoing: message.isOutgoing,
             replyToMessageID: message.replyToMessageID,
-            media: message.media
+            media: message.media,
+            reactions: message.reactions,
+            counters: message.counters,
+            editDate: message.editDate.map { Date(timeIntervalSince1970: TimeInterval($0)) },
+            authorSignature: cleanMessageAuthorSignature(message.authorSignature)
         )
+    }
+
+    private static func cleanMessageAuthorSignature(_ value: String?) -> String? {
+        guard let signature = value?.trimmingCharacters(in: .whitespacesAndNewlines), !signature.isEmpty else {
+            return nil
+        }
+        return signature
     }
 
     private static func authorName(
@@ -8214,6 +8684,8 @@ final class HSNativeMTProtoClient {
                 try skipBotInfo(reader: &reader)
             case "BotCommand":
                 try skipBotCommand(reader: &reader)
+            case "BusinessWeeklyOpen":
+                try skipBusinessWeeklyOpen(reader: &reader)
             case "StoryItem":
                 try skipStoryItem(reader: &reader)
             case "WebPageAttribute":
@@ -8303,6 +8775,66 @@ final class HSNativeMTProtoClient {
         if flags & (1 << 4) != 0 { try skipObjectVector(reader: &reader, name: "MessageReactor") }
     }
 
+    private static func parseMessageReactions(reader: inout HSTLReader) throws -> [HSMessageReaction] {
+        let constructor = try reader.uint32()
+        guard constructor == 0x0a339f0b else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported MessageReactions constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let reactions = try parseVector(reader: &reader, elementName: "ReactionCount", parseReactionCount)
+        if flags & (1 << 1) != 0 { try skipObjectVector(reader: &reader, name: "MessagePeerReaction") }
+        if flags & (1 << 4) != 0 { try skipObjectVector(reader: &reader, name: "MessageReactor") }
+        return reactions.filter { $0.count > 0 }
+    }
+
+    private static func parseMessageRepliesCount(reader: inout HSTLReader) throws -> Int {
+        let constructor = try reader.uint32()
+        guard constructor == 0x83d60fc2 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported MessageReplies constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let count = Int(try reader.int32())
+        _ = try reader.int32()
+        if flags & (1 << 1) != 0 { try skipObjectVector(reader: &reader, name: "Peer") }
+        if flags & 1 != 0 { _ = try reader.int64() }
+        if flags & (1 << 2) != 0 { _ = try reader.int32() }
+        if flags & (1 << 3) != 0 { _ = try reader.int32() }
+        return count
+    }
+
+    private static func parseReactionCount(reader: inout HSTLReader) throws -> HSMessageReaction {
+        let constructor = try reader.uint32()
+        guard constructor == 0xa3d1cb80 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported ReactionCount constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let chosenOrder = flags & 1 == 0 ? nil : Int(try reader.int32())
+        let reaction = try parseReaction(reader: &reader)
+        let count = Int(try reader.int32())
+        return HSMessageReaction(
+            value: reaction,
+            count: max(0, count),
+            isSelected: chosenOrder != nil,
+            chosenOrder: chosenOrder
+        )
+    }
+
+    private static func parseReaction(reader: inout HSTLReader) throws -> String {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case 0x79f5d419:
+            return ""
+        case 0x523da4eb:
+            return "⭐️"
+        case 0x1b2286b8:
+            return try reader.string()
+        case 0x8935fc73:
+            return "custom:\(try reader.int64())"
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported Reaction constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func skipReactionCount(reader: inout HSTLReader) throws {
         let constructor = try reader.uint32()
         guard constructor == 0xa3d1cb80 else {
@@ -8390,11 +8922,15 @@ final class HSNativeMTProtoClient {
     }
 
     private static func skipDataJSON(reader: inout HSTLReader) throws {
+        _ = try parseDataJSON(reader: &reader)
+    }
+
+    private static func parseDataJSON(reader: inout HSTLReader) throws -> String {
         let constructor = try reader.uint32()
-        guard constructor == 0x7d748d04 else {
+        guard constructor == HSNativeMTProtoSchema.dataJSON else {
             throw HSNativeMTProtoError.malformedPacket("unsupported DataJSON constructor 0x\(String(constructor, radix: 16))")
         }
-        _ = try reader.string()
+        return try reader.string()
     }
 
     private static func skipFactCheck(reader: inout HSTLReader) throws {
@@ -9355,6 +9891,146 @@ final class HSNativeMTProtoClient {
         }
         _ = try reader.string()
         try skipObjectVector(reader: &reader, name: "MessageEntity")
+    }
+
+    private static func skipChatTheme(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case 0xc3dffc04:
+            _ = try reader.string()
+        case 0x3458f9c8:
+            try skipStarGift(reader: &reader)
+            try skipThemeSettings(reader: &reader)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported ChatTheme constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func skipBusinessWorkHours(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x8c92b098 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessWorkHours constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.uint32()
+        _ = try reader.string()
+        try skipObjectVector(reader: &reader, name: "BusinessWeeklyOpen")
+    }
+
+    private static func skipBusinessWeeklyOpen(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x120b1ab9 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessWeeklyOpen constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.int32()
+        _ = try reader.int32()
+    }
+
+    private static func skipBusinessLocation(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0xac5c1af7 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessLocation constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        if flags & 1 != 0 { try skipGeoPoint(reader: &reader) }
+        _ = try reader.string()
+    }
+
+    private static func skipBusinessRecipients(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x21108ff7 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessRecipients constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        if flags & (1 << 4) != 0 { try skipInt64Vector(reader: &reader) }
+    }
+
+    private static func skipBusinessGreetingMessage(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0xe519abab else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessGreetingMessage constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.int32()
+        try skipBusinessRecipients(reader: &reader)
+        _ = try reader.int32()
+    }
+
+    private static func skipBusinessAwayMessage(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0xef156a5c else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessAwayMessage constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.uint32()
+        _ = try reader.int32()
+        try skipBusinessAwayMessageSchedule(reader: &reader)
+        try skipBusinessRecipients(reader: &reader)
+    }
+
+    private static func skipBusinessAwayMessageSchedule(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case 0xc9b9e2b9, 0xc3f2f501:
+            return
+        case 0xcc4d9ecc:
+            _ = try reader.int32()
+            _ = try reader.int32()
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessAwayMessageSchedule constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func skipBusinessIntro(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x5a0a066d else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported BusinessIntro constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        _ = try reader.string()
+        _ = try reader.string()
+        if flags & 1 != 0 { try skipDocument(reader: &reader) }
+    }
+
+    private static func skipBirthday(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x6c8e1e06 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported Birthday constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        _ = try reader.int32()
+        _ = try reader.int32()
+        if flags & 1 != 0 { _ = try reader.int32() }
+    }
+
+    private static func skipStarRefProgram(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0xdd0c66f2 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported StarRefProgram constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        _ = try reader.int64()
+        _ = try reader.int32()
+        if flags & 1 != 0 { _ = try reader.int32() }
+        if flags & (1 << 1) != 0 { _ = try reader.int32() }
+        if flags & (1 << 2) != 0 { try skipStarsAmount(reader: &reader) }
+    }
+
+    private static func skipDisallowedGiftsSettings(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x71f276c4 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported DisallowedGiftsSettings constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.uint32()
+    }
+
+    private static func skipStarsRating(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == 0x1b0e4f07 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported StarsRating constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        _ = try reader.int32()
+        _ = try reader.int64()
+        _ = try reader.int64()
+        if flags & 1 != 0 { _ = try reader.int64() }
     }
 
     private static func skipStoryItem(reader: inout HSTLReader) throws {
@@ -10537,6 +11213,8 @@ private extension HSStickerSet {
 private final class HSNativeMTProtoIntermediateTransport {
     private let configuration: HSNativeMTProtoConfiguration
     private let queue = DispatchQueue(label: "cloud.hsgram.native.mtproto.intermediate")
+    private let endpointQueue = DispatchQueue(label: "cloud.hsgram.native.mtproto.endpoint")
+    private var preferredEndpoint: HSNativeMTProtoEndpoint?
 
     init(configuration: HSNativeMTProtoConfiguration) {
         self.configuration = configuration
@@ -10552,27 +11230,70 @@ private final class HSNativeMTProtoIntermediateTransport {
         timeout: TimeInterval = 8,
         _ operation: @escaping (HSNativeMTProtoIntermediateSession) async throws -> T
     ) async throws -> T {
-        let session = HSNativeMTProtoIntermediateSession(configuration: configuration)
-        try await session.connect(timeout: timeout)
-        defer {
-            session.close()
+        var lastError: Error?
+        let endpoints = orderedEndpoints()
+        for endpoint in endpoints {
+            let session = HSNativeMTProtoIntermediateSession(configuration: configuration, endpoint: endpoint)
+            do {
+                try await session.connect(timeout: timeout)
+                rememberPreferredEndpoint(endpoint)
+                defer {
+                    session.close()
+                }
+                return try await operation(session)
+            } catch {
+                session.close()
+                guard shouldTryNextEndpoint(after: error), endpoint != endpoints.last else {
+                    throw error
+                }
+                lastError = error
+            }
         }
-        return try await operation(session)
+        throw lastError ?? HSNativeMTProtoError.connectionFailed("No HSgram MTProto endpoints are configured.")
+    }
+
+    private func orderedEndpoints() -> [HSNativeMTProtoEndpoint] {
+        let endpoints = configuration.endpoints
+        guard let preferred = endpointQueue.sync(execute: { preferredEndpoint }),
+              endpoints.contains(preferred) else {
+            return endpoints
+        }
+        return [preferred] + endpoints.filter { $0 != preferred }
+    }
+
+    private func rememberPreferredEndpoint(_ endpoint: HSNativeMTProtoEndpoint) {
+        endpointQueue.sync {
+            preferredEndpoint = endpoint
+        }
+    }
+
+    private func shouldTryNextEndpoint(after error: Error) -> Bool {
+        guard let mtProtoError = error as? HSNativeMTProtoError else {
+            return false
+        }
+        switch mtProtoError {
+        case .connectionFailed, .timedOut:
+            return true
+        case .malformedPacket, .randomBytesFailed, .serverDHParamsPending, .encryptedTransportPending:
+            return false
+        }
     }
 }
 
 final class HSNativeMTProtoIntermediateSession {
     private let configuration: HSNativeMTProtoConfiguration
+    private let endpoint: HSNativeMTProtoEndpoint
     private let connection: NWConnection
     private let queue = DispatchQueue(label: "cloud.hsgram.native.mtproto.intermediate.session")
     private var buffer = Data()
     private var didSendMarker = false
 
-    init(configuration: HSNativeMTProtoConfiguration) {
+    init(configuration: HSNativeMTProtoConfiguration, endpoint: HSNativeMTProtoEndpoint) {
         self.configuration = configuration
+        self.endpoint = endpoint
         self.connection = NWConnection(
-            host: NWEndpoint.Host(configuration.host),
-            port: NWEndpoint.Port(rawValue: configuration.port)!,
+            host: NWEndpoint.Host(endpoint.host),
+            port: NWEndpoint.Port(rawValue: endpoint.port)!,
             using: .tcp
         )
     }
