@@ -141,6 +141,9 @@ struct ChatThreadView: View {
     @State private var readOutboxMaxID: Int64
     @State private var pendingHistoryAction: PrivateChatHistoryAction?
     @State private var isPeerMuted: Bool
+    @State private var isPeerBlocked: Bool
+    @State private var isResolvingPeerBlockedState = false
+    @State private var isShowingReportPeerSheet = false
     @State private var isShowingCustomMuteDialog = false
     @State private var customMuteHoursText = "8"
     @State private var remoteInputActivity: HSInputActivity?
@@ -232,7 +235,7 @@ struct ChatThreadView: View {
             id: chat.id,
             displayName: chat.title,
             username: usernameFromSubtitle,
-            status: "contact"
+            status: isPeerBlocked ? "blocked" : (chat.isContact ? "contact" : "global")
         )
     }
 
@@ -249,6 +252,7 @@ struct ChatThreadView: View {
         self.mode = mode
         _readOutboxMaxID = State(initialValue: chat.readOutboxMaxID)
         _isPeerMuted = State(initialValue: chat.isMuted)
+        _isPeerBlocked = State(initialValue: false)
     }
 
     var body: some View {
@@ -357,9 +361,17 @@ struct ChatThreadView: View {
             }
             .environmentObject(authStore)
         }
+        .sheet(isPresented: $isShowingReportPeerSheet) {
+            ReportPeerSheet(peerName: chat.title) { reason, message in
+                Task {
+                    await reportPeer(reason: reason, message: message)
+                }
+            }
+        }
         .task {
             await refresh()
             await loadDraft()
+            await loadPeerBlockedState()
             scheduleLinkPreviewRefresh(for: draft)
         }
         .onChange(of: draft) { newValue in
@@ -462,7 +474,9 @@ struct ChatThreadView: View {
                 }
             } else if !isSavedMessagesMode {
                 NavigationLink {
-                    ContactProfileView(contact: threadContact)
+                    ContactProfileView(contact: threadContact) { updated in
+                        isPeerBlocked = updated?.status == "blocked"
+                    }
                 } label: {
                     Image(systemName: "info.circle")
                 }
@@ -524,6 +538,34 @@ struct ChatThreadView: View {
             }
         } label: {
             Label("Mute Forever", systemImage: "bell.slash.fill")
+        }
+
+        Divider()
+
+        if isPeerBlocked {
+            Button {
+                Task {
+                    await updatePeerBlocked(false)
+                }
+            } label: {
+                Label("Unblock User", systemImage: "hand.raised.slash")
+            }
+            .disabled(isResolvingPeerBlockedState)
+        } else {
+            Button(role: .destructive) {
+                Task {
+                    await updatePeerBlocked(true)
+                }
+            } label: {
+                Label("Block User", systemImage: "hand.raised")
+            }
+            .disabled(isResolvingPeerBlockedState)
+        }
+
+        Button(role: .destructive) {
+            isShowingReportPeerSheet = true
+        } label: {
+            Label("Report User", systemImage: "flag")
         }
 
         Divider()
@@ -2097,6 +2139,65 @@ struct ChatThreadView: View {
         pendingHistoryAction = action
     }
 
+    private func loadPeerBlockedState() async {
+        guard let session = authStore.session, canManagePrivateChatHistory else {
+            return
+        }
+        isResolvingPeerBlockedState = true
+        defer { isResolvingPeerBlockedState = false }
+        do {
+            let blocked = try await authStore.api.blockedContacts(limit: 100, session: session)
+            isPeerBlocked = blocked.contains { $0.id == chat.id }
+        } catch {
+            // The menu still allows block/unblock attempts if this lightweight state lookup fails.
+        }
+    }
+
+    private func updatePeerBlocked(_ blocked: Bool) async {
+        guard let session = authStore.session, canManagePrivateChatHistory else {
+            return
+        }
+        isResolvingPeerBlockedState = true
+        defer { isResolvingPeerBlockedState = false }
+        do {
+            if blocked {
+                _ = try await authStore.api.blockContact(userID: chat.id, session: session)
+            } else {
+                _ = try await authStore.api.unblockContact(userID: chat.id, session: session)
+            }
+            isPeerBlocked = blocked
+            statusMessage = blocked ? "\(chat.title) blocked." : "\(chat.title) unblocked."
+            errorMessage = nil
+            NotificationCenter.default.post(
+                name: .hsNativeSyncDidChange,
+                object: nil,
+                userInfo: ["dialog_ids": [chat.id]]
+            )
+        } catch {
+            statusMessage = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func reportPeer(reason: HSReportReason, message: String) async {
+        guard let session = authStore.session, canManagePrivateChatHistory else {
+            return
+        }
+        do {
+            _ = try await authStore.api.reportPeer(
+                dialogID: chat.id,
+                reason: reason,
+                message: message,
+                session: session
+            )
+            statusMessage = "Report submitted."
+            errorMessage = nil
+        } catch {
+            statusMessage = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func applyCustomMuteHours() {
         guard let hours = Int(customMuteHoursText.trimmingCharacters(in: .whitespacesAndNewlines)), hours > 0 else {
             statusMessage = nil
@@ -2886,6 +2987,54 @@ private struct ChatUnreadSeparatorView: View {
 
     private var title: String {
         "未读消息"
+    }
+}
+
+struct ReportPeerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let peerName: String
+    let onSubmit: (HSReportReason, String) -> Void
+
+    @State private var reason: HSReportReason = .spam
+    @State private var message = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Reason") {
+                    Picker("Reason", selection: $reason) {
+                        ForEach(HSReportReason.allCases) { reason in
+                            Text(reason.title).tag(reason)
+                        }
+                    }
+                }
+
+                Section("Details") {
+                    TextEditor(text: $message)
+                        .frame(minHeight: 120)
+                        .accessibilityLabel("Report details")
+                } footer: {
+                    Text("Reports are submitted with account.reportPeer.")
+                }
+            }
+            .navigationTitle("Report \(peerName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Submit") {
+                        let cleanMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onSubmit(reason, cleanMessage)
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 

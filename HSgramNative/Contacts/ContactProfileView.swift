@@ -8,6 +8,7 @@ struct ContactProfileView: View {
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @State private var activeAction: ProfileAction?
+    @State private var isShowingReportSheet = false
 
     private let onChanged: (HSContact?) -> Void
 
@@ -46,6 +47,17 @@ struct ContactProfileView: View {
                 Label(statusMessage, systemImage: "checkmark.circle")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(HSTheme.trust)
+            }
+
+            if canReport {
+                Section("Actions") {
+                    Button(role: .destructive) {
+                        isShowingReportSheet = true
+                    } label: {
+                        Label("Report", systemImage: "flag")
+                    }
+                    .disabled(activeAction != nil)
+                }
             }
 
             if canMessage {
@@ -134,6 +146,13 @@ struct ContactProfileView: View {
         .background(HSTheme.grouped)
         .navigationTitle("资料")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isShowingReportSheet) {
+            ReportPeerSheet(peerName: contact.displayName) { reason, message in
+                Task {
+                    await report(reason: reason, message: message)
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -209,6 +228,10 @@ struct ContactProfileView: View {
 
     private var canBlock: Bool {
         !canRequest && !isBlocked
+    }
+
+    private var canReport: Bool {
+        contact.id > 0
     }
 
     private var privateChat: HSChat {
@@ -305,6 +328,22 @@ struct ContactProfileView: View {
         }
     }
 
+    private func report(reason: HSReportReason, message: String) async {
+        guard let session = authStore.session else {
+            return
+        }
+        await run(.report) {
+            _ = try await authStore.api.reportPeer(
+                dialogID: contact.id,
+                reason: reason,
+                message: message,
+                session: session
+            )
+            statusMessage = "Report submitted."
+            errorMessage = nil
+        }
+    }
+
     private func run(_ action: ProfileAction, operation: () async throws -> Void) async {
         activeAction = action
         defer { activeAction = nil }
@@ -339,5 +378,6 @@ struct ContactProfileView: View {
         case delete
         case block
         case unblock
+        case report
     }
 }

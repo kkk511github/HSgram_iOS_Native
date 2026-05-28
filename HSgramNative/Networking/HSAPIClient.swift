@@ -902,6 +902,15 @@ final class HSAPIClient {
         try await request("v1/contacts/\(userID)/block", method: "DELETE", body: Optional<EmptyBody>.none, session: session)
     }
 
+    func reportPeer(dialogID: Int64, reason: HSReportReason, message: String, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/report",
+            method: "POST",
+            body: ReportPeerBody(reason: reason, message: message),
+            session: session
+        )
+    }
+
     func trustItems(session: HSUserSession) async throws -> [HSTrustItem] {
         try await request("v1/trust/items", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
@@ -1211,6 +1220,11 @@ private struct PeerNotificationSettingsBody: Encodable {
         case showPreviews = "show_previews"
         case silent
     }
+}
+
+private struct ReportPeerBody: Encodable {
+    let reason: HSReportReason
+    let message: String
 }
 
 private struct DraftBody: Encodable {

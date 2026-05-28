@@ -184,6 +184,7 @@ enum HSNativeMTProtoSchema {
     static let accountSetPrivacy: UInt32 = 0xc9f81ce8
     static let accountGetNotifySettings: UInt32 = 0x12b3ad31
     static let accountUpdateNotifySettings: UInt32 = 0x84be5b93
+    static let accountReportPeer: UInt32 = 0xc5ba3d86
     static let accountRegisterDevice: UInt32 = 0xec86017a
     static let accountUnregisterDevice: UInt32 = 0x6a0d3206
     static let accountAuthorizations: UInt32 = 0x4bff8ea0
@@ -321,6 +322,16 @@ enum HSNativeMTProtoSchema {
     static let inputNotifyChats: UInt32 = 0x4a95e84e
     static let inputNotifyBroadcasts: UInt32 = 0xb1db7c7e
     static let inputPeerNotifySettings: UInt32 = 0xcacb6ae2
+    static let inputReportReasonSpam: UInt32 = 0x58dbcab8
+    static let inputReportReasonViolence: UInt32 = 0x1e22c78d
+    static let inputReportReasonPornography: UInt32 = 0x2e59d922
+    static let inputReportReasonChildAbuse: UInt32 = 0xadf44ee3
+    static let inputReportReasonOther: UInt32 = 0xc1e4a2b1
+    static let inputReportReasonCopyright: UInt32 = 0x9b89f93a
+    static let inputReportReasonGeoIrrelevant: UInt32 = 0xdbd4feed
+    static let inputReportReasonFake: UInt32 = 0xf5ddd6e7
+    static let inputReportReasonIllegalDrugs: UInt32 = 0x0a8eb2be
+    static let inputReportReasonPersonalDetails: UInt32 = 0x9ec7863d
     static let peerSettings: UInt32 = 0xf47741f7
     static let inputPrivacyKeyAbout: UInt32 = 0x3823cc40
     static let inputPrivacyKeyChatInvite: UInt32 = 0xbdfb0426
@@ -2667,6 +2678,17 @@ final class HSNativeMTProtoClient {
         return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
     }
 
+    func reportPeer(dialogID: Int64, reason: HSReportReason, message: String, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: accountReportPeerPayload(peer: inputPeer, reason: reason, message: message),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
     func storageSettings(session: HSUserSession) async throws -> HSStorageSettings {
         let catalog = try await assetCatalog(session: session)
         return HSStorageSettings(
@@ -3075,6 +3097,40 @@ final class HSNativeMTProtoClient {
         writer.constructor(settings.silent ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
         writer.int32(muteUntil)
         return writer.data
+    }
+
+    private func accountReportPeerPayload(peer: Data, reason: HSReportReason, message: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountReportPeer)
+        writer.raw(peer)
+        writer.constructor(inputReportReasonConstructor(for: reason))
+        writer.string(message)
+        return writer.data
+    }
+
+    private func inputReportReasonConstructor(for reason: HSReportReason) -> UInt32 {
+        switch reason {
+        case .spam:
+            return HSNativeMTProtoSchema.inputReportReasonSpam
+        case .fake:
+            return HSNativeMTProtoSchema.inputReportReasonFake
+        case .violence:
+            return HSNativeMTProtoSchema.inputReportReasonViolence
+        case .pornography:
+            return HSNativeMTProtoSchema.inputReportReasonPornography
+        case .childAbuse:
+            return HSNativeMTProtoSchema.inputReportReasonChildAbuse
+        case .copyright:
+            return HSNativeMTProtoSchema.inputReportReasonCopyright
+        case .geoIrrelevant:
+            return HSNativeMTProtoSchema.inputReportReasonGeoIrrelevant
+        case .illegalDrugs:
+            return HSNativeMTProtoSchema.inputReportReasonIllegalDrugs
+        case .personalDetails:
+            return HSNativeMTProtoSchema.inputReportReasonPersonalDetails
+        case .other:
+            return HSNativeMTProtoSchema.inputReportReasonOther
+        }
     }
 
     func updatesGetStatePayload() -> Data {

@@ -736,6 +736,15 @@ final class HSNativeServerTransport: HSServerTransport {
                     silent: request.silent,
                     session: session
                 ))
+            case .accountReportPeer:
+                let session = try requireSession(session)
+                let request: HSNativeReportPeerBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.reportPeer(
+                    dialogID: try route.int64Part(at: 2),
+                    reason: request.reason,
+                    message: request.message,
+                    session: session
+                ))
             case .accountGetStorageStats:
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.storageSettings(session: session))
@@ -982,6 +991,11 @@ private struct HSNativePeerNotificationSettingsBody: Decodable {
         case showPreviews = "show_previews"
         case silent
     }
+}
+
+private struct HSNativeReportPeerBody: Decodable {
+    let reason: HSReportReason
+    let message: String
 }
 
 private struct HSNativePushTokenBody: Decodable {

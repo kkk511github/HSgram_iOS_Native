@@ -1225,6 +1225,48 @@ struct HSContact: Codable, Identifiable, Hashable {
     let status: String
 }
 
+enum HSReportReason: String, Codable, CaseIterable, Identifiable, Hashable {
+    case spam
+    case fake
+    case violence
+    case pornography
+    case childAbuse = "child_abuse"
+    case copyright
+    case geoIrrelevant = "geo_irrelevant"
+    case illegalDrugs = "illegal_drugs"
+    case personalDetails = "personal_details"
+    case other
+
+    var id: String {
+        rawValue
+    }
+
+    var title: String {
+        switch self {
+        case .spam:
+            return "Spam"
+        case .fake:
+            return "Fake Account"
+        case .violence:
+            return "Violence"
+        case .pornography:
+            return "Pornography"
+        case .childAbuse:
+            return "Child Abuse"
+        case .copyright:
+            return "Copyright"
+        case .geoIrrelevant:
+            return "Irrelevant Location"
+        case .illegalDrugs:
+            return "Illegal Drugs"
+        case .personalDetails:
+            return "Personal Details"
+        case .other:
+            return "Other"
+        }
+    }
+}
+
 struct HSSearchMessage: Codable, Identifiable, Hashable {
     let id: Int64
     let dialogID: Int64
