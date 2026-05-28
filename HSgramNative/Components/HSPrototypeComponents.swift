@@ -71,21 +71,21 @@ struct HSFloatingBackButton: View {
         Button(action: action) {
             HStack(spacing: title == nil ? 0 : 6) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                 if let title {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                 }
             }
             .foregroundStyle(foreground ?? data.themeConfig.primaryTextColor.color)
-            .frame(width: title == nil ? 48 : nil, height: 48)
-            .padding(.horizontal, title == nil ? 0 : 15)
+            .frame(width: title == nil ? 44 : nil, height: 44)
+            .padding(.horizontal, title == nil ? 0 : 13)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay {
                 Capsule()
                     .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.88), lineWidth: 1 / UIScreen.main.scale)
             }
-            .shadow(color: data.themeConfig.shadowColor.color, radius: 16, x: 0, y: 8)
+            .shadow(color: data.themeConfig.shadowColor.color, radius: 12, x: 0, y: 6)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title ?? "返回")
@@ -104,23 +104,23 @@ struct HSFloatingChatNavBar: View {
     var onSelectTheme: ((ChatThemeConfig) -> Void)?
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             HSFloatingBackButton(action: onBack)
 
             HStack(spacing: 4) {
                 Button(action: onProfile) {
                     VStack(spacing: 1) {
                         Text(title)
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(data.themeConfig.primaryTextColor.color)
                             .lineLimit(1)
                         Text(subtitle)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: 44)
                 }
                 .buttonStyle(.plain)
 
@@ -131,31 +131,31 @@ struct HSFloatingChatNavBar: View {
                         }
                     } label: {
                         Image(systemName: "paintpalette")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(data.themeConfig.primaryAccentColor.color)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 30, height: 30)
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("聊天主题")
                 }
             }
-            .padding(.leading, 16)
+            .padding(.leading, 14)
             .padding(.trailing, onSelectTheme == nil ? 16 : 8)
             .frame(maxWidth: .infinity)
-            .frame(height: 48)
+            .frame(height: 44)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay {
                 Capsule()
                     .stroke(data.themeConfig.glassStrokeColor.color, lineWidth: 1 / UIScreen.main.scale)
             }
-            .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 14, x: 0, y: 7)
+            .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 11, x: 0, y: 6)
 
             Button(action: onProfile) {
                 HSAvatarView(
                     initials: avatarInitials,
                     colorHex: avatarHex,
-                    size: 46,
+                    size: 42,
                     isGroup: isGroup
                 )
                 .overlay {
@@ -163,9 +163,9 @@ struct HSFloatingChatNavBar: View {
                 }
             }
             .buttonStyle(.plain)
-            .shadow(color: data.themeConfig.shadowColor.color, radius: 12, x: 0, y: 6)
+            .shadow(color: data.themeConfig.shadowColor.color, radius: 10, x: 0, y: 5)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.top, 6)
     }
 }
@@ -178,10 +178,10 @@ struct HSSearchBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             TextField(placeholder, text: $text)
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: 15, weight: .regular))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
@@ -197,8 +197,8 @@ struct HSSearchBar: View {
                 .accessibilityLabel("清空搜索")
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 42)
+        .padding(.horizontal, 12)
+        .frame(height: 38)
         .background(data.themeConfig.groupedBackgroundColor.color, in: Capsule())
     }
 }
@@ -289,7 +289,7 @@ struct HSConversationCell: View {
                 HSAvatarView(
                     initials: conversation.avatarInitials,
                     colorHex: conversation.avatarHex,
-                    size: 56,
+                    size: 52,
                     isGroup: conversation.isGroup,
                     isOnline: conversation.participants.contains(where: \.isOnline)
                 )
@@ -348,7 +348,7 @@ struct HSConversationCell: View {
                         }
                     }
                 }
-                .padding(.vertical, 7)
+                .padding(.vertical, 6)
 
                 Rectangle()
                     .fill(data.themeConfig.separatorColor.color.opacity(0.74))
@@ -356,7 +356,7 @@ struct HSConversationCell: View {
             }
         }
         .padding(.leading, 12)
-        .padding(.trailing, 14)
+        .padding(.trailing, 12)
         .contentShape(Rectangle())
         .background(data.themeConfig.appBackgroundColor.color)
     }
@@ -390,8 +390,8 @@ struct HSReactionBar: View {
                     onSelect(emoji)
                 } label: {
                     Text(emoji)
-                        .font(.system(size: 23))
-                        .frame(width: 42, height: 42)
+                        .font(.system(size: 21))
+                        .frame(width: 38, height: 38)
                         .background(data.themeConfig.cardBackgroundColor.color, in: Circle())
                         .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 9, x: 0, y: 4)
                 }
@@ -470,19 +470,19 @@ struct HSPinnedBanner: View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(data.themeConfig.primaryTextColor.color.opacity(0.45))
-                .frame(width: 4, height: 48)
+                .frame(width: 3, height: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 Text(message)
-                    .font(.system(size: 16, weight: .regular))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                     .lineLimit(2)
             }
             Spacer(minLength: 8)
             Image(systemName: "pin.fill")
-                .font(.system(size: 24, weight: .semibold))
+                .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
             Button(action: onClose) {
                 Image(systemName: "xmark")
@@ -492,14 +492,14 @@ struct HSPinnedBanner: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 12)
-        .background(data.themeConfig.activeChatTheme.pinnedBannerColor.color, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(data.themeConfig.activeChatTheme.pinnedBannerColor.color, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.92), lineWidth: 1 / UIScreen.main.scale)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
     }
 }
 
@@ -578,13 +578,13 @@ struct HSMessageBubble: View {
     private var bubbleContent: some View {
         if message.kind == .sticker, let sticker = message.sticker {
             VStack(alignment: message.isOutgoing ? .trailing : .leading, spacing: 4) {
-                HSStickerArtwork(sticker: sticker, size: 128)
+                HSStickerArtwork(sticker: sticker, size: 112)
                 statusLine
                     .padding(.horizontal, 9)
                     .padding(.vertical, 4)
                     .background(data.themeConfig.activeChatTheme.reactionPillColor.color.opacity(0.68), in: Capsule())
             }
-            .frame(maxWidth: 205, alignment: message.isOutgoing ? .trailing : .leading)
+            .frame(maxWidth: 188, alignment: message.isOutgoing ? .trailing : .leading)
         } else {
             VStack(alignment: .leading, spacing: 7) {
                 if showAuthor && !message.isOutgoing {
@@ -602,16 +602,16 @@ struct HSMessageBubble: View {
                 }
                 statusLine
             }
-            .padding(.leading, message.isOutgoing ? 11 : 15)
-            .padding(.trailing, message.isOutgoing ? 15 : 11)
-            .padding(.vertical, 7)
+            .padding(.leading, message.isOutgoing ? 10 : 14)
+            .padding(.trailing, message.isOutgoing ? 14 : 10)
+            .padding(.vertical, 6)
             .foregroundStyle(message.isOutgoing ? data.themeConfig.outgoingTextColor.color : data.themeConfig.incomingTextColor.color)
             .background(bubbleColor, in: HSMessageBubbleShape(isOutgoing: message.isOutgoing))
             .overlay {
                 HSMessageBubbleShape(isOutgoing: message.isOutgoing)
                     .stroke(data.themeConfig.bubbleStrokeColor.color.opacity(message.isOutgoing ? 0.80 : 1.0), lineWidth: 1 / UIScreen.main.scale)
             }
-            .frame(maxWidth: min(UIScreen.main.bounds.width * 0.70, 360), alignment: message.isOutgoing ? .trailing : .leading)
+            .frame(maxWidth: min(UIScreen.main.bounds.width * 0.68, 340), alignment: message.isOutgoing ? .trailing : .leading)
         }
     }
 
@@ -659,7 +659,7 @@ struct HSMessageBubble: View {
     @ViewBuilder
     private var messageText: some View {
         Text(attributedBody)
-            .font(.system(size: 16, weight: .regular))
+            .font(.system(size: 15, weight: .regular))
             .lineSpacing(1)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
@@ -670,7 +670,7 @@ struct HSMessageBubble: View {
         for mention in message.mentions {
             if let range = attributed.range(of: "@\(mention)") {
                 attributed[range].foregroundColor = data.themeConfig.secondaryAccentColor.color
-                attributed[range].font = .system(size: 16, weight: .semibold)
+                attributed[range].font = .system(size: 15, weight: .semibold)
             }
         }
         if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) {
@@ -700,9 +700,9 @@ struct HSMessageBubble: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(height: 150)
+                        .frame(height: 132)
                     Image(systemName: attachment.previewSystemImage)
-                        .font(.system(size: 40, weight: .semibold))
+                        .font(.system(size: 34, weight: .semibold))
                         .foregroundStyle(data.themeConfig.inverseTextColor.color.opacity(0.90))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     Text(attachment.subtitle)
@@ -710,7 +710,7 @@ struct HSMessageBubble: View {
                         .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .padding(10)
                 }
-                .frame(width: 228)
+                .frame(width: 210)
             case .file, .link, .location, .checklist:
                 HStack(spacing: 10) {
                     Image(systemName: attachment.previewSystemImage)
@@ -769,7 +769,7 @@ struct HSMessageBubble: View {
                 }
             }
         }
-        .frame(maxWidth: min(UIScreen.main.bounds.width * 0.70, 360), alignment: message.isOutgoing ? .trailing : .leading)
+        .frame(maxWidth: min(UIScreen.main.bounds.width * 0.68, 340), alignment: message.isOutgoing ? .trailing : .leading)
     }
 
     private var bubbleColor: Color {
@@ -797,9 +797,9 @@ struct HSMessageInputBar: View {
         HStack(alignment: .bottom, spacing: 7) {
             Button(action: onAttach) {
                 Image(systemName: "paperclip")
-                    .font(.system(size: 22, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .frame(width: 46, height: 46)
+                    .frame(width: 42, height: 42)
                     .background(data.themeConfig.inputFieldBackgroundColor.color, in: Circle())
                     .shadow(color: data.themeConfig.shadowColor.color.opacity(0.67), radius: 10, x: 0, y: 4)
             }
@@ -808,9 +808,9 @@ struct HSMessageInputBar: View {
 
             HStack(spacing: 8) {
                 TextField("输入消息", text: $text, axis: .vertical)
-                    .font(.system(size: 17))
+                    .font(.system(size: 16))
                     .lineLimit(1...5)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 8)
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
 
                 Button(action: onEmoji) {
@@ -824,7 +824,7 @@ struct HSMessageInputBar: View {
             }
             .padding(.leading, 14)
             .padding(.trailing, 7)
-            .frame(minHeight: 46)
+            .frame(minHeight: 42)
             .background(data.themeConfig.inputFieldBackgroundColor.color, in: Capsule())
             .overlay {
                 Capsule().stroke(data.themeConfig.glassStrokeColor.color.opacity(0.66), lineWidth: 1 / UIScreen.main.scale)
@@ -834,9 +834,9 @@ struct HSMessageInputBar: View {
                 text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? onVoice() : onSend()
             } label: {
                 Image(systemName: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? (isStickerPanelVisible ? "chevron.up" : "mic.fill") : "arrow.up")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .frame(width: 46, height: 46)
+                    .frame(width: 42, height: 42)
                     .background(data.themeConfig.inputFieldBackgroundColor.color, in: Circle())
                     .shadow(color: data.themeConfig.shadowColor.color.opacity(0.67), radius: 10, x: 0, y: 4)
             }
@@ -867,18 +867,18 @@ struct HSAttachmentSheet: View {
                 VStack(spacing: 0) {
                     Capsule()
                         .fill(data.themeConfig.separatorColor.color.opacity(0.55))
-                        .frame(width: 54, height: 5)
-                        .padding(.top, 8)
-                        .padding(.bottom, 10)
+                        .frame(width: 48, height: 4)
+                        .padding(.top, 7)
+                        .padding(.bottom, 8)
 
                     HStack {
                         Button {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) { isPresented = false }
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                                .frame(width: 44, height: 44)
+                                .frame(width: 40, height: 40)
                                 .background(data.themeConfig.cardBackgroundColor.color, in: Circle())
                         }
                         .buttonStyle(.plain)
@@ -892,16 +892,16 @@ struct HSAttachmentSheet: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Text("最近")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.system(size: 17, weight: .bold))
                                 Image(systemName: "chevron.down")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.system(size: 15, weight: .semibold))
                             }
                             .foregroundStyle(data.themeConfig.primaryTextColor.color)
                         }
 
                         Spacer()
 
-                        Color.clear.frame(width: 44, height: 44)
+                        Color.clear.frame(width: 40, height: 40)
                     }
                     .padding(.horizontal, 14)
 
@@ -913,12 +913,12 @@ struct HSAttachmentSheet: View {
                         withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) { isPresented = false }
                     }
                     .padding(.horizontal, 12)
-                    .padding(.top, 12)
-                    .padding(.bottom, 12)
+                    .padding(.top, 10)
+                    .padding(.bottom, 10)
                 }
-                .background(data.themeConfig.sheetBackgroundColor.color, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .background(data.themeConfig.sheetBackgroundColor.color, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(alignment: .top) {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.96), lineWidth: 1 / UIScreen.main.scale)
                 }
                 .ignoresSafeArea(edges: .bottom)
@@ -968,7 +968,7 @@ struct HSAttachmentSheet: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(maxHeight: 380)
+        .frame(maxHeight: 340)
     }
 
     private func kind(for mode: String) -> AttachmentKind {
@@ -997,18 +997,18 @@ private struct HSTranslucentAttachmentModeBar: View {
                 } label: {
                     VStack(spacing: 5) {
                         Image(systemName: icon(for: mode))
-                            .font(.system(size: 22, weight: .semibold))
+                            .font(.system(size: 20, weight: .semibold))
                         Text(mode)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundStyle(selectedMode == mode ? data.themeConfig.primaryAccentColor.color : data.themeConfig.primaryTextColor.color)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 64)
+                    .frame(height: 58)
                     .background {
                         if selectedMode == mode {
                             Circle()
                                 .fill(data.themeConfig.primaryAccentColor.color.opacity(0.13))
-                                .frame(width: 62, height: 62)
+                                .frame(width: 56, height: 56)
                         }
                     }
                 }
@@ -1045,18 +1045,18 @@ struct HSStickerPanel: View {
                 HStack(spacing: 14) {
                     Button(action: {}) {
                         Image(systemName: "plus.square.on.square")
-                            .font(.system(size: 22, weight: .medium))
+                            .font(.system(size: 20, weight: .medium))
                     }
                     Button(action: {}) {
                         Image(systemName: "clock")
-                            .font(.system(size: 23, weight: .medium))
+                            .font(.system(size: 21, weight: .medium))
                     }
                     Spacer()
                 }
                 .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                 .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 10)
 
                 HSSearchBar(text: $query, placeholder: "搜索")
                     .padding(.horizontal, 12)
@@ -1065,7 +1065,7 @@ struct HSStickerPanel: View {
                 HStack {
                     Spacer()
                     Text("最近使用")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     Spacer()
                     Button {
@@ -1086,7 +1086,7 @@ struct HSStickerPanel: View {
                             Button {
                                 onPick(sticker)
                             } label: {
-                                HSStickerArtwork(sticker: sticker, size: 56)
+                                HSStickerArtwork(sticker: sticker, size: 50)
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.plain)
@@ -1095,15 +1095,15 @@ struct HSStickerPanel: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 78)
                 }
-                .frame(height: 250)
+                .frame(height: 228)
 
                 HStack(spacing: 12) {
                     HSCapsuleSegmentedControl(selection: $selectedMode, items: modes)
                     Button(action: {}) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 24, weight: .semibold))
+                            .font(.system(size: 21, weight: .semibold))
                             .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                            .frame(width: 48, height: 48)
+                            .frame(width: 44, height: 44)
                             .background(data.themeConfig.cardBackgroundColor.color.opacity(0.80), in: Circle())
                     }
                     .buttonStyle(.plain)
@@ -1205,7 +1205,7 @@ struct HSGroupProfileHeader: View {
                     .opacity(0.18)
                     .scaleEffect(1.6)
             }
-            .frame(height: 360)
+            .frame(height: 320)
             .clipped()
 
             HStack(alignment: .top) {
@@ -1216,10 +1216,10 @@ struct HSGroupProfileHeader: View {
                         Image(systemName: "crop.rotate")
                         Text("编辑")
                     }
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(data.themeConfig.inverseTextColor.color)
-                    .padding(.horizontal, 15)
-                    .frame(height: 42)
+                    .padding(.horizontal, 13)
+                    .frame(height: 38)
                     .background(data.themeConfig.shadowColor.color.opacity(0.34), in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -1230,42 +1230,42 @@ struct HSGroupProfileHeader: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(group.title)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                 Text("\(group.memberCount) 位成员")
-                    .font(.system(size: 17, weight: .regular))
+                    .font(.system(size: 15, weight: .regular))
             }
             .foregroundStyle(data.themeConfig.inverseTextColor.color)
             .padding(.horizontal, 18)
-            .padding(.bottom, 78)
+            .padding(.bottom, 70)
         }
     }
 
     private var avatarHeader: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             HStack {
                 HSFloatingBackButton(action: onBack)
                 Spacer()
                 Button("编辑", action: onEdit)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .padding(.horizontal, 15)
-                    .frame(height: 48)
+                    .padding(.horizontal, 13)
+                    .frame(height: 44)
                     .background(.ultraThinMaterial, in: Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
 
-            HSAvatarView(initials: group.avatarInitials, colorHex: group.avatarHex, size: 104, isGroup: true)
+            HSAvatarView(initials: group.avatarInitials, colorHex: group.avatarHex, size: 92, isGroup: true)
             VStack(spacing: 4) {
                 Text(group.title)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 Text("\(group.memberCount) 位成员")
-                    .font(.system(size: 16))
+                    .font(.system(size: 15))
                     .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             }
         }
-        .padding(.bottom, 18)
+        .padding(.bottom, 14)
     }
 
     private var actionButtons: some View {
@@ -1284,14 +1284,14 @@ struct HSGroupProfileHeader: View {
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 23, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
             }
             .foregroundStyle(mode == .large ? data.themeConfig.inverseTextColor.color : data.themeConfig.primaryAccentColor.color)
             .frame(maxWidth: .infinity)
-            .frame(height: 62)
-            .background(mode == .large ? data.themeConfig.glassStrokeColor.color.opacity(0.20) : data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(height: 54)
+            .background(mode == .large ? data.themeConfig.glassStrokeColor.color.opacity(0.20) : data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1309,8 +1309,8 @@ struct HSGroupedSettingsCard<Content: View>: View {
         VStack(spacing: 0) {
             content
         }
-        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -1370,14 +1370,14 @@ struct HSSettingsRow: View {
     private var rowContent: some View {
         HStack(spacing: 11) {
             Image(systemName: icon)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(data.themeConfig.inverseTextColor.color)
-                .frame(width: 30, height: 30)
+                .frame(width: 28, height: 28)
                 .background(accent ?? data.themeConfig.primaryAccentColor.color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
@@ -1407,8 +1407,8 @@ struct HSSettingsRow: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
 }
@@ -1421,10 +1421,10 @@ struct HSMemberRow: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            HSAvatarView(initials: user.initials, colorHex: user.accentHex, size: 48, isOnline: user.isOnline)
+            HSAvatarView(initials: user.initials, colorHex: user.accentHex, size: 44, isOnline: user.isOnline)
             VStack(alignment: .leading, spacing: 3) {
                 Text(user.displayName)
-                    .font(.system(size: 17, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 Text(user.isOnline ? "在线" : user.lastSeenText)
                     .font(.system(size: 14, weight: .regular))
@@ -1443,7 +1443,7 @@ struct HSMemberRow: View {
         }
         .padding(.leading, 14)
         .padding(.trailing, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, 7)
         .overlay(alignment: .bottom) {
             if showSeparator {
                 Rectangle()
@@ -1465,7 +1465,7 @@ struct HSPermissionRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 21, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 if let detail {
                     Text(detail)
@@ -1478,8 +1478,8 @@ struct HSPermissionRow: View {
                 .labelsHidden()
                 .tint(isOn ? data.themeConfig.successColor.color : data.themeConfig.destructiveColor.color)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
     }
 }
 
@@ -1508,8 +1508,8 @@ struct HSSliderControl: View {
                 .tint(data.themeConfig.primaryAccentColor.color)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 14)
-        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.vertical, 12)
+        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -1527,12 +1527,12 @@ struct HSCapsuleSegmentedControl: View {
                     }
                 } label: {
                     Text(item)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(data.themeConfig.primaryTextColor.color)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 34)
+                        .frame(height: 32)
                         .background {
                             if selection == item {
                                 Capsule()
@@ -1564,14 +1564,14 @@ struct HSTranslucentTabBar: View {
                 } label: {
                     VStack(spacing: 3) {
                         Image(systemName: selection == tab ? tab.selectedIcon : tab.icon)
-                            .font(.system(size: 21, weight: .semibold))
-                            .frame(height: 23)
+                            .font(.system(size: 19, weight: .semibold))
+                            .frame(height: 21)
                         Text(tab.title)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 10, weight: .semibold))
                     }
                     .foregroundStyle(selection == tab ? data.themeConfig.primaryAccentColor.color : data.themeConfig.primaryTextColor.color)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(height: 50)
                     .background {
                         if selection == tab {
                             Capsule()
@@ -1589,7 +1589,7 @@ struct HSTranslucentTabBar: View {
             Capsule()
                 .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.50), lineWidth: 1 / UIScreen.main.scale)
         }
-        .shadow(color: data.themeConfig.shadowColor.color, radius: 22, x: 0, y: 8)
+        .shadow(color: data.themeConfig.shadowColor.color, radius: 18, x: 0, y: 7)
         .padding(.horizontal, 14)
         .padding(.bottom, 4)
     }
@@ -1614,9 +1614,9 @@ struct HSEmptyStateView: View {
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: systemImage)
-                .font(.system(size: 48, weight: .semibold))
+                .font(.system(size: 40, weight: .semibold))
                 .foregroundStyle(data.themeConfig.primaryAccentColor.color)
-                .frame(width: 94, height: 94)
+                .frame(width: 82, height: 82)
                 .background(data.themeConfig.primaryAccentColor.color.opacity(0.12), in: Circle())
             Text(title)
                 .font(.title3.weight(.bold))

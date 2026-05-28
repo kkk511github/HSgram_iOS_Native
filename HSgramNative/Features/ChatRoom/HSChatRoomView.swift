@@ -211,7 +211,7 @@ struct HSChatRoomView: View {
     }
 
     private var bottomClearance: CGFloat {
-        showStickerPanel ? 410 : 78
+        showStickerPanel ? 360 : 72
     }
 
     private func openProfile() {

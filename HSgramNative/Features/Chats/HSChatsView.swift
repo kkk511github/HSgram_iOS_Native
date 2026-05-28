@@ -81,19 +81,19 @@ struct HSChatsView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button("编辑") {}
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                .frame(height: 48)
-                .padding(.horizontal, 15)
+                .frame(height: 44)
+                .padding(.horizontal, 13)
                 .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Capsule())
 
             Spacer()
 
             HStack(spacing: 6) {
                 Text("聊天")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                 Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
             }
             .foregroundStyle(data.themeConfig.primaryTextColor.color)
 
@@ -101,16 +101,16 @@ struct HSChatsView: View {
 
             Button(action: {}) {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 21, weight: .semibold))
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 44, height: 44)
                     .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Circle())
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 7)
-        .padding(.bottom, 7)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
         .background(data.themeConfig.navigationBarBackground.color.opacity(0.02))
     }
 }

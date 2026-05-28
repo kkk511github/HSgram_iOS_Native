@@ -49,7 +49,7 @@ enum HSPrototypeTheme {
 }
 
 enum HSLayoutMetrics {
-    static let rootTabBarClearance: CGFloat = 92
+    static let rootTabBarClearance: CGFloat = 82
     static let chatInputClearance: CGFloat = 22
 }
 
