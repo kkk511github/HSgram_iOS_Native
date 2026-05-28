@@ -475,6 +475,9 @@ struct HSNativeServerContract {
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "media", method == "POST" {
             return .messagesSendMedia
         }
+        if parts.count == 4, parts[1] == "dialogs", parts[3] == "typing", method == "POST" {
+            return .messagesSetTyping
+        }
         if parts.count == 5, parts[1] == "dialogs", parts[3] == "shared-media", parts[4] == "counters", method == "GET" {
             return .messagesGetSearchCounters
         }
@@ -671,6 +674,7 @@ enum HSNativeServerOperation: String, Equatable {
     case messagesGetHistory = "messages.getHistory"
     case messagesSendMessage = "messages.sendMessage"
     case messagesSendMedia = "messages.sendMedia"
+    case messagesSetTyping = "messages.setTyping"
     case messagesSaveDraft = "messages.saveDraft"
     case messagesReadHistory = "messages.readHistory"
     case messagesMarkDialogUnread = "messages.markDialogUnread"

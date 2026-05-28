@@ -476,6 +476,20 @@ final class HSAPIClient {
         return message
     }
 
+    func setTyping(
+        dialogID: Int64,
+        activity: HSInputActivityKind,
+        progress: Int? = nil,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/typing",
+            method: "POST",
+            body: TypingActivityBody(activity: activity, progress: progress),
+            session: session
+        )
+    }
+
     func downloadMedia(_ media: HSMessageMedia, session: HSUserSession) async throws -> Data {
         try await downloadMedia(media, session: session, progress: nil)
     }
@@ -1123,6 +1137,11 @@ private struct MediaMessageBody: Encodable {
     let replyToMessageID: Int64?
     let duration: Double?
     let waveform: Data?
+}
+
+private struct TypingActivityBody: Encodable {
+    let activity: HSInputActivityKind
+    let progress: Int?
 }
 
 private struct MarkUnreadBody: Encodable {

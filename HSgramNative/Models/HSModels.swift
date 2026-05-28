@@ -921,6 +921,35 @@ struct HSMessageAction: Codable, Hashable {
     let ptsCount: Int?
 }
 
+enum HSInputActivityKind: String, Codable, Hashable {
+    case cancel
+    case typing
+    case recordingVoice = "recording_voice"
+    case recordingVideo = "recording_video"
+    case uploadingFile = "uploading_file"
+    case uploadingPhoto = "uploading_photo"
+    case uploadingVideo = "uploading_video"
+    case uploadingVoice = "uploading_voice"
+    case uploadingInstantVideo = "uploading_instant_video"
+    case choosingSticker = "choosing_sticker"
+}
+
+struct HSInputActivity: Codable, Hashable {
+    let dialogID: Int64
+    let userID: Int64
+    let kind: HSInputActivityKind
+    let progress: Int?
+    let expiresAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case dialogID = "dialog_id"
+        case userID = "user_id"
+        case kind
+        case progress
+        case expiresAt = "expires_at"
+    }
+}
+
 struct HSSyncState: Codable, Hashable {
     let pts: Int
     let qts: Int
@@ -934,12 +963,13 @@ struct HSSyncDifference: Codable, Hashable {
     let messages: [HSMessage]
     let changedDialogIDs: [Int64]
     let readOutboxMaxIDsByDialogID: [Int64: Int64]
+    let inputActivities: [HSInputActivity]
     let affectsAllDialogs: Bool
     let isTooLong: Bool
     let isSlice: Bool
 
     var requiresRefresh: Bool {
-        isTooLong || affectsAllDialogs || !messages.isEmpty || !changedDialogIDs.isEmpty || !readOutboxMaxIDsByDialogID.isEmpty
+        isTooLong || affectsAllDialogs || !messages.isEmpty || !changedDialogIDs.isEmpty || !readOutboxMaxIDsByDialogID.isEmpty || !inputActivities.isEmpty
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -947,6 +977,7 @@ struct HSSyncDifference: Codable, Hashable {
         case messages
         case changedDialogIDs = "changed_dialog_ids"
         case readOutboxMaxIDsByDialogID = "read_outbox_max_ids_by_dialog_id"
+        case inputActivities = "input_activities"
         case affectsAllDialogs = "affects_all_dialogs"
         case isTooLong = "is_too_long"
         case isSlice = "is_slice"
@@ -957,6 +988,7 @@ struct HSSyncDifference: Codable, Hashable {
         case messages
         case changedDialogIDs
         case readOutboxMaxIDsByDialogID
+        case inputActivities
         case affectsAllDialogs
         case isTooLong
         case isSlice
@@ -967,6 +999,7 @@ struct HSSyncDifference: Codable, Hashable {
         messages: [HSMessage],
         changedDialogIDs: [Int64],
         readOutboxMaxIDsByDialogID: [Int64: Int64] = [:],
+        inputActivities: [HSInputActivity] = [],
         affectsAllDialogs: Bool,
         isTooLong: Bool,
         isSlice: Bool
@@ -975,6 +1008,7 @@ struct HSSyncDifference: Codable, Hashable {
         self.messages = messages
         self.changedDialogIDs = changedDialogIDs
         self.readOutboxMaxIDsByDialogID = readOutboxMaxIDsByDialogID
+        self.inputActivities = inputActivities
         self.affectsAllDialogs = affectsAllDialogs
         self.isTooLong = isTooLong
         self.isSlice = isSlice
@@ -994,6 +1028,9 @@ struct HSSyncDifference: Codable, Hashable {
         readOutboxMaxIDsByDialogID = Self.decodeReadOutboxMaxIDs(from: container, key: .readOutboxMaxIDsByDialogID)
             ?? Self.decodeReadOutboxMaxIDs(from: legacyContainer, key: .readOutboxMaxIDsByDialogID)
             ?? [:]
+        inputActivities = try container.decodeIfPresent([HSInputActivity].self, forKey: .inputActivities)
+            ?? legacyContainer.decodeIfPresent([HSInputActivity].self, forKey: .inputActivities)
+            ?? []
         affectsAllDialogs = try container.decodeIfPresent(Bool.self, forKey: .affectsAllDialogs)
             ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .affectsAllDialogs)
             ?? false
@@ -1011,6 +1048,7 @@ struct HSSyncDifference: Codable, Hashable {
         try container.encode(messages, forKey: .messages)
         try container.encode(changedDialogIDs, forKey: .changedDialogIDs)
         try container.encode(Self.stringKeyedReadOutboxMaxIDs(from: readOutboxMaxIDsByDialogID), forKey: .readOutboxMaxIDsByDialogID)
+        try container.encode(inputActivities, forKey: .inputActivities)
         try container.encode(affectsAllDialogs, forKey: .affectsAllDialogs)
         try container.encode(isTooLong, forKey: .isTooLong)
         try container.encode(isSlice, forKey: .isSlice)
@@ -1050,6 +1088,7 @@ struct HSSyncDifference: Codable, Hashable {
             messages: messages,
             changedDialogIDs: changedDialogIDs,
             readOutboxMaxIDsByDialogID: readOutboxMaxIDsByDialogID,
+            inputActivities: inputActivities,
             affectsAllDialogs: affectsAllDialogs,
             isTooLong: isTooLong,
             isSlice: isSlice

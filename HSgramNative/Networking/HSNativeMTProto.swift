@@ -239,6 +239,7 @@ enum HSNativeMTProtoSchema {
     static let foldersEditPeerFolders: UInt32 = 0x6847d0ab
     static let messagesSendMessage: UInt32 = 0x545cd15a
     static let messagesSendMedia: UInt32 = 0xa550cd78
+    static let messagesSetTyping: UInt32 = 0x58943ee2
     static let messagesForwardMessages: UInt32 = 0xbb9fa475
     static let messagesSearchGlobal: UInt32 = 0x4bc6589a
     static let messagesSearch: UInt32 = 0x29ee847a
@@ -291,6 +292,17 @@ enum HSNativeMTProtoSchema {
     static let peerBlocked: UInt32 = 0xe8fd8014
     static let boolFalse: UInt32 = 0xbc799737
     static let boolTrue: UInt32 = 0x997275b5
+    static let sendMessageCancelAction: UInt32 = 0xfd5ec8f5
+    static let sendMessageRecordAudioAction: UInt32 = 0xd52f73f7
+    static let sendMessageRecordRoundAction: UInt32 = 0x88f27fbc
+    static let sendMessageRecordVideoAction: UInt32 = 0xa187d66f
+    static let sendMessageTypingAction: UInt32 = 0x16bf744e
+    static let sendMessageUploadAudioAction: UInt32 = 0xf351d7ab
+    static let sendMessageUploadDocumentAction: UInt32 = 0xaa0cd9e4
+    static let sendMessageUploadPhotoAction: UInt32 = 0xd1d34a26
+    static let sendMessageUploadRoundAction: UInt32 = 0x243e1c66
+    static let sendMessageUploadVideoAction: UInt32 = 0xe9763aec
+    static let sendMessageChooseStickerAction: UInt32 = 0xb05ac6b1
     static let inputPeerEmpty: UInt32 = 0x7f3b18ea
     static let inputPeerSelf: UInt32 = 0x7da07ec9
     static let inputPeerChat: UInt32 = 0x35a95cb9
@@ -778,6 +790,7 @@ private struct HSNativeSyncDifferencePayload: Equatable {
     let messages: [HSNativeParsedMessage]
     let affectedDialogIDs: [Int64]
     let readOutboxMaxIDsByDialogID: [Int64: Int64]
+    let inputActivities: [HSInputActivity]
     let affectsAllDialogs: Bool
     let chats: [HSNativeParsedChat]
     let users: [HSNativeParsedUser]
@@ -789,17 +802,20 @@ private struct HSNativeParsedDifferenceUpdate: Equatable {
     let message: HSNativeParsedMessage?
     let affectedDialogIDs: [Int64]
     let readOutboxMaxIDsByDialogID: [Int64: Int64]
+    let inputActivity: HSInputActivity?
     let affectsAllDialogs: Bool
 
     init(
         message: HSNativeParsedMessage?,
         affectedDialogIDs: [Int64],
         readOutboxMaxIDsByDialogID: [Int64: Int64] = [:],
+        inputActivity: HSInputActivity? = nil,
         affectsAllDialogs: Bool
     ) {
         self.message = message
         self.affectedDialogIDs = affectedDialogIDs
         self.readOutboxMaxIDsByDialogID = readOutboxMaxIDsByDialogID
+        self.inputActivity = inputActivity
         self.affectsAllDialogs = affectsAllDialogs
     }
 }
@@ -1091,7 +1107,7 @@ final class HSNativeMTProtoClient {
 
     func uploadProfilePhoto(data: Data, session: HSUserSession) async throws {
         let credentials = try authorizedAuthKey(for: session)
-        let inputFile = try await uploadFile(
+        let inputFile = try await uploadMediaFile(
             data: data,
             fileName: "profile.jpg",
             credentials: credentials,
@@ -1263,6 +1279,7 @@ final class HSNativeMTProtoClient {
                 messages: [],
                 changedDialogIDs: [],
                 readOutboxMaxIDsByDialogID: [:],
+                inputActivities: [],
                 affectsAllDialogs: true,
                 isTooLong: true,
                 isSlice: false
@@ -1285,6 +1302,7 @@ final class HSNativeMTProtoClient {
             messages: messages,
             changedDialogIDs: changedDialogIDs,
             readOutboxMaxIDsByDialogID: payload.readOutboxMaxIDsByDialogID,
+            inputActivities: payload.inputActivities,
             affectsAllDialogs: payload.affectsAllDialogs,
             isTooLong: payload.isTooLong,
             isSlice: payload.isSlice
@@ -1934,6 +1952,25 @@ final class HSNativeMTProtoClient {
             replyToMessageID: replyToMessageID,
             sessionUserID: session.userID
         )
+    }
+
+    func setTyping(
+        dialogID: Int64,
+        activity: HSInputActivityKind,
+        progress: Int?,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesSetTypingPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                activity: activity,
+                progress: progress
+            ),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
     }
 
     func downloadMedia(
@@ -3260,6 +3297,45 @@ final class HSNativeMTProtoClient {
         writer.raw(peer)
         writer.int32(Int32(clamping: maxMessageID ?? Int64(Int32.max - 1)))
         return writer.data
+    }
+
+    func messagesSetTypingPayload(peer: Data, activity: HSInputActivityKind, progress: Int?) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSetTyping)
+        writer.int32(0)
+        writer.raw(peer)
+        writeSendMessageAction(activity, progress: progress, writer: &writer)
+        return writer.data
+    }
+
+    func writeSendMessageAction(_ activity: HSInputActivityKind, progress: Int?, writer: inout HSTLWriter) {
+        switch activity {
+        case .cancel:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageCancelAction)
+        case .typing:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageTypingAction)
+        case .recordingVoice:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageRecordAudioAction)
+        case .recordingVideo:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageRecordVideoAction)
+        case .uploadingFile:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageUploadDocumentAction)
+            writer.int32(Int32(clamping: progress ?? 0))
+        case .uploadingPhoto:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageUploadPhotoAction)
+            writer.int32(Int32(clamping: progress ?? 0))
+        case .uploadingVideo:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageUploadVideoAction)
+            writer.int32(Int32(clamping: progress ?? 0))
+        case .uploadingVoice:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageUploadAudioAction)
+            writer.int32(Int32(clamping: progress ?? 0))
+        case .uploadingInstantVideo:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageUploadRoundAction)
+            writer.int32(Int32(clamping: progress ?? 0))
+        case .choosingSticker:
+            writer.constructor(HSNativeMTProtoSchema.sendMessageChooseStickerAction)
+        }
     }
 
     func messagesForwardMessagesPayload(fromPeer: Data, messageID: Int64, toPeer: Data) -> Data {
@@ -4831,6 +4907,7 @@ final class HSNativeMTProtoClient {
                 messages: [],
                 affectedDialogIDs: [],
                 readOutboxMaxIDsByDialogID: [:],
+                inputActivities: [],
                 affectsAllDialogs: false,
                 chats: [],
                 users: [],
@@ -4843,6 +4920,7 @@ final class HSNativeMTProtoClient {
             let updates = try parseVector(reader: &reader, elementName: "Update", parseDifferenceUpdate)
             let updateMessages = updates.compactMap(\.message)
             let affectedDialogIDs = Array(Set(updates.flatMap(\.affectedDialogIDs))).sorted()
+            let inputActivities = updates.compactMap(\.inputActivity)
             var readOutboxMaxIDsByDialogID: [Int64: Int64] = [:]
             for update in updates {
                 for (dialogID, maxID) in update.readOutboxMaxIDsByDialogID {
@@ -4858,6 +4936,7 @@ final class HSNativeMTProtoClient {
                 messages: newMessages + updateMessages,
                 affectedDialogIDs: affectedDialogIDs,
                 readOutboxMaxIDsByDialogID: readOutboxMaxIDsByDialogID,
+                inputActivities: inputActivities,
                 affectsAllDialogs: affectsAllDialogs,
                 chats: chats,
                 users: users,
@@ -4878,6 +4957,7 @@ final class HSNativeMTProtoClient {
                 messages: [],
                 affectedDialogIDs: [],
                 readOutboxMaxIDsByDialogID: [:],
+                inputActivities: [],
                 affectsAllDialogs: true,
                 chats: [],
                 users: [],
@@ -7325,22 +7405,42 @@ final class HSNativeMTProtoClient {
             return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [], affectsAllDialogs: true)
         case HSNativeMTProtoSchema.updateUserTyping:
             let flags = try reader.uint32()
-            _ = try reader.int64()
+            let userID = try reader.int64()
             if flags & 1 != 0 { _ = try reader.int32() }
-            try skipSendMessageAction(reader: &reader)
-            return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [], affectsAllDialogs: false)
+            let action = try parseSendMessageAction(reader: &reader)
+            let activity = inputActivity(dialogID: userID, userID: userID, action: action)
+            return HSNativeParsedDifferenceUpdate(
+                message: nil,
+                affectedDialogIDs: [],
+                inputActivity: activity,
+                affectsAllDialogs: false
+            )
         case HSNativeMTProtoSchema.updateChatUserTyping:
-            _ = try reader.int64()
-            _ = try parsePeer(reader: &reader)
-            try skipSendMessageAction(reader: &reader)
-            return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [], affectsAllDialogs: false)
+            let chatID = try reader.int64()
+            let fromPeer = try parsePeer(reader: &reader)
+            let action = try parseSendMessageAction(reader: &reader)
+            let dialogID = HSNativePeer.chat(chatID).dialogID
+            let activity = inputActivity(dialogID: dialogID, userID: rawPeerID(from: fromPeer), action: action)
+            return HSNativeParsedDifferenceUpdate(
+                message: nil,
+                affectedDialogIDs: [],
+                inputActivity: activity,
+                affectsAllDialogs: false
+            )
         case HSNativeMTProtoSchema.updateChannelUserTyping:
             let flags = try reader.uint32()
-            _ = try reader.int64()
+            let channelID = try reader.int64()
             if flags & 1 != 0 { _ = try reader.int32() }
-            _ = try parsePeer(reader: &reader)
-            try skipSendMessageAction(reader: &reader)
-            return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [], affectsAllDialogs: false)
+            let fromPeer = try parsePeer(reader: &reader)
+            let action = try parseSendMessageAction(reader: &reader)
+            let dialogID = HSNativePeer.channel(channelID).dialogID
+            let activity = inputActivity(dialogID: dialogID, userID: rawPeerID(from: fromPeer), action: action)
+            return HSNativeParsedDifferenceUpdate(
+                message: nil,
+                affectedDialogIDs: [],
+                inputActivity: activity,
+                affectsAllDialogs: false
+            )
         case HSNativeMTProtoSchema.updateChatParticipants:
             let peer = try parseChatParticipantsPeer(reader: &reader)
             return HSNativeParsedDifferenceUpdate(message: nil, affectedDialogIDs: [peer.dialogID], affectsAllDialogs: false)
@@ -9087,28 +9187,69 @@ final class HSNativeMTProtoClient {
         _ = try reader.int32()
     }
 
-    private static func skipSendMessageAction(reader: inout HSTLReader) throws {
+    private static func parseSendMessageAction(reader: inout HSTLReader) throws -> (kind: HSInputActivityKind, progress: Int?) {
         let constructor = try reader.uint32()
         switch constructor {
-        case 0x16bf744e, 0xfd5ec8f5, 0xa187d66f, 0xd52f73f7,
-            0x176f8ba1, 0x628cbc6f, 0xdd6a8f48, 0x88f27fbc,
-            0xd92c2285, 0xb05ac6b1:
-            return
-        case 0xe9763aec, 0xf351d7ab, 0xd1d34a26, 0xaa0cd9e4,
-            0x243e1c66, 0xdbda9246:
+        case HSNativeMTProtoSchema.sendMessageCancelAction:
+            return (.cancel, nil)
+        case HSNativeMTProtoSchema.sendMessageTypingAction:
+            return (.typing, nil)
+        case HSNativeMTProtoSchema.sendMessageRecordAudioAction:
+            return (.recordingVoice, nil)
+        case HSNativeMTProtoSchema.sendMessageRecordVideoAction:
+            return (.recordingVideo, nil)
+        case HSNativeMTProtoSchema.sendMessageRecordRoundAction:
+            return (.recordingVideo, nil)
+        case HSNativeMTProtoSchema.sendMessageChooseStickerAction:
+            return (.choosingSticker, nil)
+        case HSNativeMTProtoSchema.sendMessageUploadAudioAction:
+            return (.uploadingVoice, Int(try reader.int32()))
+        case HSNativeMTProtoSchema.sendMessageUploadDocumentAction:
+            return (.uploadingFile, Int(try reader.int32()))
+        case HSNativeMTProtoSchema.sendMessageUploadPhotoAction:
+            return (.uploadingPhoto, Int(try reader.int32()))
+        case HSNativeMTProtoSchema.sendMessageUploadRoundAction:
+            return (.uploadingInstantVideo, Int(try reader.int32()))
+        case HSNativeMTProtoSchema.sendMessageUploadVideoAction:
+            return (.uploadingVideo, Int(try reader.int32()))
+        case 0x176f8ba1, 0x628cbc6f, 0xdd6a8f48, 0xd92c2285:
+            return (.typing, nil)
+        case 0xdbda9246:
             _ = try reader.int32()
+            return (.uploadingFile, nil)
         case 0x25972bcb:
             _ = try reader.string()
             _ = try reader.int32()
             try skipDataJSON(reader: &reader)
+            return (.typing, nil)
         case 0xb665902e:
             _ = try reader.string()
+            return (.typing, nil)
         case 0x376d975c:
             _ = try reader.int64()
             try skipTextWithEntities(reader: &reader)
+            return (.typing, nil)
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported SendMessageAction constructor 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func skipSendMessageAction(reader: inout HSTLReader) throws {
+        _ = try parseSendMessageAction(reader: &reader)
+    }
+
+    private static func inputActivity(
+        dialogID: Int64,
+        userID: Int64,
+        action: (kind: HSInputActivityKind, progress: Int?)
+    ) -> HSInputActivity {
+        HSInputActivity(
+            dialogID: dialogID,
+            userID: userID,
+            kind: action.kind,
+            progress: action.progress,
+            expiresAt: Date().addingTimeInterval(action.kind == .cancel ? 0 : 6)
+        )
     }
 
     private static func skipDataJSON(reader: inout HSTLReader) throws {

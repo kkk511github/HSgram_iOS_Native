@@ -407,7 +407,10 @@ struct ChatListView: View {
                     await refresh()
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
+                guard !HSInputActivityNotification.isTypingOnly(notification) else {
+                    return
+                }
                 Task {
                     await refresh()
                 }

@@ -443,6 +443,9 @@ final class HSSyncStore: ObservableObject {
         if !difference.readOutboxMaxIDsByDialogID.isEmpty {
             userInfo["read_outbox_max_ids"] = difference.readOutboxMaxIDsByDialogID
         }
+        if !difference.inputActivities.isEmpty {
+            userInfo[HSInputActivityNotification.inputActivities] = difference.inputActivities
+        }
         NotificationCenter.default.post(name: .hsNativeSyncDidChange, object: self, userInfo: userInfo)
     }
 }

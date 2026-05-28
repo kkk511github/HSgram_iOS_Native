@@ -140,13 +140,24 @@ struct ChatThreadView: View {
     @State private var didResolveInitialUnreadSeparator = false
     @State private var readOutboxMaxID: Int64
     @State private var pendingHistoryAction: PrivateChatHistoryAction?
+    @State private var remoteInputActivity: HSInputActivity?
+    @State private var lastSentInputActivity: (kind: HSInputActivityKind, date: Date)?
+    @State private var inputActivityCleanupTask: Task<Void, Never>?
 
     private let pageSize = 50
     private let unreadSeparatorScrollID = "hs-unread-separator"
     private static let linkDetector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+    private static let inputActivityThrottle: TimeInterval = 4
 
     private var activeReplyToMessageID: Int64? {
         replyingToMessage?.id ?? draftReplyToMessageID
+    }
+
+    private var currentRemoteInputActivity: HSInputActivity? {
+        guard let remoteInputActivity, remoteInputActivity.expiresAt > Date() else {
+            return nil
+        }
+        return remoteInputActivity
     }
 
     private var isSavedMessagesMode: Bool {
@@ -351,6 +362,7 @@ struct ChatThreadView: View {
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
+                    applyInputActivities(from: notification)
                     applyReadOutboxMaxID(from: notification)
                     guard shouldRefreshThread(for: notification) else {
                         return
@@ -415,6 +427,7 @@ struct ChatThreadView: View {
                         statusMessage = nil
                         errorMessage = message
                     },
+                    onVoiceRecordingStateChanged: handleVoiceRecordingStateChanged,
                     onSend: {
                         Task {
                             await send()
@@ -428,7 +441,7 @@ struct ChatThreadView: View {
         .background(HSChatWallpaper().ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .principal) {
-                ChatThreadNavigationTitle(chat: chat, mode: mode)
+                ChatThreadNavigationTitle(chat: chat, mode: mode, inputActivity: currentRemoteInputActivity)
             }
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button {
@@ -594,11 +607,14 @@ struct ChatThreadView: View {
         }
         .onChange(of: draft) { newValue in
             scheduleLinkPreviewRefresh(for: newValue)
+            handleDraftInputActivity(newValue)
         }
         .onDisappear {
+            inputActivityCleanupTask?.cancel()
             cancelActiveTransfersOnDisappear()
             linkPreviewTask?.cancel()
             Task {
+                await sendInputActivity(.cancel, force: true)
                 await saveDraft()
             }
         }
@@ -799,7 +815,38 @@ struct ChatThreadView: View {
         }
     }
 
+    private func applyInputActivities(from notification: Notification) {
+        guard let activity = HSInputActivityNotification.activities(from: notification)
+            .last(where: { $0.dialogID == chat.id && $0.userID != authStore.session?.userID }) else {
+            return
+        }
+        if activity.kind == .cancel || activity.expiresAt <= Date() {
+            remoteInputActivity = nil
+            inputActivityCleanupTask?.cancel()
+            return
+        }
+        remoteInputActivity = activity
+        scheduleInputActivityExpiry(activity)
+    }
+
+    private func scheduleInputActivityExpiry(_ activity: HSInputActivity) {
+        inputActivityCleanupTask?.cancel()
+        inputActivityCleanupTask = Task {
+            let delay = max(0, activity.expiresAt.timeIntervalSinceNow)
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            await MainActor.run {
+                guard remoteInputActivity == activity else {
+                    return
+                }
+                remoteInputActivity = nil
+            }
+        }
+    }
+
     private func shouldRefreshThread(for notification: Notification) -> Bool {
+        if HSInputActivityNotification.isTypingOnly(notification) {
+            return false
+        }
         if let fullRefresh = notification.userInfo?["full_refresh"] as? Bool, fullRefresh {
             return true
         }
@@ -1297,6 +1344,65 @@ struct ChatThreadView: View {
         return nsText.substring(with: match.range)
     }
 
+    private func handleDraftInputActivity(_ value: String) {
+        guard !isSavedMessagesMode else {
+            return
+        }
+        let isEmpty = value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        Task {
+            await sendInputActivity(isEmpty ? .cancel : .typing)
+        }
+    }
+
+    private func handleVoiceRecordingStateChanged(_ isRecording: Bool) {
+        Task {
+            await sendInputActivity(isRecording ? .recordingVoice : .cancel, force: true)
+        }
+    }
+
+    private func sendInputActivity(_ kind: HSInputActivityKind, progress: Int? = nil, force: Bool = false) async {
+        guard !isSavedMessagesMode, let session = authStore.session else {
+            return
+        }
+        if !force, shouldThrottleInputActivity(kind) {
+            return
+        }
+        do {
+            _ = try await authStore.api.setTyping(
+                dialogID: chat.id,
+                activity: kind,
+                progress: progress,
+                session: session
+            )
+            lastSentInputActivity = (kind, Date())
+        } catch {
+            // Input activity is transient; failed pings should not interrupt composing.
+        }
+    }
+
+    private func shouldThrottleInputActivity(_ kind: HSInputActivityKind) -> Bool {
+        guard kind != .cancel, let lastSentInputActivity else {
+            return false
+        }
+        return lastSentInputActivity.kind == kind
+            && Date().timeIntervalSince(lastSentInputActivity.date) < Self.inputActivityThrottle
+    }
+
+    private func uploadInputActivity(for pending: HSPendingAttachmentUpload) -> HSInputActivityKind {
+        switch mediaKind(from: pending.mediaKind) {
+        case .photo, .gif, .sticker:
+            return .uploadingPhoto
+        case .video:
+            return .uploadingVideo
+        case .voice:
+            return .uploadingVoice
+        case .audio:
+            return .uploadingVoice
+        case .file, .webpage, .unknown:
+            return .uploadingFile
+        }
+    }
+
     private func localOutgoingMessage(text: String, replyToMessageID: Int64?, session: HSUserSession) -> HSMessage {
         HSMessage(
             id: nextLocalMessageID(),
@@ -1499,6 +1605,7 @@ struct ChatThreadView: View {
         replyingToMessage = nil
         draftReplyToMessageID = nil
         clearLinkPreviewState()
+        await sendInputActivity(.cancel, force: true)
         shouldScrollToLatest = true
         messages.append(pendingMessage)
         publishLocalOutboxState()
@@ -1734,6 +1841,7 @@ struct ChatThreadView: View {
                     }
                 }
             )
+            await sendInputActivity(.cancel, force: true)
             shouldScrollToLatest = true
             completePendingMessage(localID: pending.localMessageID, sent: sent)
             pendingAttachmentUpload = nil
@@ -1755,6 +1863,9 @@ struct ChatThreadView: View {
                 attachmentUploadFailed = false
                 statusMessage = "Media upload canceled."
                 errorMessage = nil
+                Task {
+                    await sendInputActivity(.cancel, force: true)
+                }
             }
         } catch {
             if pendingAttachmentUpload?.id == pending.id {
@@ -1765,6 +1876,7 @@ struct ChatThreadView: View {
             }
             statusMessage = nil
             errorMessage = error.localizedDescription
+            await sendInputActivity(.cancel, force: true)
         }
     }
 
@@ -1774,6 +1886,13 @@ struct ChatThreadView: View {
         }
         if let localMessageID = pendingAttachmentUpload?.localMessageID {
             mediaDownloadStates[localMessageID] = .downloading(progress: progress.fractionCompleted)
+        }
+        guard let pending = pendingAttachmentUpload else {
+            return
+        }
+        let percent = progress.fractionCompleted.map { Int(($0 * 100).rounded()) }
+        Task {
+            await sendInputActivity(uploadInputActivity(for: pending), progress: percent)
         }
     }
 
@@ -1800,6 +1919,9 @@ struct ChatThreadView: View {
         attachmentUploadFailed = false
         statusMessage = "Media upload canceled."
         errorMessage = nil
+        Task {
+            await sendInputActivity(.cancel, force: true)
+        }
     }
 
     private func restoreComposer(from pending: HSPendingAttachmentUpload) {
@@ -1819,6 +1941,9 @@ struct ChatThreadView: View {
         attachmentUploadTask = nil
         pendingAttachmentUpload = nil
         attachmentUploadFailed = false
+        Task {
+            await sendInputActivity(.cancel, force: true)
+        }
         mediaDownloadTasks.values.forEach { $0.cancel() }
         mediaDownloadTasks.removeAll()
         mediaDownloadStates = mediaDownloadStates.filter { !$0.value.isDownloading }
@@ -2614,6 +2739,7 @@ private struct ChatUnreadSeparatorView: View {
 private struct ChatThreadNavigationTitle: View {
     let chat: HSChat
     let mode: HSChatThreadMode
+    let inputActivity: HSInputActivity?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -2625,7 +2751,7 @@ private struct ChatThreadNavigationTitle: View {
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(HSTheme.secondaryText)
+                    .foregroundStyle(inputActivity == nil ? HSTheme.secondaryText : HSTheme.accent)
                     .lineLimit(1)
             }
         }
@@ -2634,6 +2760,9 @@ private struct ChatThreadNavigationTitle: View {
     }
 
     private var subtitle: String {
+        if let inputActivity, let title = activityTitle(inputActivity) {
+            return title
+        }
         if case .savedMessages = mode {
             return "Saved Messages"
         }
@@ -2641,6 +2770,38 @@ private struct ChatThreadNavigationTitle: View {
             return chat.subtitle.isEmpty ? "group" : chat.subtitle
         }
         return chat.subtitle.isEmpty ? "online" : chat.subtitle
+    }
+
+    private func activityTitle(_ activity: HSInputActivity) -> String? {
+        switch activity.kind {
+        case .cancel:
+            return nil
+        case .typing:
+            return "typing..."
+        case .recordingVoice:
+            return "recording voice..."
+        case .recordingVideo:
+            return "recording video..."
+        case .uploadingFile:
+            return uploadTitle("uploading file", activity.progress)
+        case .uploadingPhoto:
+            return uploadTitle("uploading photo", activity.progress)
+        case .uploadingVideo:
+            return uploadTitle("uploading video", activity.progress)
+        case .uploadingVoice:
+            return uploadTitle("uploading voice", activity.progress)
+        case .uploadingInstantVideo:
+            return uploadTitle("uploading video message", activity.progress)
+        case .choosingSticker:
+            return "choosing sticker..."
+        }
+    }
+
+    private func uploadTitle(_ title: String, _ progress: Int?) -> String {
+        guard let progress else {
+            return "\(title)..."
+        }
+        return "\(title) \(max(0, min(100, progress)))%"
     }
 
     private var iconName: String {

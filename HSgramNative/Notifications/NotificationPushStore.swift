@@ -20,6 +20,22 @@ enum HSChatLocalOutboxNotification {
     static let isClear = "is_clear"
 }
 
+enum HSInputActivityNotification {
+    static let inputActivities = "input_activities"
+
+    static func activities(from notification: Notification) -> [HSInputActivity] {
+        notification.userInfo?[inputActivities] as? [HSInputActivity] ?? []
+    }
+
+    static func isTypingOnly(_ notification: Notification) -> Bool {
+        let fullRefresh = notification.userInfo?["full_refresh"] as? Bool ?? false
+        return !activities(from: notification).isEmpty
+            && !fullRefresh
+            && notification.userInfo?["dialog_ids"] == nil
+            && notification.userInfo?["read_outbox_max_ids"] == nil
+    }
+}
+
 private enum HSRemoteNotificationRelay {
     static func post(_ name: Notification.Name, userInfo: [AnyHashable: Any]) {
         DispatchQueue.main.async {

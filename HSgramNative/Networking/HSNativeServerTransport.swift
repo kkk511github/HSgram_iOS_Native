@@ -342,6 +342,16 @@ final class HSNativeServerTransport: HSServerTransport {
                     session: session
                 )
                 return try typed(message)
+            case .messagesSetTyping:
+                let session = try requireSession(session)
+                let request: HSNativeTypingActivityBody = try decodeBody(body)
+                let action = try await mtProtoClient.setTyping(
+                    dialogID: try route.int64Part(at: 2),
+                    activity: request.activity,
+                    progress: request.progress,
+                    session: session
+                )
+                return try typed(action)
             case .messagesSaveDraft:
                 let session = try requireSession(session)
                 let request: HSNativeDraftBody = try decodeBody(body)
@@ -819,6 +829,11 @@ private struct HSNativeMediaMessageBody: Decodable {
     let replyToMessageID: Int64?
     let duration: Double?
     let waveform: Data?
+}
+
+private struct HSNativeTypingActivityBody: Decodable {
+    let activity: HSInputActivityKind
+    let progress: Int?
 }
 
 private struct HSNativeMarkUnreadBody: Decodable {

@@ -19,6 +19,7 @@ struct ChatComposerView: View {
     let onAttachment: () -> Void
     let onVoiceRecorded: (HSVoiceRecording) -> Void
     let onVoiceError: (String) -> Void
+    let onVoiceRecordingStateChanged: (Bool) -> Void
     let onSend: () -> Void
 
     @StateObject private var voiceRecorder = HSVoiceRecorder()
@@ -131,6 +132,7 @@ struct ChatComposerView: View {
     private func beginVoiceRecording() async {
         do {
             try await voiceRecorder.start()
+            onVoiceRecordingStateChanged(true)
         } catch {
             onVoiceError(error.localizedDescription)
         }
@@ -139,14 +141,17 @@ struct ChatComposerView: View {
     private func finishVoiceRecording() {
         do {
             let recording = try voiceRecorder.finish()
+            onVoiceRecordingStateChanged(false)
             onVoiceRecorded(recording)
         } catch {
+            onVoiceRecordingStateChanged(false)
             onVoiceError(error.localizedDescription)
         }
     }
 
     private func cancelVoiceRecording() {
         voiceRecorder.cancel()
+        onVoiceRecordingStateChanged(false)
     }
 }
 
