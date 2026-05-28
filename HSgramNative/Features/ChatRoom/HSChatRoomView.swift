@@ -39,7 +39,8 @@ struct HSChatRoomView: View {
                     avatarHex: viewModel.conversation?.avatarHex ?? 0x56B4F4,
                     isGroup: viewModel.isGroupChat,
                     onBack: { dismiss() },
-                    onProfile: { openProfile() }
+                    onProfile: { openProfile() },
+                    onSelectTheme: { data.setChatTheme($0) }
                 )
 
                 if showPinnedBanner, let group = viewModel.group {

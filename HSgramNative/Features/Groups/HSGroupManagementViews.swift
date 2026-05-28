@@ -48,10 +48,8 @@ struct HSGroupProfileView: View {
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .confirmationDialog("更多", isPresented: $showMore, titleVisibility: .hidden) {
-            Section("更改壁纸") {
-                ForEach(data.themeConfig.availableChatThemes) { theme in
-                    Button(theme.name) { data.setChatTheme(theme) }
-                }
+            ForEach(data.themeConfig.availableChatThemes) { theme in
+                Button("壁纸：\(theme.name)") { data.setChatTheme(theme) }
             }
             Button("启用自动删除") {}
             Button("禁用分享") {}

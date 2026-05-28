@@ -101,33 +101,55 @@ struct HSFloatingChatNavBar: View {
     var isGroup: Bool
     var onBack: () -> Void
     var onProfile: () -> Void
+    var onSelectTheme: ((ChatThemeConfig) -> Void)?
 
     var body: some View {
         HStack(spacing: 10) {
             HSFloatingBackButton(action: onBack)
 
-            Button(action: onProfile) {
-                VStack(spacing: 1) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                        .lineLimit(1)
-                    Text(subtitle)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(data.themeConfig.secondaryTextColor.color)
-                        .lineLimit(1)
+            HStack(spacing: 4) {
+                Button(action: onProfile) {
+                    VStack(spacing: 1) {
+                        Text(title)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                            .lineLimit(1)
+                        Text(subtitle)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(data.themeConfig.secondaryTextColor.color)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .padding(.horizontal, 16)
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay {
-                    Capsule()
-                        .stroke(data.themeConfig.glassStrokeColor.color, lineWidth: 1 / UIScreen.main.scale)
+                .buttonStyle(.plain)
+
+                if let onSelectTheme {
+                    Menu {
+                        ForEach(data.themeConfig.availableChatThemes) { theme in
+                            Button(theme.name) { onSelectTheme(theme) }
+                        }
+                    } label: {
+                        Image(systemName: "paintpalette")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(data.themeConfig.primaryAccentColor.color)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("聊天主题")
                 }
-                .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 14, x: 0, y: 7)
             }
-            .buttonStyle(.plain)
+            .padding(.leading, 16)
+            .padding(.trailing, onSelectTheme == nil ? 16 : 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .stroke(data.themeConfig.glassStrokeColor.color, lineWidth: 1 / UIScreen.main.scale)
+            }
+            .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 14, x: 0, y: 7)
 
             Button(action: onProfile) {
                 HSAvatarView(
