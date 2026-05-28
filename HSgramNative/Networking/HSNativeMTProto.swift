@@ -237,6 +237,7 @@ enum HSNativeMTProtoSchema {
     static let messagesUpdateDialogFiltersOrder: UInt32 = 0xc563c1e4
     static let messagesToggleDialogFilterTags: UInt32 = 0xfd2dda49
     static let messagesToggleDialogPin: UInt32 = 0xa731e257
+    static let messagesToggleNoForwards: UInt32 = 0xb2081a35
     static let messagesReorderPinnedDialogs: UInt32 = 0x3b1adf37
     static let foldersEditPeerFolders: UInt32 = 0x6847d0ab
     static let messagesSendMessage: UInt32 = 0x545cd15a
@@ -768,6 +769,31 @@ private struct HSNativeParsedChat: Equatable {
     let role: String
     let isMegagroup: Bool
     let isBroadcast: Bool
+    let noForwards: Bool
+
+    init(
+        peer: HSNativePeer,
+        accessHash: Int64?,
+        title: String,
+        isGroupLike: Bool,
+        about: String,
+        memberCount: Int,
+        role: String,
+        isMegagroup: Bool,
+        isBroadcast: Bool,
+        noForwards: Bool = false
+    ) {
+        self.peer = peer
+        self.accessHash = accessHash
+        self.title = title
+        self.isGroupLike = isGroupLike
+        self.about = about
+        self.memberCount = memberCount
+        self.role = role
+        self.isMegagroup = isMegagroup
+        self.isBroadcast = isBroadcast
+        self.noForwards = noForwards
+    }
 }
 
 private struct HSNativeParsedDialog: Equatable {
@@ -921,6 +947,25 @@ private struct HSNativeParsedChatFull: Equatable {
     let pendingRequests: Int?
     let isMegagroup: Bool
     let isBroadcast: Bool
+    let noForwards: Bool
+
+    init(
+        peer: HSNativePeer,
+        about: String,
+        memberCount: Int?,
+        pendingRequests: Int?,
+        isMegagroup: Bool,
+        isBroadcast: Bool,
+        noForwards: Bool = false
+    ) {
+        self.peer = peer
+        self.about = about
+        self.memberCount = memberCount
+        self.pendingRequests = pendingRequests
+        self.isMegagroup = isMegagroup
+        self.isBroadcast = isBroadcast
+        self.noForwards = noForwards
+    }
 }
 
 private struct HSNativeChatFullPayload: Equatable {
@@ -1475,7 +1520,8 @@ final class HSNativeMTProtoClient {
             pendingRequests: full.pendingRequests ?? base.pendingRequests,
             role: base.role,
             isMegagroup: parsed?.isMegagroup ?? (base.isMegagroup || full.isMegagroup),
-            isBroadcast: parsed?.isBroadcast ?? (full.isBroadcast || base.isBroadcast)
+            isBroadcast: parsed?.isBroadcast ?? (full.isBroadcast || base.isBroadcast),
+            noForwards: parsed?.noForwards ?? (full.noForwards || base.noForwards)
         )
         peerCacheQueue.sync {
             cachedGroupsByDialogID[dialogID] = group
@@ -1535,7 +1581,8 @@ final class HSNativeMTProtoClient {
                 pendingRequests: current.pendingRequests,
                 role: current.role,
                 isMegagroup: current.isMegagroup,
-                isBroadcast: current.isBroadcast
+                isBroadcast: current.isBroadcast,
+                noForwards: current.noForwards
             )
             peerCacheQueue.sync {
                 cachedGroupsByDialogID[dialogID] = current
@@ -1639,38 +1686,62 @@ final class HSNativeMTProtoClient {
 
     func updateGroupSettings(dialogID: Int64, settings: HSSupergroupSettings, session: HSUserSession) async throws -> HSSupergroup {
         let credentials = try authorizedAuthKey(for: session)
-        let channel = try inputChannelPayload(dialogID: dialogID)
+        var channel: Data?
+        func requireChannelPayload() throws -> Data {
+            if let channel {
+                return channel
+            }
+            let resolved = try inputChannelPayload(dialogID: dialogID)
+            channel = resolved
+            return resolved
+        }
         if let slowModeSeconds = settings.slowModeSeconds {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
-                query: channelsToggleSlowModePayload(channel: channel, seconds: slowModeSeconds),
+                query: channelsToggleSlowModePayload(channel: try requireChannelPayload(), seconds: slowModeSeconds),
                 credentials: credentials
             ))
         }
         if let participantsHidden = settings.participantsHidden {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
-                query: channelsToggleParticipantsHiddenPayload(channel: channel, enabled: participantsHidden),
+                query: channelsToggleParticipantsHiddenPayload(channel: try requireChannelPayload(), enabled: participantsHidden),
                 credentials: credentials
             ))
         }
         if let preHistoryHidden = settings.preHistoryHidden {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
-                query: channelsTogglePreHistoryHiddenPayload(channel: channel, enabled: preHistoryHidden),
+                query: channelsTogglePreHistoryHiddenPayload(channel: try requireChannelPayload(), enabled: preHistoryHidden),
                 credentials: credentials
             ))
         }
         if let joinToSend = settings.joinToSend {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
-                query: channelsToggleJoinToSendPayload(channel: channel, enabled: joinToSend),
+                query: channelsToggleJoinToSendPayload(channel: try requireChannelPayload(), enabled: joinToSend),
                 credentials: credentials
             ))
         }
         if let joinRequest = settings.joinRequest {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
-                query: channelsToggleJoinRequestPayload(channel: channel, enabled: joinRequest),
+                query: channelsToggleJoinRequestPayload(channel: try requireChannelPayload(), enabled: joinRequest),
                 credentials: credentials
             ))
         }
-        return try await group(dialogID: dialogID, session: session)
+        if let noForwards = settings.noForwards {
+            try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
+                query: messagesToggleNoForwardsPayload(
+                    peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                    enabled: noForwards
+                ),
+                credentials: credentials
+            ))
+        }
+        var updated = try await group(dialogID: dialogID, session: session)
+        if let noForwards = settings.noForwards, updated.noForwards != noForwards {
+            updated = updated.withNoForwards(noForwards)
+            peerCacheQueue.sync {
+                cachedGroupsByDialogID[dialogID] = updated
+            }
+        }
+        return updated
     }
 
     func pinGroupMessage(dialogID: Int64, messageID: Int64, silent: Bool, unpin: Bool, session: HSUserSession) async throws -> HSMessage {
@@ -3344,6 +3415,20 @@ final class HSNativeMTProtoClient {
         writer.int32(pinned ? 1 : 0)
         writer.constructor(HSNativeMTProtoSchema.inputDialogPeer)
         writer.raw(peer)
+        return writer.data
+    }
+
+    func messagesToggleNoForwardsPayload(peer: Data, enabled: Bool, requestMessageID: Int32? = nil) -> Data {
+        var flags: Int32 = 0
+        if requestMessageID != nil { flags |= 1 << 0 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesToggleNoForwards)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.constructor(enabled ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        if let requestMessageID {
+            writer.int32(requestMessageID)
+        }
         return writer.data
     }
 
@@ -5372,7 +5457,8 @@ final class HSNativeMTProtoClient {
                 memberCount: memberCount,
                 pendingRequests: pendingRequests,
                 isMegagroup: true,
-                isBroadcast: false
+                isBroadcast: false,
+                noForwards: false
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported ChatFull constructor 0x\(String(constructor, radix: 16))")
@@ -7305,7 +7391,8 @@ final class HSNativeMTProtoClient {
                 memberCount: Int(participantsCount),
                 role: flags & 1 != 0 ? "creator" : "member",
                 isMegagroup: false,
-                isBroadcast: false
+                isBroadcast: false,
+                noForwards: flags & (1 << 25) != 0
             )
         case HSNativeMTProtoSchema.channelForbidden:
             let flags = try reader.uint32()
@@ -7384,7 +7471,8 @@ final class HSNativeMTProtoClient {
                 memberCount: participantsCount,
                 role: flags & 1 != 0 ? "creator" : "member",
                 isMegagroup: megagroup,
-                isBroadcast: broadcast
+                isBroadcast: broadcast,
+                noForwards: flags & (1 << 27) != 0
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported Chat constructor 0x\(String(constructor, radix: 16))")
@@ -8163,7 +8251,8 @@ final class HSNativeMTProtoClient {
             pendingRequests: 0,
             role: chat.role,
             isMegagroup: chat.isMegagroup,
-            isBroadcast: chat.isBroadcast
+            isBroadcast: chat.isBroadcast,
+            noForwards: chat.noForwards
         )
     }
 

@@ -656,6 +656,9 @@ struct HSNativeServerContract {
         if parts.count >= 4, parts[3] == "admins" {
             return .channelsEditAdmin
         }
+        if parts.count >= 4, parts[3] == "settings" {
+            return .channelsUpdateSettings
+        }
         if parts.count >= 4, parts[3] == "admin-log" {
             return .channelsGetAdminLog
         }

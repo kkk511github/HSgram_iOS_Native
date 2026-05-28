@@ -649,6 +649,15 @@ final class HSAPIClient {
         )
     }
 
+    func updateChannelSettings(dialogID: Int64, settings: HSSupergroupSettings, session: HSUserSession) async throws -> HSChannel {
+        try await request(
+            "v1/channels/\(dialogID)/settings",
+            method: "PATCH",
+            body: settings,
+            session: session
+        )
+    }
+
     func leaveChannel(dialogID: Int64, session: HSUserSession) async throws -> HSMessageAction {
         try await request("v1/channels/\(dialogID)/leave", method: "POST", body: Optional<EmptyBody>.none, session: session)
     }

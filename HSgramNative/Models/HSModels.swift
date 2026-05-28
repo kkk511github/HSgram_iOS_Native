@@ -1123,6 +1123,73 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
     let role: String
     let isMegagroup: Bool
     let isBroadcast: Bool
+    let noForwards: Bool
+
+    init(
+        id: Int64,
+        channelID: Int64,
+        title: String,
+        about: String,
+        memberCount: Int,
+        pendingRequests: Int,
+        role: String,
+        isMegagroup: Bool,
+        isBroadcast: Bool,
+        noForwards: Bool = false
+    ) {
+        self.id = id
+        self.channelID = channelID
+        self.title = title
+        self.about = about
+        self.memberCount = memberCount
+        self.pendingRequests = pendingRequests
+        self.role = role
+        self.isMegagroup = isMegagroup
+        self.isBroadcast = isBroadcast
+        self.noForwards = noForwards
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case channelID
+        case title
+        case about
+        case memberCount
+        case pendingRequests
+        case role
+        case isMegagroup
+        case isBroadcast
+        case noForwards
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int64.self, forKey: .id)
+        channelID = try container.decode(Int64.self, forKey: .channelID)
+        title = try container.decode(String.self, forKey: .title)
+        about = try container.decode(String.self, forKey: .about)
+        memberCount = try container.decode(Int.self, forKey: .memberCount)
+        pendingRequests = try container.decode(Int.self, forKey: .pendingRequests)
+        role = try container.decode(String.self, forKey: .role)
+        isMegagroup = try container.decode(Bool.self, forKey: .isMegagroup)
+        isBroadcast = try container.decode(Bool.self, forKey: .isBroadcast)
+        noForwards = try container.decodeIfPresent(Bool.self, forKey: .noForwards) ?? false
+    }
+
+    func withNoForwards(_ value: Bool) -> HSSupergroup {
+        HSSupergroup(
+            id: id,
+            channelID: channelID,
+            title: title,
+            about: about,
+            memberCount: memberCount,
+            pendingRequests: pendingRequests,
+            role: role,
+            isMegagroup: isMegagroup,
+            isBroadcast: isBroadcast,
+            noForwards: value
+        )
+    }
 }
 
 typealias HSChannel = HSSupergroup
@@ -1188,6 +1255,7 @@ struct HSSupergroupSettings: Codable, Hashable {
     var preHistoryHidden: Bool?
     var joinToSend: Bool?
     var joinRequest: Bool?
+    var noForwards: Bool?
 }
 
 struct HSSupergroupAdminLogEvent: Codable, Identifiable, Hashable {
