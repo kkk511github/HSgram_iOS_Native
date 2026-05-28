@@ -248,263 +248,15 @@ struct ChatThreadView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if isThreadSearchActive {
-                ChatSearchInputBar(
-                    query: $threadSearchQuery,
-                    isSearching: isThreadSearchSearching,
-                    onCancel: endThreadSearch
-                )
-                .onChange(of: threadSearchQuery) { _ in
-                    Task {
-                        await debouncedThreadSearch()
-                    }
-                }
-            }
-
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        if let errorMessage {
-                            HSErrorBanner(message: errorMessage)
-                        }
-                        if let statusMessage {
-                            Label(statusMessage, systemImage: "checkmark.circle")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(HSTheme.trust)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        }
-                        if !messages.isEmpty && hasMoreHistory {
-                            Button {
-                                Task {
-                                    await loadOlder()
-                                }
-                            } label: {
-                                HStack(spacing: 8) {
-                                    if isLoadingOlder {
-                                        ProgressView()
-                                    } else {
-                                        Image(systemName: "clock.arrow.circlepath")
-                                    }
-                                    Text(isLoadingOlder ? "Loading earlier messages" : "Load Earlier Messages")
-                                }
-                                .font(.footnote.weight(.semibold))
-                                .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(isLoadingOlder)
-                            .id("history-loader")
-                        }
-                        ForEach(messageRows) { row in
-                            let message = row.message
-                            if shouldShowDateSeparator(for: message, after: row.previousMessage) {
-                                ChatDateSeparatorView(date: message.sentAt)
-                            }
-                            if unreadSeparatorMessageID == message.id {
-                                ChatUnreadSeparatorView()
-                                    .id(unreadSeparatorScrollID)
-                            }
-                            MessageBubble(
-                                message: displayMessage(message),
-                                replyPreview: message.replyToMessageID.flatMap { messagesByID[$0] },
-                                isGroup: displaysPeerAuthors,
-                                showsAvatar: shouldShowAvatar(for: message, row: row),
-                                isMergedWithPrevious: row.isMergedWithPrevious,
-                                isMergedWithNext: row.isMergedWithNext,
-                                isHighlighted: message.id == highlightedSearchMessageID,
-                                isSelecting: isSelectionMode,
-                                isSelected: selectedMessageIDs.contains(message.id),
-                                onReply: { beginReply(message) },
-                                onOpenReply: { messageID in Task { await openReplyTarget(messageID) } },
-                                onToggleSelection: { toggleSelection(message) },
-                                onBeginSelection: { beginSelection(message) },
-                                onEdit: { beginEdit(message) },
-                                onDelete: { Task { await delete(message) } },
-                                onForward: { forwardingMessage = message },
-                                onReact: { reaction in Task { await react(message, reaction: reaction) } },
-                                onPin: { Task { await pin(message) } },
-                                onCopyLink: { Task { await copyLink(message) } },
-                                onRetry: { Task { await retryFailedTextMessage(message) } },
-                                onOpenTextEntity: handleTextEntity,
-                                mediaDownloadState: mediaDownloadStates[message.id],
-                                onOpenMedia: { handleMediaAction(message) }
-                            )
-                            .id(message.id)
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 10)
-                }
-                .background(HSChatWallpaper())
-                .onChange(of: messages.count) { _ in
-                    if shouldScrollToUnreadSeparator, unreadSeparatorMessageID != nil {
-                        proxy.scrollTo(unreadSeparatorScrollID, anchor: .center)
-                        shouldScrollToUnreadSeparator = false
-                    } else if let preserved = preserveMessageID {
-                        proxy.scrollTo(preserved, anchor: .top)
-                        preserveMessageID = nil
-                    } else if shouldScrollToLatest, let last = messages.last {
-                        proxy.scrollTo(last.id, anchor: .bottom)
-                    }
-                }
-                .refreshable {
-                    await refresh()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidArrive)) { _ in
-                    Task {
-                        await refresh()
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidOpen)) { _ in
-                    Task {
-                        await refresh()
-                    }
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
-                    applyInputActivities(from: notification)
-                    applyReadOutboxMaxID(from: notification)
-                    guard shouldRefreshThread(for: notification) else {
-                        return
-                    }
-                    Task {
-                        await refresh()
-                    }
-                }
-                .onChange(of: scrollTargetMessageID) { targetID in
-                    guard let targetID else {
-                        return
-                    }
-                    proxy.scrollTo(targetID, anchor: .center)
-                    scrollTargetMessageID = nil
-                }
-            }
-
-            if isSelectionMode {
-                MessageSelectionToolbar(
-                    selectedCount: selectedMessageIDs.count,
-                    canCopy: selectedMessagesContainText,
-                    onCancel: clearSelection,
-                    onCopy: copySelectedMessages,
-                    onForward: {
-                        isShowingSelectionForwardSheet = true
-                    },
-                    onDelete: {
-                        isShowingSelectionDeleteConfirmation = true
-                    }
-                )
-            } else if isThreadSearchActive {
-                ChatSearchNavigationPanel(
-                    currentDisplayIndex: currentThreadSearchDisplayIndex,
-                    totalCount: threadSearchResults.count,
-                    didSearch: didPerformThreadSearch,
-                    canOpenResults: !threadSearchResults.isEmpty,
-                    canNavigateEarlier: canNavigateThreadSearchEarlier,
-                    canNavigateLater: canNavigateThreadSearchLater,
-                    onEarlier: { Task { await navigateThreadSearch(.earlier) } },
-                    onLater: { Task { await navigateThreadSearch(.later) } },
-                    onOpenResults: { isShowingThreadSearchResults = true }
-                )
-            } else {
-                if linkPreview != nil || isLoadingLinkPreview {
-                    ChatComposerLinkPreviewBar(
-                        preview: linkPreview,
-                        isLoading: isLoadingLinkPreview,
-                        onDismiss: dismissLinkPreview
-                    )
-                }
-                ChatComposerView(
-                    draft: $draft,
-                    isReplying: replyingToMessage != nil || draftReplyToMessageID != nil,
-                    replyTitle: replyTitle,
-                    replyPreview: replyPreview,
-                    onClearReply: clearReply,
-                    onAttachment: {
-                        isShowingAttachmentSheet = true
-                    },
-                    onVoiceRecorded: sendVoiceRecording,
-                    onVoiceError: { message in
-                        statusMessage = nil
-                        errorMessage = message
-                    },
-                    onVoiceRecordingStateChanged: handleVoiceRecordingStateChanged,
-                    onSend: {
-                        Task {
-                            await send()
-                        }
-                    }
-                )
-            }
+            threadSearchInput
+            messageTimeline
+            bottomInteractionBar
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .background(HSChatWallpaper().ignoresSafeArea())
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                ChatThreadNavigationTitle(chat: chat, mode: mode, inputActivity: currentRemoteInputActivity)
-            }
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                Button {
-                    isShowingSharedMediaBrowser = true
-                } label: {
-                    Image(systemName: "rectangle.stack")
-                }
-                .disabled(isThreadSearchActive)
-                Button {
-                    beginThreadSearch()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-                .disabled(isThreadSearchActive)
-                if case .channel = mode {
-                    NavigationLink {
-                        ChannelManageView(chat: chat)
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-                } else if chat.isCircle {
-                    NavigationLink {
-                        SupergroupManageView(chat: chat)
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-                } else if !isSavedMessagesMode {
-                    NavigationLink {
-                        ContactProfileView(contact: threadContact)
-                    } label: {
-                        Image(systemName: "info.circle")
-                    }
-                }
-                if canManagePrivateChatHistory {
-                    Menu {
-                        Button(role: .destructive) {
-                            confirmHistoryAction(.clearHistory)
-                        } label: {
-                            Label("Clear History", systemImage: "trash")
-                        }
-                        Button(role: .destructive) {
-                            confirmHistoryAction(.deleteChat)
-                        } label: {
-                            Label("Delete Chat", systemImage: "trash")
-                        }
-                        Button(role: .destructive) {
-                            confirmHistoryAction(.deleteForEveryone)
-                        } label: {
-                            Label("Delete for Both", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                    .disabled(isThreadSearchActive)
-                }
-                Button {
-                    Task {
-                        await refresh()
-                    }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-            }
+            threadToolbar
         }
         .alert("编辑消息", isPresented: Binding(
             get: { editingMessage != nil },
@@ -658,6 +410,292 @@ struct ChatThreadView: View {
             if let pendingHistoryAction {
                 Text(pendingHistoryAction.message)
             }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var threadToolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            ChatThreadNavigationTitle(chat: chat, mode: mode, inputActivity: currentRemoteInputActivity)
+        }
+        ToolbarItemGroup(placement: .navigationBarTrailing) {
+            Button {
+                isShowingSharedMediaBrowser = true
+            } label: {
+                Image(systemName: "rectangle.stack")
+            }
+            .disabled(isThreadSearchActive)
+            Button {
+                beginThreadSearch()
+            } label: {
+                Image(systemName: "magnifyingglass")
+            }
+            .disabled(isThreadSearchActive)
+            if case .channel = mode {
+                NavigationLink {
+                    ChannelManageView(chat: chat)
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+            } else if chat.isCircle {
+                NavigationLink {
+                    SupergroupManageView(chat: chat)
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+            } else if !isSavedMessagesMode {
+                NavigationLink {
+                    ContactProfileView(contact: threadContact)
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+            }
+            if canManagePrivateChatHistory {
+                Menu {
+                    Button(role: .destructive) {
+                        confirmHistoryAction(.clearHistory)
+                    } label: {
+                        Label("Clear History", systemImage: "trash")
+                    }
+                    Button(role: .destructive) {
+                        confirmHistoryAction(.deleteChat)
+                    } label: {
+                        Label("Delete Chat", systemImage: "trash")
+                    }
+                    Button(role: .destructive) {
+                        confirmHistoryAction(.deleteForEveryone)
+                    } label: {
+                        Label("Delete for Both", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .disabled(isThreadSearchActive)
+            }
+            Button {
+                Task {
+                    await refresh()
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var threadSearchInput: some View {
+        if isThreadSearchActive {
+            ChatSearchInputBar(
+                query: $threadSearchQuery,
+                isSearching: isThreadSearchSearching,
+                onCancel: endThreadSearch
+            )
+            .onChange(of: threadSearchQuery) { _ in
+                Task {
+                    await debouncedThreadSearch()
+                }
+            }
+        }
+    }
+
+    private var messageTimeline: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                messageStack
+            }
+            .background(HSChatWallpaper())
+            .onChange(of: messages.count) { _ in
+                scrollAfterMessageCountChange(proxy: proxy)
+            }
+            .refreshable {
+                await refresh()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidArrive)) { _ in
+                Task {
+                    await refresh()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .hsRemoteNotificationDidOpen)) { _ in
+                Task {
+                    await refresh()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .hsNativeSyncDidChange)) { notification in
+                applyInputActivities(from: notification)
+                applyReadOutboxMaxID(from: notification)
+                guard shouldRefreshThread(for: notification) else {
+                    return
+                }
+                Task {
+                    await refresh()
+                }
+            }
+            .onChange(of: scrollTargetMessageID) { targetID in
+                guard let targetID else {
+                    return
+                }
+                proxy.scrollTo(targetID, anchor: .center)
+                scrollTargetMessageID = nil
+            }
+        }
+    }
+
+    private var messageStack: some View {
+        LazyVStack(spacing: 4) {
+            if let errorMessage {
+                HSErrorBanner(message: errorMessage)
+            }
+            if let statusMessage {
+                statusBanner(statusMessage)
+            }
+            if !messages.isEmpty && hasMoreHistory {
+                historyLoaderButton
+            }
+            ForEach(messageRows) { row in
+                messageRow(row)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 10)
+    }
+
+    private func statusBanner(_ message: String) -> some View {
+        Label(message, systemImage: "checkmark.circle")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(HSTheme.trust)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var historyLoaderButton: some View {
+        Button {
+            Task {
+                await loadOlder()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if isLoadingOlder {
+                    ProgressView()
+                } else {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                Text(isLoadingOlder ? "Loading earlier messages" : "Load Earlier Messages")
+            }
+            .font(.footnote.weight(.semibold))
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .disabled(isLoadingOlder)
+        .id("history-loader")
+    }
+
+    @ViewBuilder
+    private func messageRow(_ row: ChatThreadMessageRow) -> some View {
+        let message = row.message
+        if shouldShowDateSeparator(for: message, after: row.previousMessage) {
+            ChatDateSeparatorView(date: message.sentAt)
+        }
+        if unreadSeparatorMessageID == message.id {
+            ChatUnreadSeparatorView()
+                .id(unreadSeparatorScrollID)
+        }
+        MessageBubble(
+            message: displayMessage(message),
+            replyPreview: message.replyToMessageID.flatMap { messagesByID[$0] },
+            isGroup: displaysPeerAuthors,
+            showsAvatar: shouldShowAvatar(for: message, row: row),
+            isMergedWithPrevious: row.isMergedWithPrevious,
+            isMergedWithNext: row.isMergedWithNext,
+            isHighlighted: message.id == highlightedSearchMessageID,
+            isSelecting: isSelectionMode,
+            isSelected: selectedMessageIDs.contains(message.id),
+            onReply: { beginReply(message) },
+            onOpenReply: { messageID in Task { await openReplyTarget(messageID) } },
+            onToggleSelection: { toggleSelection(message) },
+            onBeginSelection: { beginSelection(message) },
+            onEdit: { beginEdit(message) },
+            onDelete: { Task { await delete(message) } },
+            onForward: { forwardingMessage = message },
+            onReact: { reaction in Task { await react(message, reaction: reaction) } },
+            onPin: { Task { await pin(message) } },
+            onCopyLink: { Task { await copyLink(message) } },
+            onRetry: { Task { await retryFailedTextMessage(message) } },
+            onOpenTextEntity: handleTextEntity,
+            mediaDownloadState: mediaDownloadStates[message.id],
+            onOpenMedia: { handleMediaAction(message) }
+        )
+        .id(message.id)
+    }
+
+    private func scrollAfterMessageCountChange(proxy: ScrollViewProxy) {
+        if shouldScrollToUnreadSeparator, unreadSeparatorMessageID != nil {
+            proxy.scrollTo(unreadSeparatorScrollID, anchor: .center)
+            shouldScrollToUnreadSeparator = false
+        } else if let preserved = preserveMessageID {
+            proxy.scrollTo(preserved, anchor: .top)
+            preserveMessageID = nil
+        } else if shouldScrollToLatest, let last = messages.last {
+            proxy.scrollTo(last.id, anchor: .bottom)
+        }
+    }
+
+    @ViewBuilder
+    private var bottomInteractionBar: some View {
+        if isSelectionMode {
+            MessageSelectionToolbar(
+                selectedCount: selectedMessageIDs.count,
+                canCopy: selectedMessagesContainText,
+                onCancel: clearSelection,
+                onCopy: copySelectedMessages,
+                onForward: {
+                    isShowingSelectionForwardSheet = true
+                },
+                onDelete: {
+                    isShowingSelectionDeleteConfirmation = true
+                }
+            )
+        } else if isThreadSearchActive {
+            ChatSearchNavigationPanel(
+                currentDisplayIndex: currentThreadSearchDisplayIndex,
+                totalCount: threadSearchResults.count,
+                didSearch: didPerformThreadSearch,
+                canOpenResults: !threadSearchResults.isEmpty,
+                canNavigateEarlier: canNavigateThreadSearchEarlier,
+                canNavigateLater: canNavigateThreadSearchLater,
+                onEarlier: { Task { await navigateThreadSearch(.earlier) } },
+                onLater: { Task { await navigateThreadSearch(.later) } },
+                onOpenResults: { isShowingThreadSearchResults = true }
+            )
+        } else {
+            if linkPreview != nil || isLoadingLinkPreview {
+                ChatComposerLinkPreviewBar(
+                    preview: linkPreview,
+                    isLoading: isLoadingLinkPreview,
+                    onDismiss: dismissLinkPreview
+                )
+            }
+            ChatComposerView(
+                draft: $draft,
+                isReplying: replyingToMessage != nil || draftReplyToMessageID != nil,
+                replyTitle: replyTitle,
+                replyPreview: replyPreview,
+                onClearReply: clearReply,
+                onAttachment: {
+                    isShowingAttachmentSheet = true
+                },
+                onVoiceRecorded: sendVoiceRecording,
+                onVoiceError: { message in
+                    statusMessage = nil
+                    errorMessage = message
+                },
+                onVoiceRecordingStateChanged: handleVoiceRecordingStateChanged,
+                onSend: {
+                    Task {
+                        await send()
+                    }
+                }
+            )
         }
     }
 
