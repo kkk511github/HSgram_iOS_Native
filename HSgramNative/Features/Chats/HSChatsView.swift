@@ -16,9 +16,9 @@ struct HSChatsView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     HSSearchBar(text: $query, placeholder: "搜索")
-                        .padding(.horizontal, 16)
-                        .padding(.top, 10)
-                        .padding(.bottom, 16)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 6)
+                        .padding(.bottom, 10)
 
                     if viewModel.visibleConversations.isEmpty {
                         HSEmptyStateView(
@@ -68,7 +68,7 @@ struct HSChatsView: View {
                         }
                     }
                 }
-                .padding(.bottom, HSLayoutMetrics.rootTabBarClearance + 18)
+                .padding(.bottom, HSLayoutMetrics.rootTabBarClearance + 10)
             }
             .scrollIndicators(.hidden)
             .refreshable { await data.refresh() }
@@ -81,19 +81,19 @@ struct HSChatsView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Button("编辑") {}
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                .frame(height: 56)
-                .padding(.horizontal, 18)
+                .frame(height: 48)
+                .padding(.horizontal, 15)
                 .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Capsule())
 
             Spacer()
 
             HStack(spacing: 6) {
                 Text("聊天")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                 Image(systemName: "sparkles")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
             }
             .foregroundStyle(data.themeConfig.primaryTextColor.color)
 
@@ -101,16 +101,16 @@ struct HSChatsView: View {
 
             Button(action: {}) {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 25, weight: .semibold))
+                    .font(.system(size: 21, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 48, height: 48)
                     .background(data.themeConfig.cardBackgroundColor.color.opacity(0.78), in: Circle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 12)
+        .padding(.top, 7)
+        .padding(.bottom, 7)
         .background(data.themeConfig.navigationBarBackground.color.opacity(0.02))
     }
 }

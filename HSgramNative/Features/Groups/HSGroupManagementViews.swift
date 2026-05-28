@@ -21,22 +21,17 @@ struct HSGroupProfileView: View {
                     router.open(.groupSettings(groupID))
                 }, onAction: handleHeaderAction)
 
-                VStack(spacing: 22) {
-                    Button {
-                        router.open(.groupSettings(groupID))
-                    } label: {
-                        HSSettingsRow(
-                            icon: "slider.horizontal.3",
-                            title: "群组设置",
-                            accent: data.themeConfig.warningColor.color,
-                            action: {}
-                        )
-                    }
-                    .buttonStyle(.plain)
+                VStack(spacing: 16) {
+                    HSSettingsRow(
+                        icon: "slider.horizontal.3",
+                        title: "群组设置",
+                        accent: data.themeConfig.warningColor.color,
+                        action: { router.open(.groupSettings(groupID)) }
+                    )
                     .background(data.themeConfig.cardBackgroundColor.color, in: Capsule())
 
                     HSCapsuleSegmentedControl(selection: $selectedTab, items: ["成员", "媒体", "文件", "链接"])
-                        .frame(maxWidth: 330)
+                        .frame(maxWidth: 286)
 
                     if selectedTab == "成员" {
                         membersContent
@@ -44,9 +39,9 @@ struct HSGroupProfileView: View {
                         mediaPlaceholder
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 18)
-                .padding(.bottom, 28)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
+                .padding(.bottom, 22)
             }
         }
         .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
@@ -66,18 +61,18 @@ struct HSGroupProfileView: View {
             Button {
                 router.open(.groupMembers(groupID))
             } label: {
-                HStack(spacing: 14) {
+                HStack(spacing: 11) {
                     Image(systemName: "person.badge.plus")
-                        .font(.system(size: 26, weight: .medium))
+                        .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(data.themeConfig.primaryAccentColor.color)
-                        .frame(width: 58, height: 58)
+                        .frame(width: 48, height: 48)
                     Text("添加成员")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 17, weight: .bold))
                         .foregroundStyle(data.themeConfig.primaryAccentColor.color)
                     Spacer()
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
             }
             .buttonStyle(.plain)
 
@@ -89,7 +84,7 @@ struct HSGroupProfileView: View {
                 )
             }
         }
-        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+        .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var mediaPlaceholder: some View {
@@ -143,29 +138,29 @@ struct HSGroupSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 18) {
                 HSSimplePageHeader(title: "群组设置", leadingTitle: "取消", trailingTitle: "完成", onLeading: { dismiss() }, onTrailing: { dismiss() })
 
                 VStack(spacing: 12) {
-                    HSAvatarView(initials: group.avatarInitials, colorHex: group.avatarHex, size: 110, isGroup: true)
+                    HSAvatarView(initials: group.avatarInitials, colorHex: group.avatarHex, size: 88, isGroup: true)
                         .opacity(0.32)
                     Text("设置新头像")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(data.themeConfig.primaryAccentColor.color)
                 }
 
                 HSGroupedSettingsCard {
                     VStack(spacing: 0) {
                         TextField("群名称", text: $titleText)
-                            .font(.system(size: 20, weight: .semibold))
-                            .padding(.horizontal, 18)
-                            .frame(height: 58)
-                        Rectangle().fill(data.themeConfig.separatorColor.color).frame(height: 1 / UIScreen.main.scale).padding(.leading, 18)
+                            .font(.system(size: 17, weight: .semibold))
+                            .padding(.horizontal, 14)
+                            .frame(height: 48)
+                        Rectangle().fill(data.themeConfig.separatorColor.color).frame(height: 1 / UIScreen.main.scale).padding(.leading, 14)
                         TextField("简介", text: $aboutText, axis: .vertical)
-                            .font(.system(size: 20))
+                            .font(.system(size: 17))
                             .lineLimit(2...4)
-                            .padding(.horizontal, 18)
-                            .frame(minHeight: 72)
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 58)
                     }
                 }
 
@@ -190,8 +185,8 @@ struct HSGroupSettingsView: View {
                     row("eye.fill", "近期操作", nil, 0xF5A12A) { router.open(.groupRecentActions(groupID)) }
                 ])
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 30)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
         }
         .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
@@ -210,7 +205,7 @@ struct HSGroupSettingsView: View {
                     Rectangle()
                         .fill(data.themeConfig.separatorColor.color)
                         .frame(height: 1 / UIScreen.main.scale)
-                        .padding(.leading, 72)
+                        .padding(.leading, 56)
                 }
             }
         }
@@ -319,7 +314,7 @@ struct HSGroupPermissionsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 18) {
                 HSSimplePageHeader(title: "权限", leadingTitle: nil, trailingTitle: nil, onLeading: { dismiss() }, onTrailing: {})
 
                 sectionTitle("本群组成员有何权限？")
@@ -436,16 +431,16 @@ struct HSInviteLinksView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 22) {
                 HSSimplePageHeader(title: "邀请链接", leadingTitle: "返回", trailingTitle: nil, onLeading: { dismiss() }, onTrailing: {})
 
                 VStack(spacing: 18) {
                     Image(systemName: "checkmark.circle")
-                        .font(.system(size: 90, weight: .thin))
+                        .font(.system(size: 70, weight: .thin))
                         .foregroundStyle(.white)
-                        .frame(height: 110)
+                        .frame(height: 86)
                     Text("HSgram 上的任何人都可以通过此链接加入您的群组。")
-                        .font(.system(size: 18))
+                        .font(.system(size: 16))
                         .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                         .multilineTextAlignment(.center)
                 }
@@ -457,17 +452,17 @@ struct HSInviteLinksView: View {
                     VStack(spacing: 18) {
                         HStack {
                             Text(invite.shortLink)
-                                .font(.system(size: 20, weight: .semibold))
+                                .font(.system(size: 17, weight: .semibold))
                                 .lineLimit(1)
                             Spacer()
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 20, weight: .bold))
+                                .font(.system(size: 17, weight: .bold))
                                 .foregroundStyle(.white)
-                                .frame(width: 40, height: 40)
+                                .frame(width: 34, height: 34)
                                 .background(data.themeConfig.mutedTextColor.color, in: Circle())
                         }
-                        .padding(.horizontal, 18)
-                        .frame(height: 56)
+                        .padding(.horizontal, 14)
+                        .frame(height: 46)
                         .background(data.themeConfig.groupedBackgroundColor.color, in: Capsule())
 
                         HStack(spacing: 10) {
@@ -478,11 +473,11 @@ struct HSInviteLinksView: View {
                         }
 
                         Text(invite.joinedCount == 0 ? "无人加入" : "\(invite.joinedCount) 人加入")
-                            .font(.system(size: 20))
+                            .font(.system(size: 17))
                             .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                             .padding(.bottom, 4)
                     }
-                    .padding(18)
+                    .padding(14)
                 }
 
                 sectionTitle("其他链接")
@@ -490,7 +485,7 @@ struct HSInviteLinksView: View {
                     HSSettingsRow(icon: "plus", title: "新建链接", accent: data.themeConfig.primaryAccentColor.color, showsDisclosure: false)
                 }
                 Text("你可以建立限制时间、用户数量或需要付费订阅的附加邀请链接。")
-                    .font(.system(size: 16))
+                    .font(.system(size: 14))
                     .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     .padding(.horizontal, 18)
                     .padding(.top, -18)
@@ -500,13 +495,13 @@ struct HSInviteLinksView: View {
                     HSPermissionRow(title: "限制保存内容", isOn: $restrictSaving)
                 }
                 Text("成员将可以拷贝、保存及转发此群组中的内容。")
-                    .font(.system(size: 16))
+                    .font(.system(size: 14))
                     .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     .padding(.horizontal, 18)
                     .padding(.top, -18)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 30)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
         }
         .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
@@ -516,10 +511,10 @@ struct HSInviteLinksView: View {
     private func inviteButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 58)
+                .frame(height: 48)
                 .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
         }
         .buttonStyle(.plain)
@@ -527,7 +522,7 @@ struct HSInviteLinksView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             .padding(.leading, 18)
             .padding(.bottom, -18)
@@ -545,14 +540,14 @@ struct HSReactionSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 22) {
                     HSSimplePageHeader(title: "表情回应", leadingTitle: nil, trailingTitle: nil, onLeading: { dismiss() }, onTrailing: {})
 
                     HSGroupedSettingsCard {
                         HSPermissionRow(title: "启用表情回应", isOn: $enabled)
                     }
                     Text("您可以添加任意表情包中的表情作为回应。")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                         .padding(.horizontal, 18)
                         .padding(.top, -18)
@@ -560,12 +555,12 @@ struct HSReactionSettingsView: View {
                     sectionTitle("可选表情回应")
                     HSGroupedSettingsCard {
                         TextField("添加表情回应...", text: $allowed)
-                            .font(.system(size: 20))
-                            .padding(.horizontal, 18)
-                            .frame(height: 58)
+                            .font(.system(size: 17))
+                            .padding(.horizontal, 14)
+                            .frame(height: 48)
                     }
                     Text("您也可以 创建自己的 表情包并使用它们。")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                         .padding(.horizontal, 18)
                         .padding(.top, -18)
@@ -579,26 +574,26 @@ struct HSReactionSettingsView: View {
                         centerTitle: "\(Int(limit)) 反应"
                     )
                     Text("限制可以加入到帖子中的表情回应类型数量，包括已发布的帖子。")
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                         .padding(.horizontal, 18)
                         .padding(.top, -18)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 110)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 96)
             }
 
             Button {
                 dismiss()
             } label: {
                 Text("更新表情回应")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 60)
+                    .frame(height: 50)
                     .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 18)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 14)
             }
             .buttonStyle(.plain)
         }
@@ -609,7 +604,7 @@ struct HSReactionSettingsView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             .padding(.leading, 18)
             .padding(.bottom, -18)
@@ -634,7 +629,7 @@ struct HSRemovedUsersView: View {
                     HSSettingsRow(icon: "minus", title: "移除用户", accent: data.themeConfig.primaryAccentColor.color, showsDisclosure: false)
                 }
                 Text("被管理员移除的用户不能通过邀请链接再次加入群组。")
-                    .font(.system(size: 16))
+                    .font(.system(size: 14))
                     .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     .padding(.horizontal, 18)
                     .padding(.top, -14)
@@ -642,31 +637,31 @@ struct HSRemovedUsersView: View {
                 sectionTitle("被移除的用户")
                 HSGroupedSettingsCard {
                     ForEach(Array(group.removedUsers.enumerated()), id: \.element.id) { index, item in
-                        HStack(spacing: 14) {
-                            HSAvatarView(initials: item.user.initials, colorHex: item.user.accentHex, size: 58)
+                        HStack(spacing: 11) {
+                            HSAvatarView(initials: item.user.initials, colorHex: item.user.accentHex, size: 48)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(item.user.displayName)
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 17, weight: .bold))
                                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                                 Text("被 \(item.removedBy) 移除")
-                                    .font(.system(size: 16))
+                                    .font(.system(size: 14))
                                     .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                             }
                             Spacer()
                         }
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 11)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
                         if index != group.removedUsers.count - 1 {
                             Rectangle()
                                 .fill(data.themeConfig.separatorColor.color)
                                 .frame(height: 1 / UIScreen.main.scale)
-                                .padding(.leading, 90)
+                                .padding(.leading, 70)
                         }
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 30)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
         }
         .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
@@ -675,7 +670,7 @@ struct HSRemovedUsersView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             .padding(.leading, 18)
             .padding(.bottom, -14)
@@ -701,7 +696,7 @@ struct HSRecentActionsView: View {
                         Image(systemName: "chevron.left")
                         Text("返回")
                     }
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(data.themeConfig.primaryAccentColor.color)
                 }
                 .buttonStyle(.plain)
@@ -717,29 +712,29 @@ struct HSRecentActionsView: View {
                 }
 
                 Spacer()
-                Color.clear.frame(width: 64, height: 1)
+                Color.clear.frame(width: 52, height: 1)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
             .background(data.themeConfig.navigationBarBackground.color)
 
             ZStack {
                 HSChatWallpaperView(theme: .blushPattern)
                 VStack(spacing: 18) {
                     Image(systemName: "list.clipboard.fill")
-                        .font(.system(size: 72, weight: .semibold))
+                    .font(.system(size: 56, weight: .semibold))
                         .foregroundStyle(.white)
                     Text("暂无近期操作记录")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.system(size: 19, weight: .bold))
                         .foregroundStyle(.white)
                     Text("在过去的 48 小时内，群组成员/管理员没有执行任何操作。")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
                 }
-                .padding(34)
-                .background(Color(hex: 0xC85E95).opacity(0.66), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .padding(.horizontal, 54)
+                .padding(24)
+                .background(data.themeConfig.activeChatTheme.reactionPillColor.color.opacity(0.66), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(.horizontal, 44)
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -760,16 +755,16 @@ struct HSSimplePageHeader: View {
             Button(action: onLeading) {
                 if let leadingTitle {
                     Text(leadingTitle)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                        .padding(.horizontal, 18)
-                        .frame(height: 56)
+                        .padding(.horizontal, 15)
+                        .frame(height: 48)
                         .background(.ultraThinMaterial, in: Capsule())
                 } else {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 25, weight: .semibold))
+                        .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                        .frame(width: 56, height: 56)
+                        .frame(width: 48, height: 48)
                         .background(.ultraThinMaterial, in: Circle())
                 }
             }
@@ -778,23 +773,23 @@ struct HSSimplePageHeader: View {
             Spacer()
 
             Text(title)
-                .font(.system(size: 22, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(data.themeConfig.primaryTextColor.color)
 
             Spacer()
 
             if let trailingTitle {
                 Button(trailingTitle, action: onTrailing)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
-                    .padding(.horizontal, 18)
-                    .frame(height: 56)
+                    .padding(.horizontal, 15)
+                    .frame(height: 48)
                     .background(.ultraThinMaterial, in: Capsule())
                     .buttonStyle(.plain)
             } else {
-                Color.clear.frame(width: 56, height: 56)
+                Color.clear.frame(width: 48, height: 48)
             }
         }
-        .padding(.top, 10)
+        .padding(.top, 7)
     }
 }

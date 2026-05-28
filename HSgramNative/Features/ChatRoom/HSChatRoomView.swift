@@ -46,23 +46,23 @@ struct HSChatRoomView: View {
                     HSPinnedBanner(title: "置顶消息", message: group.announcement) {
                         withAnimation(.easeInOut(duration: 0.18)) { showPinnedBanner = false }
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 8)
                 } else if blockedUserBanner {
                     HSPinnedBanner(title: "屏蔽此用户", message: "这个会话已被屏蔽，可从资料页恢复。") {
                         withAnimation(.easeInOut(duration: 0.18)) { blockedUserBanner = false }
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 8)
                 }
 
                 if !selectedMessageIDs.isEmpty {
                     selectionBar
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 6)
                 }
 
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 3) {
+                        LazyVStack(spacing: 2) {
                             ForEach(timeline) { item in
                                 switch item.kind {
                                 case .date(let title):
@@ -73,7 +73,7 @@ struct HSChatRoomView: View {
                                 }
                             }
                         }
-                        .padding(.top, 12)
+                        .padding(.top, 8)
                         .padding(.bottom, bottomClearance)
                     }
                     .scrollIndicators(.hidden)
@@ -210,7 +210,7 @@ struct HSChatRoomView: View {
     }
 
     private var bottomClearance: CGFloat {
-        showStickerPanel ? 438 : 92
+        showStickerPanel ? 410 : 78
     }
 
     private func openProfile() {
