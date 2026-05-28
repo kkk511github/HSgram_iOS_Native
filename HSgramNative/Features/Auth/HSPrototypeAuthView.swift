@@ -2,13 +2,17 @@ import SwiftUI
 
 struct HSPrototypeAuthView: View {
     @EnvironmentObject private var router: HSAppRouter
-    @State private var mode: AuthMode = .login
-    @State private var loginMethod: LoginMethod = .email
+    @State private var mode: HSAuthMode = .login
+    @State private var loginMethod: HSAuthLoginMethod = .email
     @State private var email = "linhe@hsgram.app"
     @State private var phone = "+86 138 0000 1024"
     @State private var code = ""
     @State private var name = "林河"
     @State private var codeSent = false
+
+    private var viewModel: HSAuthViewModel {
+        HSAuthViewModel(mode: mode, loginMethod: loginMethod, codeSent: codeSent)
+    }
 
     var body: some View {
         ZStack {
@@ -18,19 +22,19 @@ struct HSPrototypeAuthView: View {
                     brandHeader
                     VStack(spacing: 16) {
                         Picker("模式", selection: $mode) {
-                            Text("登录").tag(AuthMode.login)
-                            Text("注册").tag(AuthMode.register)
+                            Text("登录").tag(HSAuthMode.login)
+                            Text("注册").tag(HSAuthMode.register)
                         }
                         .pickerStyle(.segmented)
                         Picker("登录方式", selection: $loginMethod) {
-                            Label("邮箱", systemImage: "envelope").tag(LoginMethod.email)
-                            Label("手机", systemImage: "phone").tag(LoginMethod.phone)
+                            Label("邮箱", systemImage: "envelope").tag(HSAuthLoginMethod.email)
+                            Label("手机", systemImage: "phone").tag(HSAuthLoginMethod.phone)
                         }
                         .pickerStyle(.segmented)
-                        if mode == .register {
+                        if viewModel.showsNameField {
                             authField(title: "昵称", text: $name, icon: "person.crop.circle", keyboard: .default)
                         }
-                        if loginMethod == .email {
+                        if viewModel.usesEmailLogin {
                             authField(title: "邮箱", text: $email, icon: "envelope", keyboard: .emailAddress)
                         } else {
                             authField(title: "手机号", text: $phone, icon: "phone", keyboard: .phonePad)
@@ -45,11 +49,11 @@ struct HSPrototypeAuthView: View {
                                     router.signIn()
                                 } else {
                                     codeSent = true
-                                    code = "1024"
+                                    code = viewModel.verificationSeed
                                 }
                             }
                         } label: {
-                            Text(codeSent ? (mode == .login ? "登录 HSgram" : "创建 HSgram 账号") : "获取验证码")
+                            Text(viewModel.primaryActionTitle)
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 50)
@@ -58,12 +62,12 @@ struct HSPrototypeAuthView: View {
                         .tint(HSPrototypeTheme.accent)
                         Button {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
-                                mode = mode == .login ? .register : .login
+                                mode = viewModel.toggledMode()
                                 codeSent = false
                                 code = ""
                             }
                         } label: {
-                            Text(mode == .login ? "没有账号？注册" : "已有账号？登录")
+                            Text(viewModel.switchPrompt)
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(HSPrototypeTheme.accent)
                         }
@@ -72,7 +76,7 @@ struct HSPrototypeAuthView: View {
                     .padding(18)
                     .background(HSPrototypeTheme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 12)
-                    Text("邮箱为主入口，手机号作为辅助登录。当前原型使用 Mock 验证码，后续可接入真实 API。")
+                    Text(viewModel.helperText)
                         .font(.footnote)
                         .foregroundStyle(HSPrototypeTheme.secondaryText)
                         .multilineTextAlignment(.center)
@@ -114,6 +118,3 @@ struct HSPrototypeAuthView: View {
         .background(HSPrototypeTheme.secondarySurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
-
-private enum AuthMode: Hashable { case login, register }
-private enum LoginMethod: Hashable { case email, phone }

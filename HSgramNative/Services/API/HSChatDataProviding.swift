@@ -35,14 +35,48 @@ enum HSRemoteChatAPIError: LocalizedError {
     }
 }
 
+enum HSRemoteChatEndpoint: Hashable {
+    case startEmailAuth
+    case verifyEmailAuth
+    case dialogs
+    case messages(dialogID: UUID)
+    case media(dialogID: UUID)
+    case reactions(dialogID: UUID, messageID: UUID)
+    case search
+    case privacySettings
+    case notificationSettings
+
+    var path: String {
+        switch self {
+        case .startEmailAuth:
+            return "v1/auth/email/start"
+        case .verifyEmailAuth:
+            return "v1/auth/email/verify"
+        case .dialogs:
+            return "v1/dialogs"
+        case .messages(let dialogID):
+            return "v1/dialogs/\(dialogID.uuidString)/messages"
+        case .media(let dialogID):
+            return "v1/dialogs/\(dialogID.uuidString)/media"
+        case .reactions(let dialogID, let messageID):
+            return "v1/dialogs/\(dialogID.uuidString)/messages/\(messageID.uuidString)/reactions"
+        case .search:
+            return "v1/search"
+        case .privacySettings:
+            return "v1/settings/privacy"
+        case .notificationSettings:
+            return "v1/settings/notifications"
+        }
+    }
+}
+
 struct HSRemoteChatAPI {
     var baseURL: URL
 
-    // Align these endpoint slots with the current native client/server adapter:
-    // POST v1/auth/email/start, POST v1/auth/email/verify, GET v1/dialogs,
-    // GET/POST v1/dialogs/{dialogID}/messages, POST v1/dialogs/{dialogID}/media,
-    // POST v1/dialogs/{dialogID}/messages/{messageID}/reactions, GET v1/search,
-    // GET/PATCH v1/settings/privacy and v1/settings/notifications.
+    func url(for endpoint: HSRemoteChatEndpoint) -> URL {
+        baseURL.appendingPathComponent(endpoint.path)
+    }
+
     func loadConversations(token: String) async throws -> [Conversation] {
         throw HSRemoteChatAPIError.notConfigured
     }

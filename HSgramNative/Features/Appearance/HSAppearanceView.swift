@@ -2,7 +2,10 @@ import SwiftUI
 
 struct HSAppearanceView: View {
     @EnvironmentObject private var data: HSMockChatService
-    private let accentChoices: [UInt32] = [0x168BFF, 0x30B7C5, 0x34C759, 0xFF9500, 0xAF52DE]
+
+    private var viewModel: HSAppearanceViewModel {
+        HSAppearanceViewModel(themeConfig: data.themeConfig, users: data.users, currentUser: data.currentUser)
+    }
 
     var body: some View {
         List {
@@ -32,7 +35,7 @@ struct HSAppearanceView: View {
             }
             Section("主题色") {
                 HStack(spacing: 14) {
-                    ForEach(accentChoices, id: \.self) { hex in
+                    ForEach(viewModel.accentChoices, id: \.self) { hex in
                         Button { data.themeConfig.accentHex = hex } label: {
                             Circle().fill(Color(hex: hex)).frame(width: 34, height: 34).overlay {
                                 if data.themeConfig.accentHex == hex {
@@ -65,8 +68,8 @@ struct HSAppearanceView: View {
         ZStack {
             HSChatBackgroundView(style: data.themeConfig.chatBackground).frame(height: 260).clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             VStack(spacing: 10) {
-                HSMessageBubble(message: Message(conversationID: UUID(), sender: data.users.first ?? data.currentUser, body: "这是一条收到的消息预览。", sentAt: Date().addingTimeInterval(-120), isOutgoing: false))
-                HSMessageBubble(message: Message(conversationID: UUID(), sender: data.currentUser, body: "主题色和背景会实时影响界面。", sentAt: Date(), isOutgoing: true, deliveryState: .read, reactions: [MessageReaction(emoji: "👍", count: 1, isSelectedByCurrentUser: true)]))
+                HSMessageBubble(message: viewModel.incomingPreview)
+                HSMessageBubble(message: viewModel.outgoingPreview)
             }
             .padding(.vertical, 22)
         }

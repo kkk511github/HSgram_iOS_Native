@@ -1,6 +1,51 @@
 import Foundation
 import SwiftUI
 
+enum HSAuthMode: Hashable {
+    case login
+    case register
+
+    var switchPrompt: String {
+        self == .login ? "没有账号？注册" : "已有账号？登录"
+    }
+}
+
+enum HSAuthLoginMethod: Hashable {
+    case email
+    case phone
+}
+
+struct HSAuthViewModel {
+    let mode: HSAuthMode
+    let loginMethod: HSAuthLoginMethod
+    let codeSent: Bool
+
+    var showsNameField: Bool {
+        mode == .register
+    }
+
+    var usesEmailLogin: Bool {
+        loginMethod == .email
+    }
+
+    var primaryActionTitle: String {
+        guard codeSent else { return "获取验证码" }
+        return mode == .login ? "登录 HSgram" : "创建 HSgram 账号"
+    }
+
+    var helperText: String {
+        "邮箱为主入口，手机号作为辅助登录。当前原型使用 Mock 验证码，后续可接入真实 API。"
+    }
+
+    var verificationSeed: String {
+        "1024"
+    }
+
+    func toggledMode() -> HSAuthMode {
+        mode == .login ? .register : .login
+    }
+}
+
 struct HSChatListViewModel {
     let conversations: [Conversation]
     let query: String
@@ -154,6 +199,36 @@ struct HSMediaLibraryViewModel {
                 return message.body.contains("http") || message.attachment?.kind == .link
             }
         }
+    }
+}
+
+struct HSAppearanceViewModel {
+    let themeConfig: ThemeConfig
+    let users: [User]
+    let currentUser: User
+
+    let accentChoices: [UInt32] = [0x168BFF, 0x30B7C5, 0x34C759, 0xFF9500, 0xAF52DE]
+
+    var incomingPreview: Message {
+        Message(
+            conversationID: UUID(),
+            sender: users.first ?? currentUser,
+            body: "这是一条收到的消息预览。",
+            sentAt: Date().addingTimeInterval(-120),
+            isOutgoing: false
+        )
+    }
+
+    var outgoingPreview: Message {
+        Message(
+            conversationID: UUID(),
+            sender: currentUser,
+            body: "主题色和背景会实时影响界面。",
+            sentAt: Date(),
+            isOutgoing: true,
+            deliveryState: .read,
+            reactions: [MessageReaction(emoji: "👍", count: 1, isSelectedByCurrentUser: true)]
+        )
     }
 }
 
