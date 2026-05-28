@@ -1,4 +1,5 @@
 import CommonCrypto
+import CryptoKit
 import Foundation
 import Network
 import Security
@@ -8238,11 +8239,8 @@ final class HSNativeMTProtoClient {
     }
 
     private static func md5Hex(_ data: Data) -> String {
-        var digest = [UInt8](repeating: 0, count: Int(CC_MD5_DIGEST_LENGTH))
-        data.withUnsafeBytes { buffer in
-            _ = CC_MD5(buffer.baseAddress, CC_LONG(data.count), &digest)
-        }
-        return digest.map { String(format: "%02x", $0) }.joined()
+        // MTProto inputFile.md5_checksum requires MD5 for small uploaded files.
+        return Data(Insecure.MD5.hash(data: data)).hexString
     }
 
     private static func parsePasswordKdfAlgo(reader: inout HSTLReader, allowUnknown: Bool) throws -> HSNativePasswordKDF.Algorithm? {
