@@ -104,7 +104,7 @@ struct HSGroupProfileView: View {
                     .aspectRatio(1, contentMode: .fit)
                     .overlay {
                         Image(systemName: selectedTab == "媒体" ? "photo" : selectedTab == "文件" ? "doc.text" : "link")
-                            .foregroundStyle(.white.opacity(0.90))
+                            .foregroundStyle(data.themeConfig.inverseTextColor.color.opacity(0.90))
                     }
             }
         }
@@ -223,11 +223,23 @@ struct HSGroupSettingsView: View {
             icon: icon,
             title: title,
             value: value,
-            accent: Color(hex: hex),
+            accent: settingsAccent(hex),
             showsDisclosure: toggle == nil,
             toggle: toggle,
             action: action
         )
+    }
+
+    private func settingsAccent(_ hex: UInt32) -> Color {
+        switch hex {
+        case 0x3478F6, 0x8B5FD3: return data.themeConfig.primaryAccentColor.color
+        case 0x48A8F5: return data.themeConfig.secondaryAccentColor.color
+        case 0x58C75A: return data.themeConfig.successColor.color
+        case 0xF04B41, 0xF04B6A: return data.themeConfig.destructiveColor.color
+        case 0xF5A12A: return data.themeConfig.warningColor.color
+        case 0x8E8E93: return data.themeConfig.mutedTextColor.color
+        default: return data.themeConfig.primaryTextColor.color
+        }
     }
 }
 
@@ -437,7 +449,7 @@ struct HSInviteLinksView: View {
                 VStack(spacing: 18) {
                     Image(systemName: "checkmark.circle")
                         .font(.system(size: 70, weight: .thin))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .frame(height: 86)
                     Text("HSgram 上的任何人都可以通过此链接加入您的群组。")
                         .font(.system(size: 16))
@@ -457,7 +469,7 @@ struct HSInviteLinksView: View {
                             Spacer()
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                                 .frame(width: 34, height: 34)
                                 .background(data.themeConfig.mutedTextColor.color, in: Circle())
                         }
@@ -512,7 +524,7 @@ struct HSInviteLinksView: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
                 .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
@@ -588,7 +600,7 @@ struct HSReactionSettingsView: View {
             } label: {
                 Text("更新表情回应")
                     .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
@@ -722,14 +734,14 @@ struct HSRecentActionsView: View {
                 HSChatWallpaperView(theme: .blushPattern)
                 VStack(spacing: 18) {
                     Image(systemName: "list.clipboard.fill")
-                    .font(.system(size: 56, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 56, weight: .semibold))
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     Text("暂无近期操作记录")
                         .font(.system(size: 19, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     Text("在过去的 48 小时内，群组成员/管理员没有执行任何操作。")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .multilineTextAlignment(.center)
                 }
                 .padding(24)

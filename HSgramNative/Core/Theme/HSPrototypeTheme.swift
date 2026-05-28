@@ -5,7 +5,7 @@ enum HSPrototypeTheme {
     static let fallback = ThemeConfig.defaultLight
 
     static let accent = fallback.primaryAccentColor.color
-    static let accentDeep = Color(hex: 0x6F44BE)
+    static let accentDeep = fallback.primaryAccentColor.color
     static let success = fallback.successColor.color
     static let warning = fallback.destructiveColor.color
     static let orange = fallback.warningColor.color
@@ -13,7 +13,7 @@ enum HSPrototypeTheme {
     static let teal = fallback.secondaryAccentColor.color
     static let background = fallback.groupedBackgroundColor.color
     static let surface = fallback.cardBackgroundColor.color
-    static let secondarySurface = Color(hex: 0xECEEF4)
+    static let secondarySurface = fallback.groupedBackgroundColor.color
     static let elevatedSurface = fallback.cardBackgroundColor.color
     static let primaryText = fallback.primaryTextColor.color
     static let secondaryText = fallback.secondaryTextColor.color
@@ -23,8 +23,8 @@ enum HSPrototypeTheme {
     static let outgoingBubble = fallback.outgoingBubbleColor.color
     static let unreadMuted = fallback.mutedTextColor.color
     static let glassTint = fallback.navigationBarBackground.color
-    static let glassHighlight = Color.white.opacity(0.60)
-    static let glassShadow = Color.black.opacity(0.14)
+    static let glassHighlight = fallback.glassStrokeColor.color
+    static let glassShadow = fallback.shadowColor.color
 
     static func accentColor(_ config: ThemeConfig) -> Color {
         config.primaryAccentColor.color
@@ -134,14 +134,7 @@ struct HSChatWallpaperView: View {
     }
 
     private var patternInk: Color {
-        switch theme.chatWallpaperType {
-        case .dark:
-            return Color.white.opacity(0.28)
-        case .gradientPattern:
-            return Color(hex: 0x7F346C).opacity(0.85)
-        default:
-            return Color(hex: 0x7894A8).opacity(0.52)
-        }
+        theme.chatPatternInkColor.color
     }
 }
 
@@ -172,12 +165,15 @@ private struct HSGeneratedWallpaperImage: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.chatWallpaperColor.color, Color(hex: 0xCDE9F9)],
+                colors: [theme.chatWallpaperColor.color, theme.chatWallpaperSecondaryColor.color],
                 startPoint: .top,
                 endPoint: .bottom
             )
             Canvas { context, size in
-                let colors = [Color.white.opacity(0.28), Color(hex: 0x529AD7).opacity(0.14)]
+                let colors = [
+                    theme.chatWallpaperHighlightColor.color,
+                    theme.chatPatternInkColor.color.opacity(0.28)
+                ]
                 for index in 0..<18 {
                     let x = CGFloat((index * 71) % 390) / 390 * size.width
                     let y = CGFloat((index * 113) % 820) / 820 * size.height
@@ -186,7 +182,7 @@ private struct HSGeneratedWallpaperImage: View {
                     context.fill(path, with: .color(colors[index % colors.count]))
                     path = Path()
                     path.addEllipse(in: CGRect(x: x + 8, y: y + 8, width: 16, height: 16))
-                    context.fill(path, with: .color(Color.white.opacity(0.22)))
+                    context.fill(path, with: .color(theme.chatWallpaperHighlightColor.color))
                 }
             }
         }

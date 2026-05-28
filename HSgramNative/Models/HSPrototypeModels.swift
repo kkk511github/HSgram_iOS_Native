@@ -68,6 +68,9 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
     var chatWallpaperImage: String?
     var chatWallpaperOverlayColor: HSThemeColor
     var chatPatternOpacity: Double
+    var chatPatternInkColor: HSThemeColor = HSThemeColor(0x7894A8, alpha: 0.52)
+    var chatWallpaperSecondaryColor: HSThemeColor = HSThemeColor(0xCDE9F9)
+    var chatWallpaperHighlightColor: HSThemeColor = HSThemeColor(0xFFFFFF, alpha: 0.22)
     var reactionPillColor: HSThemeColor
     var reactionAvatarColor: HSThemeColor
     var inputBarBackgroundColor: HSThemeColor
@@ -88,6 +91,9 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
         chatWallpaperImage: nil,
         chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.0),
         chatPatternOpacity: 0.12,
+        chatPatternInkColor: HSThemeColor(0x7894A8, alpha: 0.52),
+        chatWallpaperSecondaryColor: HSThemeColor(0xCDE9F9),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.22),
         reactionPillColor: HSThemeColor(0xE9F1FA),
         reactionAvatarColor: HSThemeColor(0x58C7D0),
         inputBarBackgroundColor: HSThemeColor(0xF7F7F7, alpha: 0.86),
@@ -114,6 +120,9 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
         chatWallpaperImage: nil,
         chatWallpaperOverlayColor: HSThemeColor(0xFFFFFF, alpha: 0.10),
         chatPatternOpacity: 0.22,
+        chatPatternInkColor: HSThemeColor(0x7F346C, alpha: 0.85),
+        chatWallpaperSecondaryColor: HSThemeColor(0xF6C2A2),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.22),
         reactionPillColor: HSThemeColor(0x8F63CF, alpha: 0.90),
         reactionAvatarColor: HSThemeColor(0x68D6DD),
         inputBarBackgroundColor: HSThemeColor(0xF8DCF4, alpha: 0.74),
@@ -135,6 +144,9 @@ struct ChatThemeConfig: Identifiable, Codable, Hashable {
         chatWallpaperImage: nil,
         chatWallpaperOverlayColor: HSThemeColor(0x000000, alpha: 0.18),
         chatPatternOpacity: 0.10,
+        chatPatternInkColor: HSThemeColor(0xFFFFFF, alpha: 0.28),
+        chatWallpaperSecondaryColor: HSThemeColor(0x070A10),
+        chatWallpaperHighlightColor: HSThemeColor(0xFFFFFF, alpha: 0.12),
         reactionPillColor: HSThemeColor(0x263447),
         reactionAvatarColor: HSThemeColor(0x58C7D0),
         inputBarBackgroundColor: HSThemeColor(0x161A21, alpha: 0.86),
@@ -176,6 +188,15 @@ struct ThemeConfig: Identifiable, Codable, Hashable {
     var destructiveColor: HSThemeColor
     var warningColor: HSThemeColor
     var sheetBackgroundColor: HSThemeColor
+    var inverseTextColor: HSThemeColor
+    var glassStrokeColor: HSThemeColor
+    var shadowColor: HSThemeColor
+    var subtleOverlayColor: HSThemeColor
+    var bubbleStrokeColor: HSThemeColor
+    var avatarOnlineRingColor: HSThemeColor
+    var profileHeaderBlendColor: HSThemeColor
+    var cameraTileColor: HSThemeColor
+    var stickerInkColor: HSThemeColor
     var activeChatTheme: ChatThemeConfig
     var availableChatThemes: [ChatThemeConfig]
 
@@ -211,6 +232,15 @@ struct ThemeConfig: Identifiable, Codable, Hashable {
         destructiveColor: HSThemeColor = HSThemeColor(0xF04B41),
         warningColor: HSThemeColor = HSThemeColor(0xF5A12A),
         sheetBackgroundColor: HSThemeColor = HSThemeColor(0xF8F8FA, alpha: 0.94),
+        inverseTextColor: HSThemeColor = HSThemeColor(0xFFFFFF),
+        glassStrokeColor: HSThemeColor = HSThemeColor(0xFFFFFF, alpha: 0.52),
+        shadowColor: HSThemeColor = HSThemeColor(0x000000, alpha: 0.12),
+        subtleOverlayColor: HSThemeColor = HSThemeColor(0x000000, alpha: 0.05),
+        bubbleStrokeColor: HSThemeColor = HSThemeColor(0x000000, alpha: 0.10),
+        avatarOnlineRingColor: HSThemeColor = HSThemeColor(0xFFFFFF),
+        profileHeaderBlendColor: HSThemeColor = HSThemeColor(0xC8D6E7),
+        cameraTileColor: HSThemeColor = HSThemeColor(0x462214),
+        stickerInkColor: HSThemeColor = HSThemeColor(0x1E1E22),
         activeChatTheme: ChatThemeConfig = .defaultLight,
         availableChatThemes: [ChatThemeConfig] = [.defaultLight, .blushPattern, .dark]
     ) {
@@ -245,6 +275,15 @@ struct ThemeConfig: Identifiable, Codable, Hashable {
         self.destructiveColor = destructiveColor
         self.warningColor = warningColor
         self.sheetBackgroundColor = sheetBackgroundColor
+        self.inverseTextColor = inverseTextColor
+        self.glassStrokeColor = glassStrokeColor
+        self.shadowColor = shadowColor
+        self.subtleOverlayColor = subtleOverlayColor
+        self.bubbleStrokeColor = bubbleStrokeColor
+        self.avatarOnlineRingColor = avatarOnlineRingColor
+        self.profileHeaderBlendColor = profileHeaderBlendColor
+        self.cameraTileColor = cameraTileColor
+        self.stickerInkColor = stickerInkColor
         self.activeChatTheme = activeChatTheme
         self.availableChatThemes = availableChatThemes
     }

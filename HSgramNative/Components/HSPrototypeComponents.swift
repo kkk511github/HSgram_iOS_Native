@@ -83,9 +83,9 @@ struct HSFloatingBackButton: View {
             .background(.ultraThinMaterial, in: Capsule())
             .overlay {
                 Capsule()
-                    .stroke(Color.white.opacity(0.46), lineWidth: 1 / UIScreen.main.scale)
+                    .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.88), lineWidth: 1 / UIScreen.main.scale)
             }
-            .shadow(color: Color.black.opacity(0.12), radius: 16, x: 0, y: 8)
+            .shadow(color: data.themeConfig.shadowColor.color, radius: 16, x: 0, y: 8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title ?? "返回")
@@ -123,9 +123,9 @@ struct HSFloatingChatNavBar: View {
                 .background(.ultraThinMaterial, in: Capsule())
                 .overlay {
                     Capsule()
-                        .stroke(Color.white.opacity(0.52), lineWidth: 1 / UIScreen.main.scale)
+                        .stroke(data.themeConfig.glassStrokeColor.color, lineWidth: 1 / UIScreen.main.scale)
                 }
-                .shadow(color: Color.black.opacity(0.10), radius: 14, x: 0, y: 7)
+                .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 14, x: 0, y: 7)
             }
             .buttonStyle(.plain)
 
@@ -137,11 +137,11 @@ struct HSFloatingChatNavBar: View {
                     isGroup: isGroup
                 )
                 .overlay {
-                    Circle().stroke(Color.white.opacity(0.86), lineWidth: 2)
+                    Circle().stroke(data.themeConfig.avatarOnlineRingColor.color.opacity(0.86), lineWidth: 2)
                 }
             }
             .buttonStyle(.plain)
-            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
+            .shadow(color: data.themeConfig.shadowColor.color, radius: 12, x: 0, y: 6)
         }
         .padding(.horizontal, 12)
         .padding(.top, 6)
@@ -204,11 +204,11 @@ struct HSAvatarView: View {
                 if let systemImage {
                     Image(systemName: systemImage)
                         .font(.system(size: size * 0.42, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                 } else {
                     Text(displayText)
                         .font(.system(size: size * (displayText.count > 1 ? 0.34 : 0.48), weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .minimumScaleFactor(0.6)
                 }
             }
@@ -216,10 +216,10 @@ struct HSAvatarView: View {
 
             if isOnline {
                 Circle()
-                    .fill(Color(hex: 0x58C75A))
+                    .fill(data.themeConfig.successColor.color)
                     .frame(width: max(12, size * 0.24), height: max(12, size * 0.24))
                     .overlay {
-                        Circle().stroke(Color.white, lineWidth: max(2, size * 0.05))
+                        Circle().stroke(data.themeConfig.avatarOnlineRingColor.color, lineWidth: max(2, size * 0.05))
                     }
                     .offset(x: 1, y: 1)
             }
@@ -245,7 +245,7 @@ struct HSBadgeView: View {
     var body: some View {
         Text(count > 99 ? "99+" : "\(count)")
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(data.themeConfig.inverseTextColor.color)
             .padding(.horizontal, count < 10 ? 7 : 8)
             .frame(minWidth: 22, minHeight: 22)
             .background(
@@ -370,7 +370,7 @@ struct HSReactionBar: View {
                         .font(.system(size: 23))
                         .frame(width: 42, height: 42)
                         .background(data.themeConfig.cardBackgroundColor.color, in: Circle())
-                        .shadow(color: Color.black.opacity(0.10), radius: 9, x: 0, y: 4)
+                        .shadow(color: data.themeConfig.shadowColor.color.opacity(0.84), radius: 9, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
             }
@@ -394,11 +394,11 @@ struct HSReactionPill: View {
                 ForEach(Array(visibleInitials.enumerated()), id: \.offset) { index, initials in
                     Text(String(initials.prefix(1)).uppercased())
                         .font(.system(size: compact ? 10 : 12, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .frame(width: compact ? 22 : 27, height: compact ? 22 : 27)
                         .background(data.themeConfig.activeChatTheme.reactionAvatarColor.color, in: Circle())
                         .overlay {
-                            Circle().stroke(Color.white.opacity(0.32), lineWidth: 1 / UIScreen.main.scale)
+                            Circle().stroke(data.themeConfig.glassStrokeColor.color.opacity(0.62), lineWidth: 1 / UIScreen.main.scale)
                         }
                         .offset(x: index == 0 ? 0 : -4)
                 }
@@ -429,7 +429,7 @@ struct HSDateDivider: View {
     var body: some View {
         Text(title)
             .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(data.themeConfig.inverseTextColor.color)
             .padding(.horizontal, 13)
             .padding(.vertical, 6)
             .background(data.themeConfig.activeChatTheme.dateDividerColor.color, in: Capsule())
@@ -474,7 +474,7 @@ struct HSPinnedBanner: View {
         .background(data.themeConfig.activeChatTheme.pinnedBannerColor.color, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(0.48), lineWidth: 1 / UIScreen.main.scale)
+                .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.92), lineWidth: 1 / UIScreen.main.scale)
         }
         .padding(.horizontal, 16)
     }
@@ -586,7 +586,7 @@ struct HSMessageBubble: View {
             .background(bubbleColor, in: HSMessageBubbleShape(isOutgoing: message.isOutgoing))
             .overlay {
                 HSMessageBubbleShape(isOutgoing: message.isOutgoing)
-                    .stroke(Color.black.opacity(message.isOutgoing ? 0.08 : 0.10), lineWidth: 1 / UIScreen.main.scale)
+                    .stroke(data.themeConfig.bubbleStrokeColor.color.opacity(message.isOutgoing ? 0.80 : 1.0), lineWidth: 1 / UIScreen.main.scale)
             }
             .frame(maxWidth: min(UIScreen.main.bounds.width * 0.70, 360), alignment: message.isOutgoing ? .trailing : .leading)
         }
@@ -630,7 +630,7 @@ struct HSMessageBubble: View {
                 .lineLimit(2)
         }
         .padding(8)
-        .background(Color.black.opacity(0.05), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .background(data.themeConfig.subtleOverlayColor.color, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
     @ViewBuilder
@@ -680,11 +680,11 @@ struct HSMessageBubble: View {
                         .frame(height: 150)
                     Image(systemName: attachment.previewSystemImage)
                         .font(.system(size: 40, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.90))
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color.opacity(0.90))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     Text(attachment.subtitle)
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .padding(10)
                 }
                 .frame(width: 228)
@@ -692,7 +692,7 @@ struct HSMessageBubble: View {
                 HStack(spacing: 10) {
                     Image(systemName: attachment.previewSystemImage)
                         .font(.title2.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .frame(width: 44, height: 44)
                         .background(Color(hex: attachment.accentHex), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     VStack(alignment: .leading, spacing: 3) {
@@ -708,7 +708,7 @@ struct HSMessageBubble: View {
                 HStack(spacing: 10) {
                     Image(systemName: "play.fill")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(data.themeConfig.inverseTextColor.color)
                         .frame(width: 36, height: 36)
                         .background(data.themeConfig.primaryAccentColor.color, in: Circle())
                     HStack(spacing: 3) {
@@ -778,7 +778,7 @@ struct HSMessageInputBar: View {
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                     .frame(width: 46, height: 46)
                     .background(data.themeConfig.inputFieldBackgroundColor.color, in: Circle())
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+                    .shadow(color: data.themeConfig.shadowColor.color.opacity(0.67), radius: 10, x: 0, y: 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("附件")
@@ -804,7 +804,7 @@ struct HSMessageInputBar: View {
             .frame(minHeight: 46)
             .background(data.themeConfig.inputFieldBackgroundColor.color, in: Capsule())
             .overlay {
-                Capsule().stroke(Color.white.opacity(0.34), lineWidth: 1 / UIScreen.main.scale)
+                Capsule().stroke(data.themeConfig.glassStrokeColor.color.opacity(0.66), lineWidth: 1 / UIScreen.main.scale)
             }
 
             Button {
@@ -815,7 +815,7 @@ struct HSMessageInputBar: View {
                     .foregroundStyle(data.themeConfig.primaryTextColor.color)
                     .frame(width: 46, height: 46)
                     .background(data.themeConfig.inputFieldBackgroundColor.color, in: Circle())
-                    .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+                    .shadow(color: data.themeConfig.shadowColor.color.opacity(0.67), radius: 10, x: 0, y: 4)
             }
             .buttonStyle(.plain)
         }
@@ -896,7 +896,7 @@ struct HSAttachmentSheet: View {
                 .background(data.themeConfig.sheetBackgroundColor.color, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
                 .overlay(alignment: .top) {
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.50), lineWidth: 1 / UIScreen.main.scale)
+                        .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.96), lineWidth: 1 / UIScreen.main.scale)
                 }
                 .ignoresSafeArea(edges: .bottom)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -917,7 +917,7 @@ struct HSAttachmentSheet: View {
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        index == 0 ? Color(hex: 0x462214) : data.themeConfig.primaryAccentColor.color.opacity(0.10 + Double(index % 4) * 0.10),
+                                        index == 0 ? data.themeConfig.cameraTileColor.color : data.themeConfig.primaryAccentColor.color.opacity(0.10 + Double(index % 4) * 0.10),
                                         data.themeConfig.secondaryAccentColor.color.opacity(0.16 + Double(index % 3) * 0.10)
                                     ],
                                     startPoint: .topLeading,
@@ -928,16 +928,16 @@ struct HSAttachmentSheet: View {
                         if index != 0 {
                             Image(systemName: index % 2 == 0 ? "photo" : "square.text.square")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.85))
+                                .foregroundStyle(data.themeConfig.inverseTextColor.color.opacity(0.85))
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             Image(systemName: "camera")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                                 .padding(10)
                         }
                         Circle()
-                            .stroke(Color.white.opacity(0.86), lineWidth: 2)
+                            .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.86), lineWidth: 2)
                             .frame(width: 28, height: 28)
                             .padding(6)
                     }
@@ -1127,17 +1127,17 @@ struct HSStickerArtwork: View {
                 )
                 .overlay(alignment: .topLeading) {
                     Circle()
-                        .fill(Color.white.opacity(0.56))
+                        .fill(data.themeConfig.glassStrokeColor.color.opacity(0.56))
                         .frame(width: size * 0.18, height: size * 0.18)
                         .offset(x: size * 0.18, y: size * 0.13)
                 }
                 .overlay {
-                    Circle().stroke(Color.white.opacity(0.50), lineWidth: 2)
+                    Circle().stroke(data.themeConfig.glassStrokeColor.color.opacity(0.50), lineWidth: 2)
                 }
             Image(systemName: sticker.symbol)
                 .font(.system(size: size * 0.43, weight: .black))
-                .foregroundStyle(Color(hex: sticker.accentHex == sticker.baseHex ? 0x1E1E22 : sticker.accentHex))
-                .shadow(color: Color.white.opacity(0.52), radius: 1, x: 0, y: 1)
+                .foregroundStyle(sticker.accentHex == sticker.baseHex ? data.themeConfig.stickerInkColor.color : Color(hex: sticker.accentHex))
+                .shadow(color: data.themeConfig.glassStrokeColor.color.opacity(0.52), radius: 1, x: 0, y: 1)
         }
         .frame(width: size, height: size)
         .rotationEffect(.degrees(sticker.mood == "睡觉" ? -8 : 0))
@@ -1172,7 +1172,7 @@ struct HSGroupProfileHeader: View {
     private var largeHeader: some View {
         ZStack(alignment: .bottomLeading) {
             LinearGradient(
-                colors: [Color(hex: group.avatarHex).opacity(0.55), Color(hex: 0xC8D6E7)],
+                colors: [Color(hex: group.avatarHex).opacity(0.55), data.themeConfig.profileHeaderBlendColor.color],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -1193,10 +1193,10 @@ struct HSGroupProfileHeader: View {
                         Text("编辑")
                     }
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     .padding(.horizontal, 15)
                     .frame(height: 42)
-                    .background(Color.black.opacity(0.34), in: Capsule())
+                    .background(data.themeConfig.shadowColor.color.opacity(0.34), in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
@@ -1210,7 +1210,7 @@ struct HSGroupProfileHeader: View {
                 Text("\(group.memberCount) 位成员")
                     .font(.system(size: 17, weight: .regular))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(data.themeConfig.inverseTextColor.color)
             .padding(.horizontal, 18)
             .padding(.bottom, 78)
         }
@@ -1264,10 +1264,10 @@ struct HSGroupProfileHeader: View {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
             }
-            .foregroundStyle(mode == .large ? .white : data.themeConfig.primaryAccentColor.color)
+            .foregroundStyle(mode == .large ? data.themeConfig.inverseTextColor.color : data.themeConfig.primaryAccentColor.color)
             .frame(maxWidth: .infinity)
             .frame(height: 62)
-            .background(mode == .large ? Color.white.opacity(0.20) : data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(mode == .large ? data.themeConfig.glassStrokeColor.color.opacity(0.20) : data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1326,7 +1326,7 @@ struct HSSettingsRow: View {
         self.title = item.title
         self.subtitle = item.subtitle
         self.value = nil
-        self.accent = Color(hex: item.accentHex)
+        self.accent = nil
         self.showsDisclosure = true
         self.toggle = nil
         self.action = nil
@@ -1347,7 +1347,7 @@ struct HSSettingsRow: View {
         HStack(spacing: 11) {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                 .frame(width: 30, height: 30)
                 .background(accent ?? data.themeConfig.primaryAccentColor.color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
 
@@ -1513,7 +1513,7 @@ struct HSCapsuleSegmentedControl: View {
                             if selection == item {
                                 Capsule()
                                     .fill(data.themeConfig.groupedBackgroundColor.color)
-                                    .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
+                                    .shadow(color: data.themeConfig.shadowColor.color.opacity(0.67), radius: 8, x: 0, y: 3)
                             }
                         }
                 }
@@ -1523,7 +1523,7 @@ struct HSCapsuleSegmentedControl: View {
         .padding(4)
         .background(data.themeConfig.cardBackgroundColor.color.opacity(0.88), in: Capsule())
         .overlay {
-            Capsule().stroke(Color.white.opacity(0.60), lineWidth: 1 / UIScreen.main.scale)
+            Capsule().stroke(data.themeConfig.glassStrokeColor.color.opacity(0.60), lineWidth: 1 / UIScreen.main.scale)
         }
     }
 }
@@ -1562,9 +1562,9 @@ struct HSTranslucentTabBar: View {
         .background(.ultraThinMaterial, in: Capsule())
         .overlay {
             Capsule()
-                .stroke(Color.white.opacity(0.50), lineWidth: 1 / UIScreen.main.scale)
+                .stroke(data.themeConfig.glassStrokeColor.color.opacity(0.50), lineWidth: 1 / UIScreen.main.scale)
         }
-        .shadow(color: Color.black.opacity(0.12), radius: 22, x: 0, y: 8)
+        .shadow(color: data.themeConfig.shadowColor.color, radius: 22, x: 0, y: 8)
         .padding(.horizontal, 14)
         .padding(.bottom, 4)
     }
@@ -1603,7 +1603,7 @@ struct HSEmptyStateView: View {
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .font(.body.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     .padding(.horizontal, 22)
                     .frame(height: 44)
                     .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
