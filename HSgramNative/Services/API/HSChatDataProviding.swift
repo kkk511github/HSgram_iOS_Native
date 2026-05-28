@@ -7,7 +7,7 @@ protocol HSChatDataProviding: ObservableObject {
     var users: [User] { get }
     var conversations: [Conversation] { get }
     var contacts: [Contact] { get }
-    var groups: [Group] { get }
+    var groups: [HSGroup] { get }
     var settingsItems: [SettingsItem] { get }
     var themeConfig: ThemeConfig { get set }
     var recentSearches: [String] { get set }
@@ -15,7 +15,7 @@ protocol HSChatDataProviding: ObservableObject {
     func messages(for conversationID: UUID) -> [Message]
     func conversation(id: UUID) -> Conversation?
     func user(id: UUID) -> User?
-    func group(id: UUID) -> Group?
+    func group(id: UUID) -> HSGroup?
     func sendText(_ text: String, in conversationID: UUID)
     func sendAttachment(_ attachment: Attachment, caption: String, in conversationID: UUID)
     func toggleReaction(_ emoji: String, for messageID: UUID, in conversationID: UUID)

@@ -1147,7 +1147,7 @@ struct HSStickerArtwork: View {
 
 struct HSGroupProfileHeader: View {
     @EnvironmentObject private var data: HSMockChatService
-    let group: Group
+    let group: HSGroup
     var mode: Mode = .large
     var onBack: () -> Void
     var onEdit: () -> Void

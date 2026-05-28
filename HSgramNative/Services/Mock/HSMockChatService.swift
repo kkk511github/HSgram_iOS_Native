@@ -7,7 +7,7 @@ final class HSMockChatService: HSChatDataProviding {
     @Published var users: [User]
     @Published var conversations: [Conversation]
     @Published var contacts: [Contact]
-    @Published var groups: [Group]
+    @Published var groups: [HSGroup]
     @Published var settingsItems: [SettingsItem]
     @Published var themeConfig: ThemeConfig
     @Published var recentSearches: [String]
@@ -40,7 +40,7 @@ final class HSMockChatService: HSChatDataProviding {
         users.first { $0.id == id }
     }
 
-    func group(id: UUID) -> Group? {
+    func group(id: UUID) -> HSGroup? {
         groups.first { $0.id == id }
     }
 
@@ -200,7 +200,7 @@ private enum HSMockSeed {
         var users: [User]
         var conversations: [Conversation]
         var messages: [UUID: [Message]]
-        var groups: [Group]
+        var groups: [HSGroup]
         var contacts: [Contact]
         var settings: [SettingsItem]
         var theme: ThemeConfig
@@ -454,7 +454,7 @@ private enum HSMockSeed {
             )
         ]
 
-        let group = Group(
+        let group = HSGroup(
             id: groupID,
             title: "测试超级群",
             about: "用于验证群资料、权限、邀请链接、成员和表情回应体验。",

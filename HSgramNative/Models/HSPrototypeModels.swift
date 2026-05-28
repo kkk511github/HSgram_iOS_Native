@@ -466,7 +466,7 @@ struct GroupInviteLink: Identifiable, Codable, Hashable {
     var requiresApproval: Bool
 }
 
-struct Group: Identifiable, Codable, Hashable {
+struct HSGroup: Identifiable, Codable, Hashable {
     let id: UUID
     var title: String
     var about: String

@@ -34,6 +34,10 @@ struct HSAuthViewModel {
 
     var verificationSeed: String { "1024" }
 
+    var switchPrompt: String {
+        mode.switchPrompt
+    }
+
     func toggledMode() -> HSAuthMode {
         mode == .login ? .register : .login
     }
@@ -64,7 +68,7 @@ struct HSChatRoomViewModel {
     let conversation: Conversation?
     let messages: [Message]
     let currentUser: User
-    let group: Group?
+    let group: HSGroup?
     let themeConfig: ThemeConfig
 
     var title: String {
@@ -182,7 +186,7 @@ struct HSGlobalSearchViewModel {
     let query: String
     let users: [User]
     let currentUser: User
-    let groups: [Group]
+    let groups: [HSGroup]
     let conversations: [Conversation]
     let messages: [Message]
     let recentSearches: [String]
@@ -196,7 +200,7 @@ struct HSGlobalSearchViewModel {
         }
     }
 
-    var groupResults: [Group] {
+    var groupResults: [HSGroup] {
         groups.filter {
             query.isEmpty ||
                 $0.title.localizedCaseInsensitiveContains(query) ||
@@ -209,7 +213,7 @@ struct HSGlobalSearchViewModel {
         return messages.filter { $0.body.localizedCaseInsensitiveContains(query) }
     }
 
-    func conversation(for group: Group) -> Conversation? {
+    func conversation(for group: HSGroup) -> Conversation? {
         conversations.first { $0.groupID == group.id }
     }
 }

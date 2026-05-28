@@ -10,7 +10,7 @@ struct HSGroupProfileView: View {
     @State private var headerMode: HSGroupProfileHeader.Mode = .large
     @State private var showMore = false
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -137,7 +137,7 @@ struct HSGroupSettingsView: View {
     @State private var forbidPrivateChat = true
     @State private var historyVisible = true
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -244,7 +244,7 @@ struct HSGroupMembersView: View {
     @State private var hideMembers = true
     @State private var hideMemberCount = false
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -313,7 +313,7 @@ struct HSGroupPermissionsView: View {
     @State private var canEditTags = false
     @State private var slowMode: Double = 0
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -420,7 +420,7 @@ struct HSInviteLinksView: View {
     let groupID: UUID
     @State private var restrictSaving = false
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -621,7 +621,7 @@ struct HSRemovedUsersView: View {
     @Environment(\.dismiss) private var dismiss
     let groupID: UUID
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
@@ -687,7 +687,7 @@ struct HSRecentActionsView: View {
     @Environment(\.dismiss) private var dismiss
     let groupID: UUID
 
-    private var group: Group {
+    private var group: HSGroup {
         data.group(id: groupID) ?? data.groups[0]
     }
 
