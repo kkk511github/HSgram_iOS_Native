@@ -469,11 +469,17 @@ struct HSNativeServerContract {
                 return .messagesSendReaction
             }
         }
+        if parts.count == 4, parts[1] == "dialogs", parts[3] == "history", method == "DELETE" {
+            return .messagesDeleteHistory
+        }
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "media", method == "POST" {
             return .messagesSendMedia
         }
         if parts.count == 5, parts[1] == "dialogs", parts[3] == "shared-media", parts[4] == "counters", method == "GET" {
             return .messagesGetSearchCounters
+        }
+        if parts.count == 4, parts[1] == "dialogs", parts[3] == "search", method == "GET" {
+            return .messagesSearch
         }
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "shared-media", method == "GET" {
             return .messagesSearch
@@ -501,6 +507,9 @@ struct HSNativeServerContract {
         }
         if parts.count >= 3, parts[1] == "contacts", parts[2] == "blocked" {
             return .contactsGetBlocked
+        }
+        if parts.count >= 3, parts[1] == "contacts", parts[2] == "resolve" {
+            return .contactsResolve
         }
         if parts.count >= 3, parts[1] == "contacts", parts[2] == "search" {
             return .contactsSearch
@@ -670,6 +679,7 @@ enum HSNativeServerOperation: String, Equatable {
     case foldersEditPeerFolders = "folders.editPeerFolders"
     case messagesEditMessage = "messages.editMessage"
     case messagesDeleteMessages = "messages.deleteMessages"
+    case messagesDeleteHistory = "messages.deleteHistory"
     case messagesForwardMessages = "messages.forwardMessages"
     case messagesSendReaction = "messages.sendReaction"
     case messagesSearch = "messages.search"
@@ -681,6 +691,7 @@ enum HSNativeServerOperation: String, Equatable {
     case messagesGetStickerAndReactionState = "messages/stickers/reactions state"
     case contactsGetContacts = "contacts.getContacts"
     case contactsGetBlocked = "contacts.getBlocked"
+    case contactsResolve = "contacts.resolve"
     case contactsSearch = "contacts.search"
     case contactsAddContact = "contacts.addContact"
     case contactsRequestContact = "contacts.requestContact"

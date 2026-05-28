@@ -1,11 +1,19 @@
 import SwiftUI
 import UIKit
 
+private struct ChatListLocalOutboxState: Equatable {
+    let messageID: Int64
+    let preview: String
+    let deliveryState: HSMessage.DeliveryState
+    let updatedAt: Date
+}
+
 struct ChatListView: View {
     @EnvironmentObject private var authStore: AuthStore
     @State private var chats: [HSChat] = []
     @State private var archivedChats: [HSChat] = []
     @State private var draftsByDialogID: [Int64: HSDraft] = [:]
+    @State private var localOutboxByDialogID: [Int64: ChatListLocalOutboxState] = [:]
     @State private var dialogFiltersState = HSChatListFiltersState(tagsEnabled: false, filters: [])
     @State private var errorMessage: String?
     @State private var isShowingNewGroup = false
@@ -217,7 +225,8 @@ struct ChatListView: View {
                                 dateText: dateText(for: chat),
                                 icon: iconName(for: chat),
                                 tint: iconColor(for: chat),
-                                isSavedMessages: isSavedMessages(chat)
+                                isSavedMessages: isSavedMessages(chat),
+                                localOutboxState: localOutboxByDialogID[chat.id]
                             )
                         }
                         .buttonStyle(.plain)
@@ -403,6 +412,9 @@ struct ChatListView: View {
                     await refresh()
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .hsChatLocalOutboxDidChange)) { notification in
+                applyLocalOutboxChange(notification)
+            }
         }
     }
 
@@ -441,6 +453,7 @@ struct ChatListView: View {
 
             chats = orderedChats(loaded)
             archivedChats = orderedChats(loadedArchived.map { $0.withFolderID(HSChat.archiveFolderID) })
+            pruneConfirmedLocalOutboxStates()
             draftsByDialogID = Dictionary(uniqueKeysWithValues: drafts.map { ($0.dialogID, $0) })
             dialogFiltersState = filters
             if case .custom(let id) = selectedFilter,
@@ -465,10 +478,16 @@ struct ChatListView: View {
         if let draft = draftsByDialogID[chat.id], !draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return draft.text
         }
+        if let localOutboxState = localOutboxByDialogID[chat.id] {
+            return localOutboxState.preview
+        }
         return chat.subtitle
     }
 
     private func dateText(for chat: HSChat) -> String {
+        if let localOutboxState = localOutboxByDialogID[chat.id] {
+            return Self.dateFormatter.string(from: localOutboxState.updatedAt)
+        }
         guard let date = chat.updatedAt else {
             return ""
         }
@@ -492,6 +511,8 @@ struct ChatListView: View {
                     unreadCount: 0,
                     readInboxMaxID: item.readInboxMaxID,
                     readOutboxMaxID: item.readOutboxMaxID,
+                    topMessageID: item.topMessageID,
+                    topMessageIsOutgoing: item.topMessageIsOutgoing,
                     isMarkedUnread: false,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -515,6 +536,8 @@ struct ChatListView: View {
                     unreadCount: 0,
                     readInboxMaxID: item.readInboxMaxID,
                     readOutboxMaxID: item.readOutboxMaxID,
+                    topMessageID: item.topMessageID,
+                    topMessageIsOutgoing: item.topMessageIsOutgoing,
                     isMarkedUnread: false,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -550,6 +573,8 @@ struct ChatListView: View {
                     unreadCount: item.unreadCount,
                     readInboxMaxID: item.readInboxMaxID,
                     readOutboxMaxID: item.readOutboxMaxID,
+                    topMessageID: item.topMessageID,
+                    topMessageIsOutgoing: item.topMessageIsOutgoing,
                     isMarkedUnread: true,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -573,6 +598,8 @@ struct ChatListView: View {
                     unreadCount: item.unreadCount,
                     readInboxMaxID: item.readInboxMaxID,
                     readOutboxMaxID: item.readOutboxMaxID,
+                    topMessageID: item.topMessageID,
+                    topMessageIsOutgoing: item.topMessageIsOutgoing,
                     isMarkedUnread: true,
                     isPinned: item.isPinned,
                     folderID: item.folderID,
@@ -646,6 +673,55 @@ struct ChatListView: View {
 
     private func hasUnreadActivity(_ chat: HSChat) -> Bool {
         chat.unreadCount > 0 || chat.isMarkedUnread
+    }
+
+    private func applyLocalOutboxChange(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let dialogID = userInfo[HSChatLocalOutboxNotification.dialogID] as? Int64 else {
+            return
+        }
+        if (userInfo[HSChatLocalOutboxNotification.isClear] as? Bool) == true {
+            localOutboxByDialogID.removeValue(forKey: dialogID)
+            return
+        }
+        guard let messageID = userInfo[HSChatLocalOutboxNotification.messageID] as? Int64,
+              let stateRawValue = userInfo[HSChatLocalOutboxNotification.deliveryState] as? String,
+              let deliveryState = HSMessage.DeliveryState(rawValue: stateRawValue),
+              let updatedAt = userInfo[HSChatLocalOutboxNotification.updatedAt] as? Date else {
+            return
+        }
+        let preview = (userInfo[HSChatLocalOutboxNotification.preview] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        localOutboxByDialogID[dialogID] = ChatListLocalOutboxState(
+            messageID: messageID,
+            preview: preview.flatMap { $0.isEmpty ? nil : $0 } ?? "Message",
+            deliveryState: deliveryState,
+            updatedAt: updatedAt
+        )
+    }
+
+    private func pruneConfirmedLocalOutboxStates() {
+        var knownChats: [Int64: HSChat] = [:]
+        for chat in chats + archivedChats {
+            knownChats[chat.id] = chat
+        }
+        localOutboxByDialogID = localOutboxByDialogID.filter { entry in
+            let dialogID = entry.key
+            let state = entry.value
+            guard let chat = knownChats[dialogID] else {
+                return true
+            }
+            if let updatedAt = chat.updatedAt, updatedAt > state.updatedAt {
+                return false
+            }
+            guard state.messageID > 0 else {
+                return true
+            }
+            guard let topMessageID = chat.topMessageID,
+                  chat.topMessageIsOutgoing else {
+                return true
+            }
+            return topMessageID < state.messageID
+        }
     }
 
     private func isSavedMessages(_ chat: HSChat) -> Bool {
@@ -1254,6 +1330,7 @@ private struct ChatListRow: View {
     let icon: String
     let tint: Color
     let isSavedMessages: Bool
+    let localOutboxState: ChatListLocalOutboxState?
 
     var body: some View {
         HStack(spacing: 10) {
@@ -1276,6 +1353,10 @@ private struct ChatListRow: View {
                     }
 
                     Spacer(minLength: 8)
+
+                    if let deliveryState {
+                        ChatListDeliveryStatusView(state: deliveryState)
+                    }
 
                     if !dateText.isEmpty {
                         Text(dateText)
@@ -1341,5 +1422,78 @@ private struct ChatListRow: View {
 
     private var trailingAccessoryMinWidth: CGFloat {
         chat.unreadCount > 99 ? 34 : 22
+    }
+
+    private var deliveryState: HSMessage.DeliveryState? {
+        if let localOutboxState, subtitlePrefix == nil {
+            return localOutboxState.deliveryState
+        }
+        guard !isSavedMessages,
+              subtitlePrefix == nil,
+              chat.topMessageIsOutgoing,
+              let topMessageID = chat.topMessageID,
+              topMessageID > 0 else {
+            return nil
+        }
+        return chat.readOutboxMaxID >= topMessageID ? .read : .sent
+    }
+}
+
+private struct ChatListDeliveryStatusView: View {
+    let state: HSMessage.DeliveryState
+
+    var body: some View {
+        Group {
+            switch state {
+            case .read:
+                ChatListDoubleCheckmarkView(color: HSTheme.accent)
+                    .frame(width: 17, height: 12)
+            case .sent:
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(HSTheme.accent)
+                    .frame(width: 12, height: 12)
+            case .sending:
+                Image(systemName: "clock")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(HSTheme.secondaryText)
+                    .frame(width: 13, height: 13)
+            case .failed:
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(HSTheme.warning)
+                    .frame(width: 14, height: 14)
+            }
+        }
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var accessibilityLabel: String {
+        switch state {
+        case .sending:
+            return "Sending"
+        case .sent:
+            return "Sent"
+        case .read:
+            return "Read"
+        case .failed:
+            return "Failed"
+        }
+    }
+}
+
+private struct ChatListDoubleCheckmarkView: View {
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            Image(systemName: "checkmark")
+                .font(.system(size: 10, weight: .bold))
+                .offset(x: -2)
+            Image(systemName: "checkmark")
+                .font(.system(size: 10, weight: .bold))
+                .offset(x: 3)
+        }
+        .foregroundStyle(color)
     }
 }

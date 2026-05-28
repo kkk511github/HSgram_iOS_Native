@@ -117,7 +117,17 @@ struct SearchView: View {
         isSearching = true
         defer { isSearching = false }
         do {
-            results = try await authStore.api.search(query: trimmed, session: session)
+            var loaded = try await authStore.api.search(query: trimmed, session: session)
+            if let resolved = try? await authStore.api.resolveContact(identifier: trimmed, session: session),
+               !loaded.contacts.contains(where: { $0.id == resolved.id }) {
+                loaded = HSSearchResults(
+                    query: loaded.query,
+                    dialogs: loaded.dialogs,
+                    contacts: [resolved] + loaded.contacts,
+                    messages: loaded.messages
+                )
+            }
+            results = loaded
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription

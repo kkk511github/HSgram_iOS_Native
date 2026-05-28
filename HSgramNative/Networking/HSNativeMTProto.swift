@@ -245,6 +245,7 @@ enum HSNativeMTProtoSchema {
     static let messagesGetSearchCounters: UInt32 = 0x1bbcf300
     static let messagesEditMessage: UInt32 = 0x51e842e1
     static let messagesDeleteMessages: UInt32 = 0xe58e95d2
+    static let messagesDeleteHistory: UInt32 = 0xb08f922a
     static let messagesSaveDraft: UInt32 = 0x54ae308e
     static let messagesGetWebPagePreview: UInt32 = 0x570d6f6f
     static let messagesWebPagePreview: UInt32 = 0xb53e8b21
@@ -271,6 +272,8 @@ enum HSNativeMTProtoSchema {
     static let contactsGetContacts: UInt32 = 0x5dd69e12
     static let contactsGetBlocked: UInt32 = 0x9a868f80
     static let contactsSearch: UInt32 = 0x11f812d8
+    static let contactsResolveUsername: UInt32 = 0x725afbbc
+    static let contactsResolvePhone: UInt32 = 0x8af94344
     static let contactsAddContact: UInt32 = 0xd9ba2e54
     static let contactsDeleteContacts: UInt32 = 0x096a0e00
     static let contactsBlock: UInt32 = 0x2e2e8734
@@ -283,6 +286,7 @@ enum HSNativeMTProtoSchema {
     static let contactsBlocked: UInt32 = 0x0ade1591
     static let contactsBlockedSlice: UInt32 = 0xe1664194
     static let contactsFound: UInt32 = 0xb3134d9d
+    static let contactsResolvedPeer: UInt32 = 0x7f077ad9
     static let contact: UInt32 = 0x145ade0b
     static let peerBlocked: UInt32 = 0xe8fd8014
     static let boolFalse: UInt32 = 0xbc799737
@@ -852,6 +856,12 @@ private struct HSNativeContactsFoundPayload: Equatable {
     let users: [HSNativeParsedUser]
 }
 
+private struct HSNativeResolvedPeerPayload: Equatable {
+    let peer: HSNativePeer
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
 private struct HSNativeChannelParticipantsPayload: Equatable {
     let members: [HSSupergroupMember]
     let chats: [HSNativeParsedChat]
@@ -1308,6 +1318,8 @@ final class HSNativeMTProtoClient {
                 unreadCount: Int(dialog.unreadCount),
                 readInboxMaxID: Int64(dialog.readInboxMaxID),
                 readOutboxMaxID: Int64(dialog.readOutboxMaxID),
+                topMessageID: topMessage.map { Int64($0.id) },
+                topMessageIsOutgoing: topMessage?.isOutgoing ?? false,
                 isMarkedUnread: dialog.isMarkedUnread,
                 isPinned: dialog.isPinned,
                 folderID: dialog.folderID,
@@ -1760,6 +1772,63 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    func searchMessages(
+        dialogID: Int64,
+        query: String,
+        offsetID: Int64?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> [HSSearchMessage] {
+        let cleanQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanQuery.isEmpty else {
+            return []
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesSearchPayload(
+                peer: inputPeer,
+                query: cleanQuery,
+                filter: nil,
+                offsetID: offsetID,
+                limit: limit
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseMessagesResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return payload.messages.compactMap { message -> HSSearchMessage? in
+            guard let mapped = Self.hsMessage(
+                from: message,
+                fallbackDialogID: dialogID,
+                users: payload.users,
+                chats: payload.chats,
+                sessionUserID: session.userID
+            ) else {
+                return nil
+            }
+            let peer = message.peer
+            return HSSearchMessage(
+                id: mapped.id,
+                dialogID: mapped.dialogID,
+                dialogTitle: peer.map { peerTitle($0, users: payload.users, chats: payload.chats) } ?? "Chat",
+                authorID: mapped.authorID,
+                authorName: mapped.authorName,
+                text: mapped.text,
+                kind: mapped.kind,
+                sentAt: mapped.sentAt,
+                isOutgoing: mapped.isOutgoing,
+                isGroup: peer?.isGroupLike ?? false,
+                isChannel: {
+                    if case .channel = peer {
+                        return true
+                    }
+                    return false
+                }()
+            )
+        }
+    }
+
     func sharedMediaCounters(
         dialogID: Int64,
         filters: [HSSharedMediaFilter],
@@ -2048,6 +2117,26 @@ final class HSNativeMTProtoClient {
         return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: messageID)
     }
 
+    func deleteDialogHistory(
+        dialogID: Int64,
+        justClear: Bool,
+        revoke: Bool,
+        maxMessageID: Int64?,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesDeleteHistoryPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                justClear: justClear,
+                revoke: revoke,
+                maxMessageID: maxMessageID
+            ),
+            credentials: credentials
+        )
+        return try Self.parseAffectedHistoryResult(result, dialogID: dialogID)
+    }
+
     func forwardMessage(dialogID: Int64, messageID: Int64, toDialogID: Int64, session: HSUserSession) async throws -> HSMessage {
         let credentials = try authorizedAuthKey(for: session)
         let result = try await sendEncryptedRPC(
@@ -2174,6 +2263,29 @@ final class HSNativeMTProtoClient {
             }
             return Self.hsContact(from: user, forcedStatus: payload.myResultUserIDs.contains(user.id) ? "contact" : "global")
         }
+    }
+
+    func resolveContact(identifier: String, session: HSUserSession) async throws -> HSContact {
+        let normalized = Self.normalizedContactIdentifier(identifier)
+        guard !normalized.value.isEmpty else {
+            throw HSAPIError.server(code: "EMPTY_IDENTIFIER", message: "Please enter a username, phone number, or HSgram link.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let query: Data
+        switch normalized.kind {
+        case .phone:
+            query = contactsResolvePhonePayload(phone: normalized.value)
+        case .username:
+            query = contactsResolveUsernamePayload(username: normalized.value, referrer: nil)
+        }
+        let result = try await sendEncryptedRPC(query: query, credentials: credentials)
+        let payload = try Self.parseResolvedPeerResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        guard case let .user(userID) = payload.peer,
+              let user = payload.users.first(where: { $0.id == userID }) else {
+            throw HSAPIError.server(code: "PEER_NOT_USER", message: "This link resolves to a group or channel, not a private chat.")
+        }
+        return Self.hsContact(from: user, forcedStatus: nil)
     }
 
     func addContact(userID: Int64, firstName: String, lastName: String, phone: String, session: HSUserSession) async throws -> HSMessageAction {
@@ -3138,6 +3250,18 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func messagesDeleteHistoryPayload(peer: Data, justClear: Bool, revoke: Bool, maxMessageID: Int64?) -> Data {
+        var flags: Int32 = 0
+        if justClear { flags |= 1 << 0 }
+        if revoke { flags |= 1 << 1 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesDeleteHistory)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: maxMessageID ?? Int64(Int32.max - 1)))
+        return writer.data
+    }
+
     func messagesForwardMessagesPayload(fromPeer: Data, messageID: Int64, toPeer: Data) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.messagesForwardMessages)
@@ -3168,19 +3292,23 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
-    func messagesSearchPayload(peer: Data, query: String, filter: HSSharedMediaFilter, offsetID: Int64?, limit: Int) -> Data {
+    func messagesSearchPayload(peer: Data, query: String, filter: HSSharedMediaFilter?, offsetID: Int64?, limit: Int) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.messagesSearch)
         writer.int32(0)
         writer.raw(peer)
         writer.string(query)
-        writeMessagesFilter(filter, writer: &writer)
+        if let filter {
+            writeMessagesFilter(filter, writer: &writer)
+        } else {
+            writer.constructor(HSNativeMTProtoSchema.inputMessagesFilterEmpty)
+        }
         writer.int32(0)
-        writer.int32(0)
+        writer.int32(Int32.max - 1)
         writer.int32(Int32(clamping: offsetID ?? 0))
         writer.int32(0)
         writer.int32(Int32(clamping: limit))
-        writer.int32(0)
+        writer.int32(Int32.max - 1)
         writer.int32(0)
         writer.int64(0)
         return writer.data
@@ -3396,6 +3524,28 @@ final class HSNativeMTProtoClient {
         writer.constructor(HSNativeMTProtoSchema.contactsSearch)
         writer.string(query)
         writer.int32(Int32(clamping: limit))
+        return writer.data
+    }
+
+    func contactsResolveUsernamePayload(username: String, referrer: String?) -> Data {
+        var flags: Int32 = 0
+        if referrer != nil {
+            flags |= 1 << 0
+        }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsResolveUsername)
+        writer.int32(flags)
+        writer.string(username)
+        if let referrer {
+            writer.string(referrer)
+        }
+        return writer.data
+    }
+
+    func contactsResolvePhonePayload(phone: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsResolvePhone)
+        writer.string(phone)
         return writer.data
     }
 
@@ -5447,6 +5597,22 @@ final class HSNativeMTProtoClient {
             return HSNativeContactsFoundPayload(myResultUserIDs: myIDs, resultUserIDs: resultIDs, chats: chats, users: users)
         default:
             throw HSNativeMTProtoError.malformedPacket("expected contacts.Found, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseResolvedPeerResult(_ result: Data) throws -> HSNativeResolvedPeerPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.contactsResolvedPeer:
+            let peer = try parsePeer(reader: &reader)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeResolvedPeerPayload(peer: peer, chats: chats, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected contacts.ResolvedPeer, got 0x\(String(constructor, radix: 16))")
         }
     }
 
@@ -7813,6 +7979,30 @@ final class HSNativeMTProtoClient {
             return "contact"
         }
         return "global"
+    }
+
+    private enum HSNativeResolvedContactKind {
+        case username
+        case phone
+    }
+
+    private static func normalizedContactIdentifier(_ identifier: String) -> (kind: HSNativeResolvedContactKind, value: String) {
+        var value = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let url = URL(string: value), let host = url.host?.lowercased(), host == "t.me" || host == "telegram.me" || host == "hsgram.cloud" {
+            value = url.path.split(separator: "/").first.map(String.init) ?? ""
+        } else if let url = URL(string: "https://\(value)"),
+                  let host = url.host?.lowercased(),
+                  host == "t.me" || host == "telegram.me" || host == "hsgram.cloud" {
+            value = url.path.split(separator: "/").first.map(String.init) ?? ""
+        }
+        value = value.trimmingCharacters(in: CharacterSet(charactersIn: "@/ "))
+        let phoneCharacters = CharacterSet(charactersIn: "+0123456789 -()")
+        if !value.isEmpty,
+           value.rangeOfCharacter(from: phoneCharacters.inverted) == nil,
+           value.filter(\.isNumber).count >= 5 {
+            return (.phone, value.filter { $0.isNumber })
+        }
+        return (.username, value.trimmingCharacters(in: CharacterSet(charactersIn: "@")))
     }
 
     private static func userID(from peer: HSNativePeer) -> Int64? {

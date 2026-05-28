@@ -325,6 +325,26 @@ final class HSAPIClient {
         return try await request("v1/search?q=\(encoded)&limit=\(limit)", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
+    func searchMessages(
+        dialogID: Int64,
+        query: String,
+        offsetID: Int64? = nil,
+        limit: Int = 100,
+        session: HSUserSession
+    ) async throws -> [HSSearchMessage] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return []
+        }
+        let safeLimit = max(1, min(limit, 100))
+        let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
+        var path = "v1/dialogs/\(dialogID)/search?q=\(encoded)&limit=\(safeLimit)"
+        if let offsetID {
+            path += "&offset_id=\(offsetID)"
+        }
+        return try await request(path, method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
     func messages(dialogID: Int64, beforeID: Int64? = nil, limit: Int = 50, session: HSUserSession) async throws -> [HSMessage] {
         var path = "v1/dialogs/\(dialogID)/messages?limit=\(limit)"
         if let beforeID {
@@ -539,6 +559,28 @@ final class HSAPIClient {
     func deleteMessage(dialogID: Int64, messageID: Int64, revoke: Bool = true, session: HSUserSession) async throws -> HSMessageAction {
         try await request(
             "v1/dialogs/\(dialogID)/messages/\(messageID)?revoke=\(revoke)",
+            method: "DELETE",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func deleteDialogHistory(
+        dialogID: Int64,
+        justClear: Bool,
+        revoke: Bool,
+        maxMessageID: Int64?,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        var queryItems = [
+            "just_clear=\(justClear)",
+            "revoke=\(revoke)"
+        ]
+        if let maxMessageID {
+            queryItems.append("max_id=\(maxMessageID)")
+        }
+        return try await request(
+            "v1/dialogs/\(dialogID)/history?\(queryItems.joined(separator: "&"))",
             method: "DELETE",
             body: Optional<EmptyBody>.none,
             session: session
@@ -797,6 +839,15 @@ final class HSAPIClient {
         }
         let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
         return try await request("v1/contacts/search?q=\(encoded)&limit=\(limit)", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func resolveContact(identifier: String, session: HSUserSession) async throws -> HSContact {
+        let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw HSAPIError.server(code: "EMPTY_IDENTIFIER", message: "Please enter a username, phone number, or HSgram link.")
+        }
+        let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
+        return try await request("v1/contacts/resolve?identifier=\(encoded)", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func addContact(userID: Int64, firstName: String, lastName: String = "", phone: String = "", session: HSUserSession) async throws -> HSMessageAction {

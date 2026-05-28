@@ -8,6 +8,16 @@ extension Notification.Name {
     static let hsRemoteNotificationDidArrive = Notification.Name("HSRemoteNotificationDidArrive")
     static let hsRemoteNotificationDidOpen = Notification.Name("HSRemoteNotificationDidOpen")
     static let hsNativeSyncDidChange = Notification.Name("HSNativeSyncDidChange")
+    static let hsChatLocalOutboxDidChange = Notification.Name("HSChatLocalOutboxDidChange")
+}
+
+enum HSChatLocalOutboxNotification {
+    static let dialogID = "dialog_id"
+    static let messageID = "message_id"
+    static let preview = "preview"
+    static let deliveryState = "delivery_state"
+    static let updatedAt = "updated_at"
+    static let isClear = "is_clear"
 }
 
 private enum HSRemoteNotificationRelay {

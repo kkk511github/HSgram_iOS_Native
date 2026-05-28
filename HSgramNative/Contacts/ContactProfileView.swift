@@ -196,7 +196,7 @@ struct ContactProfileView: View {
     }
 
     private var canMessage: Bool {
-        isContactLike && !isBlocked
+        !isBlocked && contact.status != "pending_received" && contact.status != "pending"
     }
 
     private var canRequest: Bool {

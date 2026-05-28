@@ -127,6 +127,8 @@ struct HSChat: Codable, Identifiable, Hashable {
     let unreadCount: Int
     let readInboxMaxID: Int64
     let readOutboxMaxID: Int64
+    let topMessageID: Int64?
+    let topMessageIsOutgoing: Bool
     let isMarkedUnread: Bool
     let isPinned: Bool
     let folderID: Int?
@@ -149,6 +151,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         unreadCount: Int,
         readInboxMaxID: Int64 = 0,
         readOutboxMaxID: Int64 = 0,
+        topMessageID: Int64? = nil,
+        topMessageIsOutgoing: Bool = false,
         isMarkedUnread: Bool = false,
         isPinned: Bool = false,
         folderID: Int? = nil,
@@ -166,6 +170,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         self.unreadCount = unreadCount
         self.readInboxMaxID = readInboxMaxID
         self.readOutboxMaxID = readOutboxMaxID
+        self.topMessageID = topMessageID
+        self.topMessageIsOutgoing = topMessageIsOutgoing
         self.isMarkedUnread = isMarkedUnread
         self.isPinned = isPinned
         self.folderID = folderID
@@ -186,6 +192,8 @@ struct HSChat: Codable, Identifiable, Hashable {
             unreadCount: unreadCount,
             readInboxMaxID: readInboxMaxID,
             readOutboxMaxID: readOutboxMaxID,
+            topMessageID: topMessageID,
+            topMessageIsOutgoing: topMessageIsOutgoing,
             isMarkedUnread: isMarkedUnread,
             isPinned: isPinned,
             folderID: folderID,
@@ -207,6 +215,8 @@ struct HSChat: Codable, Identifiable, Hashable {
             unreadCount: unreadCount,
             readInboxMaxID: readInboxMaxID,
             readOutboxMaxID: readOutboxMaxID,
+            topMessageID: topMessageID,
+            topMessageIsOutgoing: topMessageIsOutgoing,
             isMarkedUnread: isMarkedUnread,
             isPinned: isPinned,
             folderID: folderID,
@@ -227,6 +237,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         case unreadCount = "unread_count"
         case readInboxMaxID = "read_inbox_max_id"
         case readOutboxMaxID = "read_outbox_max_id"
+        case topMessageID = "top_message_id"
+        case topMessageIsOutgoing = "top_message_is_outgoing"
         case isMarkedUnread = "is_marked_unread"
         case isPinned = "is_pinned"
         case folderID = "folder_id"
@@ -246,6 +258,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         case unreadCount
         case readInboxMaxID
         case readOutboxMaxID
+        case topMessageID
+        case topMessageIsOutgoing
         case isMarkedUnread
         case isPinned
         case folderID
@@ -273,6 +287,11 @@ struct HSChat: Codable, Identifiable, Hashable {
         readOutboxMaxID = try container.decodeIfPresent(Int64.self, forKey: .readOutboxMaxID)
             ?? legacyContainer.decodeIfPresent(Int64.self, forKey: .readOutboxMaxID)
             ?? 0
+        topMessageID = try container.decodeIfPresent(Int64.self, forKey: .topMessageID)
+            ?? legacyContainer.decodeIfPresent(Int64.self, forKey: .topMessageID)
+        topMessageIsOutgoing = try container.decodeIfPresent(Bool.self, forKey: .topMessageIsOutgoing)
+            ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .topMessageIsOutgoing)
+            ?? false
         isMarkedUnread = try container.decodeIfPresent(Bool.self, forKey: .isMarkedUnread)
             ?? legacyContainer.decodeIfPresent(Bool.self, forKey: .isMarkedUnread)
             ?? false
@@ -311,6 +330,8 @@ struct HSChat: Codable, Identifiable, Hashable {
         try container.encode(unreadCount, forKey: .unreadCount)
         try container.encode(readInboxMaxID, forKey: .readInboxMaxID)
         try container.encode(readOutboxMaxID, forKey: .readOutboxMaxID)
+        try container.encodeIfPresent(topMessageID, forKey: .topMessageID)
+        try container.encode(topMessageIsOutgoing, forKey: .topMessageIsOutgoing)
         try container.encode(isMarkedUnread, forKey: .isMarkedUnread)
         try container.encode(isPinned, forKey: .isPinned)
         try container.encodeIfPresent(folderID, forKey: .folderID)

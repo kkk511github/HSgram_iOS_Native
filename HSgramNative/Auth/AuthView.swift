@@ -264,7 +264,7 @@ struct AuthView: View {
     private var signUpEntryContent: some View {
         let context = currentSignUpContext
 
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             PhotosPicker(selection: $selectedAvatarItem, matching: .images) {
                 HSAuthAddPhotoMark(image: selectedAvatarImage, isLoading: isLoadingAvatar)
                     .frame(width: 96, height: 96)

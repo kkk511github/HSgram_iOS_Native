@@ -31,9 +31,61 @@ private struct HSPendingAttachmentUpload: Identifiable {
     let replyMessage: HSMessage?
 }
 
+private enum PrivateChatHistoryAction {
+    case clearHistory
+    case deleteChat
+    case deleteForEveryone
+
+    var title: String {
+        switch self {
+        case .clearHistory:
+            return "Clear History"
+        case .deleteChat:
+            return "Delete Chat"
+        case .deleteForEveryone:
+            return "Delete for Both"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .clearHistory:
+            return "Remove the message history while keeping this chat in your list."
+        case .deleteChat:
+            return "Remove this chat and its history from your account."
+        case .deleteForEveryone:
+            return "Remove this private chat and its history for both sides."
+        }
+    }
+
+    var justClear: Bool {
+        self == .clearHistory
+    }
+
+    var revoke: Bool {
+        self == .deleteForEveryone
+    }
+
+    var dismissesThread: Bool {
+        self != .clearHistory
+    }
+
+    var successMessage: String {
+        switch self {
+        case .clearHistory:
+            return "History cleared."
+        case .deleteChat:
+            return "Chat deleted."
+        case .deleteForEveryone:
+            return "Chat deleted for both sides."
+        }
+    }
+}
+
 struct ChatThreadView: View {
     @EnvironmentObject private var authStore: AuthStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
     let chat: HSChat
     let mode: HSChatThreadMode
 
@@ -87,6 +139,7 @@ struct ChatThreadView: View {
     @State private var shouldScrollToUnreadSeparator = false
     @State private var didResolveInitialUnreadSeparator = false
     @State private var readOutboxMaxID: Int64
+    @State private var pendingHistoryAction: PrivateChatHistoryAction?
 
     private let pageSize = 50
     private let unreadSeparatorScrollID = "hs-unread-separator"
@@ -101,6 +154,10 @@ struct ChatThreadView: View {
             return true
         }
         return false
+    }
+
+    private var canManagePrivateChatHistory: Bool {
+        chat.peerKind == .user && !chat.isCircle && !isSavedMessagesMode
     }
 
     private var messagesByID: [Int64: HSMessage] {
@@ -405,6 +462,28 @@ struct ChatThreadView: View {
                         Image(systemName: "info.circle")
                     }
                 }
+                if canManagePrivateChatHistory {
+                    Menu {
+                        Button(role: .destructive) {
+                            confirmHistoryAction(.clearHistory)
+                        } label: {
+                            Label("Clear History", systemImage: "trash")
+                        }
+                        Button(role: .destructive) {
+                            confirmHistoryAction(.deleteChat)
+                        } label: {
+                            Label("Delete Chat", systemImage: "trash")
+                        }
+                        Button(role: .destructive) {
+                            confirmHistoryAction(.deleteForEveryone)
+                        } label: {
+                            Label("Delete for Both", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .disabled(isThreadSearchActive)
+                }
                 Button {
                     Task {
                         await refresh()
@@ -535,6 +614,35 @@ struct ChatThreadView: View {
             }
             Button("取消", role: .cancel) {}
         }
+        .confirmationDialog(
+            pendingHistoryAction?.title ?? "Chat History",
+            isPresented: Binding(
+                get: { pendingHistoryAction != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        pendingHistoryAction = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let pendingHistoryAction {
+                Button(pendingHistoryAction.title, role: .destructive) {
+                    let action = pendingHistoryAction
+                    self.pendingHistoryAction = nil
+                    Task {
+                        await applyHistoryAction(action)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                pendingHistoryAction = nil
+            }
+        } message: {
+            if let pendingHistoryAction {
+                Text(pendingHistoryAction.message)
+            }
+        }
     }
 
     private var replyTitle: String {
@@ -636,9 +744,7 @@ struct ChatThreadView: View {
         defer { isThreadSearchSearching = false }
 
         do {
-            let response = try await authStore.api.search(query: trimmed, limit: 100, session: session)
-            let found = response.messages
-                .filter { $0.dialogID == chat.id }
+            let found = try await authStore.api.searchMessages(dialogID: chat.id, query: trimmed, limit: 100, session: session)
                 .map(ChatSearchResult.init)
                 .sorted { lhs, rhs in
                     if lhs.sentAt == rhs.sentAt {
@@ -710,6 +816,7 @@ struct ChatThreadView: View {
             return
         }
         readOutboxMaxID = max(readOutboxMaxID, maxID)
+        publishLocalOutboxState()
     }
 
     private func refresh() async {
@@ -735,6 +842,7 @@ struct ChatThreadView: View {
                 }
             }
             messages = mergedServerAndLocalMessages(serverMessages: loaded)
+            publishLocalOutboxState()
             selectedMessageIDs.formIntersection(Set(messages.map(\.id)))
             restoreDraftReplyTarget()
             hasMoreHistory = initialPage.hasMoreHistory
@@ -788,6 +896,7 @@ struct ChatThreadView: View {
             return
         }
         readOutboxMaxID = max(readOutboxMaxID, readState.readOutboxMaxID)
+        publishLocalOutboxState()
     }
 
     private func openSearchResult(_ result: ChatSearchResult) async {
@@ -1218,9 +1327,11 @@ struct ChatThreadView: View {
         }
         messages.remove(at: index)
         guard !messages.contains(where: { $0.id == sent.id }) else {
+            publishLocalOutboxState()
             return
         }
         messages.append(sent)
+        publishLocalOutboxState()
     }
 
     private func localAttachmentMessage(from pending: HSPendingAttachmentUpload, session: HSUserSession) -> HSMessage {
@@ -1280,6 +1391,82 @@ struct ChatThreadView: View {
         }
     }
 
+    private func publishLocalOutboxState() {
+        guard !isSavedMessagesMode else {
+            postLocalOutboxClear()
+            return
+        }
+        guard let lastMessage = messages.last else {
+            postLocalOutboxClear()
+            return
+        }
+        let displayedMessage = displayMessage(lastMessage)
+        guard displayedMessage.isOutgoing else {
+            postLocalOutboxClear()
+            return
+        }
+        let preview = chatListPreview(for: displayedMessage)
+        NotificationCenter.default.post(
+            name: .hsChatLocalOutboxDidChange,
+            object: nil,
+            userInfo: [
+                HSChatLocalOutboxNotification.dialogID: chat.id,
+                HSChatLocalOutboxNotification.messageID: displayedMessage.id,
+                HSChatLocalOutboxNotification.preview: preview,
+                HSChatLocalOutboxNotification.deliveryState: displayedMessage.deliveryState.rawValue,
+                HSChatLocalOutboxNotification.updatedAt: displayedMessage.sentAt
+            ]
+        )
+    }
+
+    private func postLocalOutboxClear() {
+        NotificationCenter.default.post(
+            name: .hsChatLocalOutboxDidChange,
+            object: nil,
+            userInfo: [
+                HSChatLocalOutboxNotification.dialogID: chat.id,
+                HSChatLocalOutboxNotification.isClear: true
+            ]
+        )
+    }
+
+    private func chatListPreview(for message: HSMessage) -> String {
+        let text = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !text.isEmpty {
+            return text
+        }
+        guard let media = message.media else {
+            return "Message"
+        }
+        switch media.kind {
+        case .photo:
+            return "Photo"
+        case .video:
+            return "Video"
+        case .gif:
+            return "GIF"
+        case .voice:
+            return "Voice message"
+        case .audio:
+            return "Audio"
+        case .file:
+            if let fileName = media.fileName, !fileName.isEmpty {
+                return fileName
+            }
+            return "File"
+        case .sticker:
+            return "Sticker"
+        case .webpage:
+            return media.webPage?.title
+                ?? media.webPage?.siteName
+                ?? media.webPage?.displayURL
+                ?? media.webPage?.url
+                ?? "Link Preview"
+        case .unknown:
+            return "Attachment"
+        }
+    }
+
     private func saveDraft() async {
         guard let session = authStore.session else {
             return
@@ -1314,6 +1501,7 @@ struct ChatThreadView: View {
         clearLinkPreviewState()
         shouldScrollToLatest = true
         messages.append(pendingMessage)
+        publishLocalOutboxState()
 
         await sendPendingTextMessage(pendingMessage, disableWebPagePreview: sentWithoutWebPage)
     }
@@ -1354,6 +1542,7 @@ struct ChatThreadView: View {
         let pendingMessage = message.withDeliveryState(.sending)
         replace(messageID: message.id, with: pendingMessage)
         shouldScrollToLatest = true
+        publishLocalOutboxState()
         await sendPendingTextMessage(pendingMessage, disableWebPagePreview: false)
     }
 
@@ -1502,6 +1691,7 @@ struct ChatThreadView: View {
                 shouldScrollToLatest = true
                 messages.append(localMessage)
             }
+            publishLocalOutboxState()
         }
         let task = Task {
             await performAttachmentUpload(pending)
@@ -1515,6 +1705,7 @@ struct ChatThreadView: View {
             if let localMessage = messages.first(where: { $0.id == pending.localMessageID }) {
                 replace(messageID: pending.localMessageID, with: localMessage.withDeliveryState(.failed))
             }
+            publishLocalOutboxState()
             mediaDownloadStates[pending.localMessageID] = .failed
             attachmentUploadTask = nil
             errorMessage = HSAPIError.missingSession.localizedDescription
@@ -1560,6 +1751,7 @@ struct ChatThreadView: View {
                 pendingAttachmentUpload = nil
                 mediaDownloadStates.removeValue(forKey: pending.localMessageID)
                 messages.removeAll { $0.id == pending.localMessageID }
+                publishLocalOutboxState()
                 attachmentUploadFailed = false
                 statusMessage = "Media upload canceled."
                 errorMessage = nil
@@ -1569,6 +1761,7 @@ struct ChatThreadView: View {
                 attachmentUploadFailed = true
                 replace(messageID: pending.localMessageID, with: localAttachmentMessage(from: pending, session: session).withDeliveryState(.failed))
                 mediaDownloadStates[pending.localMessageID] = .failed
+                publishLocalOutboxState()
             }
             statusMessage = nil
             errorMessage = error.localizedDescription
@@ -1603,6 +1796,7 @@ struct ChatThreadView: View {
         pendingAttachmentUpload = nil
         mediaDownloadStates.removeValue(forKey: pending.localMessageID)
         messages.removeAll { $0.id == pending.localMessageID }
+        publishLocalOutboxState()
         attachmentUploadFailed = false
         statusMessage = "Media upload canceled."
         errorMessage = nil
@@ -1619,6 +1813,7 @@ struct ChatThreadView: View {
             restoreComposer(from: pending)
             mediaDownloadStates.removeValue(forKey: pending.localMessageID)
             messages.removeAll { $0.id == pending.localMessageID }
+            publishLocalOutboxState()
         }
         attachmentUploadTask?.cancel()
         attachmentUploadTask = nil
@@ -1667,6 +1862,66 @@ struct ChatThreadView: View {
         selectedMessageIDs.removeAll()
         isShowingSelectionForwardSheet = false
         isShowingSelectionDeleteConfirmation = false
+    }
+
+    private func confirmHistoryAction(_ action: PrivateChatHistoryAction) {
+        guard canManagePrivateChatHistory else {
+            return
+        }
+        pendingHistoryAction = action
+    }
+
+    private func applyHistoryAction(_ action: PrivateChatHistoryAction) async {
+        guard let session = authStore.session else {
+            return
+        }
+        do {
+            _ = try await authStore.api.deleteDialogHistory(
+                dialogID: chat.id,
+                justClear: action.justClear,
+                revoke: action.revoke,
+                maxMessageID: historyMaxMessageID,
+                session: session
+            )
+            clearSelection()
+            cancelLocalTransfersAfterHistoryRemoval()
+            messages.removeAll()
+            hasMoreHistory = false
+            unreadSeparatorMessageID = nil
+            shouldScrollToUnreadSeparator = false
+            postLocalOutboxClear()
+            NotificationCenter.default.post(
+                name: .hsNativeSyncDidChange,
+                object: nil,
+                userInfo: ["dialog_ids": [chat.id]]
+            )
+            statusMessage = action.successMessage
+            errorMessage = nil
+            if action.dismissesThread {
+                draft = ""
+                replyingToMessage = nil
+                draftReplyToMessageID = nil
+                clearLinkPreviewState()
+                dismiss()
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private var historyMaxMessageID: Int64? {
+        chat.topMessageID ?? messages.map(\.id).filter { $0 > 0 }.max()
+    }
+
+    private func cancelLocalTransfersAfterHistoryRemoval() {
+        attachmentUploadTask?.cancel()
+        attachmentUploadTask = nil
+        pendingAttachmentUpload = nil
+        attachmentUploadFailed = false
+        mediaDownloadTasks.values.forEach { $0.cancel() }
+        mediaDownloadTasks.removeAll()
+        mediaDownloadStates.removeAll()
+        downloadedMediaURLs.removeAll()
     }
 
     private func isServerBackedMessage(_ message: HSMessage) -> Bool {
@@ -1971,6 +2226,9 @@ struct ChatThreadView: View {
             return
         }
         messages[index] = message
+        if message.isOutgoing {
+            publishLocalOutboxState()
+        }
     }
 }
 

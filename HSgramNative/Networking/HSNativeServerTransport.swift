@@ -416,6 +416,16 @@ final class HSNativeServerTransport: HSServerTransport {
                     session: session
                 )
                 return try typed(action)
+            case .messagesDeleteHistory:
+                let session = try requireSession(session)
+                let action = try await mtProtoClient.deleteDialogHistory(
+                    dialogID: try route.int64Part(at: 2),
+                    justClear: route.boolQuery("just_clear") ?? true,
+                    revoke: route.boolQuery("revoke") ?? false,
+                    maxMessageID: route.int64Query("max_id"),
+                    session: session
+                )
+                return try typed(action)
             case .messagesForwardMessages:
                 let session = try requireSession(session)
                 let request: HSNativeForwardMessageBody = try decodeBody(body)
@@ -447,6 +457,16 @@ final class HSNativeServerTransport: HSServerTransport {
                 return try typed(results)
             case .messagesSearch:
                 let session = try requireSession(session)
+                if route.parts.indices.contains(3), route.parts[3] == "search" {
+                    let messages = try await mtProtoClient.searchMessages(
+                        dialogID: try route.int64Part(at: 2),
+                        query: route.stringQuery("q") ?? "",
+                        offsetID: route.int64Query("offset_id"),
+                        limit: route.intQuery("limit") ?? 100,
+                        session: session
+                    )
+                    return try typed(messages)
+                }
                 let filter = HSSharedMediaFilter(rawValue: route.stringQuery("filter") ?? "") ?? .media
                 let messages = try await mtProtoClient.sharedMedia(
                     dialogID: try route.int64Part(at: 2),
@@ -478,6 +498,12 @@ final class HSNativeServerTransport: HSServerTransport {
                 return try typed(try await mtProtoClient.blockedContacts(
                     offset: route.intQuery("offset") ?? 0,
                     limit: route.intQuery("limit") ?? 100,
+                    session: session
+                ))
+            case .contactsResolve:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.resolveContact(
+                    identifier: route.stringQuery("identifier") ?? "",
                     session: session
                 ))
             case .contactsSearch:
