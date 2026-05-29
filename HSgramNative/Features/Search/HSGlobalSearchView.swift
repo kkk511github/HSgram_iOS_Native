@@ -24,7 +24,7 @@ struct HSGlobalSearchView: View {
                 Section {
                     HSSearchBar(text: $query, placeholder: "全局搜索")
                         .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
-                        .listRowBackground(HSPrototypeTheme.background)
+                        .listRowBackground(data.themeConfig.groupedBackgroundColor.color)
                 }
                 if query.isEmpty {
                     Section("最近搜索") {
@@ -35,7 +35,7 @@ struct HSGlobalSearchView: View {
                 }
                 Section("用户") {
                     if viewModel.userResults.isEmpty {
-                        Text("没有匹配用户").foregroundStyle(HSPrototypeTheme.secondaryText)
+                        Text("没有匹配用户").foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     } else {
                         ForEach(viewModel.userResults) { user in
                             Button { router.open(.profile(user.id)) } label: { searchUserRow(user) }.buttonStyle(.plain)
@@ -44,7 +44,7 @@ struct HSGlobalSearchView: View {
                 }
                 Section("群组") {
                     if viewModel.groupResults.isEmpty {
-                        Text("没有匹配群组").foregroundStyle(HSPrototypeTheme.secondaryText)
+                        Text("没有匹配群组").foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     } else {
                         ForEach(viewModel.groupResults) { group in
                             if let conversation = viewModel.conversation(for: group) {
@@ -53,7 +53,7 @@ struct HSGlobalSearchView: View {
                                         HSAvatarView(initials: "HS", colorHex: group.avatarHex, size: 42, isGroup: true)
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text(group.title).font(.body.weight(.semibold))
-                                            Text("\(group.memberCount) 位成员").font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+                                            Text("\(group.memberCount) 位成员").font(.caption).foregroundStyle(data.themeConfig.secondaryTextColor.color)
                                         }
                                     }
                                 }
@@ -64,13 +64,13 @@ struct HSGlobalSearchView: View {
                 }
                 Section("消息") {
                     if viewModel.messageResults.isEmpty {
-                        Text(query.isEmpty ? "输入关键词搜索消息" : "没有匹配消息").foregroundStyle(HSPrototypeTheme.secondaryText)
+                        Text(query.isEmpty ? "输入关键词搜索消息" : "没有匹配消息").foregroundStyle(data.themeConfig.secondaryTextColor.color)
                     } else {
                         ForEach(viewModel.messageResults) { message in
                             Button { router.open(.chat(message.conversationID)) } label: {
                                 VStack(alignment: .leading, spacing: 5) {
-                                    Text(message.sender.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                                    Text(message.body).font(.subheadline).foregroundStyle(HSPrototypeTheme.secondaryText).lineLimit(2)
+                                    Text(message.sender.displayName).font(.subheadline.weight(.semibold)).foregroundStyle(data.themeConfig.primaryTextColor.color)
+                                    Text(message.body).font(.subheadline).foregroundStyle(data.themeConfig.secondaryTextColor.color).lineLimit(2)
                                 }
                                 .padding(.vertical, 3)
                             }
@@ -84,17 +84,17 @@ struct HSGlobalSearchView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
             }
-            .background(HSPrototypeTheme.background)
+            .background(data.themeConfig.groupedBackgroundColor.color)
         }
-        .background(HSPrototypeTheme.background.ignoresSafeArea())
+        .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
     }
 
     private func searchUserRow(_ user: User) -> some View {
         HStack(spacing: 12) {
             HSAvatarView(initials: user.initials, colorHex: user.accentHex, size: 42, isOnline: user.isOnline)
             VStack(alignment: .leading, spacing: 3) {
-                Text(user.displayName).font(.body.weight(.semibold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                Text("@\(user.username)").font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+                Text(user.displayName).font(.body.weight(.semibold)).foregroundStyle(data.themeConfig.primaryTextColor.color)
+                Text("@\(user.username)").font(.caption).foregroundStyle(data.themeConfig.secondaryTextColor.color)
             }
         }
     }

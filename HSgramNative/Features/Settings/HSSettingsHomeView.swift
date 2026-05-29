@@ -23,65 +23,108 @@ struct HSSettingsHomeView: View {
                             }
                             .buttonStyle(.plain)
                             if item.id != viewModel.settingsItems.last?.id {
-                                Rectangle().fill(HSPrototypeTheme.separator.opacity(0.55)).frame(height: 1 / UIScreen.main.scale).padding(.leading, 62)
+                                Rectangle()
+                                    .fill(data.themeConfig.separatorColor.color.opacity(0.55))
+                                    .frame(height: 1 / UIScreen.main.scale)
+                                    .padding(.leading, 62)
                             }
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     Button(role: .destructive) { router.signOut() } label: {
-                        Label("退出登录", systemImage: "rectangle.portrait.and.arrow.right").font(.body.weight(.semibold)).frame(maxWidth: .infinity).frame(height: 48)
+                        Label("退出登录", systemImage: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(data.themeConfig.destructiveColor.color)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(data.themeConfig.cardBackgroundColor.color, in: Capsule())
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 24)
                 }
                 .padding(.bottom, HSLayoutMetrics.rootTabBarClearance)
             }
-            .background(HSPrototypeTheme.background)
+            .background(data.themeConfig.groupedBackgroundColor.color)
         }
-        .background(HSPrototypeTheme.background.ignoresSafeArea())
+        .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
     }
 
     private var profileCard: some View {
         Button { router.open(.profile(viewModel.currentUser.id)) } label: {
             HStack(spacing: 14) {
-                HSAvatarView(initials: viewModel.currentUser.initials, colorHex: viewModel.currentUser.accentHex, size: 64, isOnline: true)
+                HSAvatarView(initials: viewModel.currentUser.initials, colorHex: viewModel.currentUser.accentHex, size: 58, isOnline: true)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(viewModel.currentUser.displayName).font(.title3.weight(.bold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                    Text("@\(viewModel.currentUser.username)").font(.subheadline).foregroundStyle(HSPrototypeTheme.accent)
-                    Text(viewModel.currentUser.email).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+                    Text(viewModel.currentUser.displayName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                    Text("@\(viewModel.currentUser.username)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(data.themeConfig.primaryAccentColor.color)
+                    Text(viewModel.currentUser.email)
+                        .font(.caption)
+                        .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(HSPrototypeTheme.tertiaryText)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(data.themeConfig.mutedTextColor.color)
             }
-            .padding(16)
-            .background(HSPrototypeTheme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(14)
+            .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 }
 
 struct HSSettingsDetailView: View {
+    @EnvironmentObject private var data: HSMockChatService
+    @Environment(\.dismiss) private var dismiss
     let destination: SettingsDestination
 
     var body: some View {
-        List {
-            Section {
-                ForEach(rows, id: \.0) { title, subtitle, icon in
-                    HStack(spacing: 12) {
-                        Image(systemName: icon).foregroundStyle(HSPrototypeTheme.accent).frame(width: 26)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(title).font(.body.weight(.semibold))
-                            Text(subtitle).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+        VStack(spacing: 0) {
+            HSSimplePageHeader(title: title, leadingTitle: nil, trailingTitle: nil, onLeading: { dismiss() }, onTrailing: {})
+                .padding(.horizontal, 12)
+
+            ScrollView {
+                HSGroupedSettingsCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                            HStack(spacing: 12) {
+                                Image(systemName: row.icon)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(data.themeConfig.primaryAccentColor.color)
+                                    .frame(width: 28)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(row.title)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                                    Text(row.subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(data.themeConfig.secondaryTextColor.color)
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            if index != rows.count - 1 {
+                                Rectangle()
+                                    .fill(data.themeConfig.separatorColor.color)
+                                    .frame(height: 1 / UIScreen.main.scale)
+                                    .padding(.leading, 54)
+                            }
                         }
                     }
-                    .padding(.vertical, 3)
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 16)
             }
         }
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+        .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var title: String {
@@ -99,7 +142,7 @@ struct HSSettingsDetailView: View {
         }
     }
 
-    private var rows: [(String, String, String)] {
+    private var rows: [(title: String, subtitle: String, icon: String)] {
         switch destination {
         case .accountSecurity: return [("邮箱登录", "linhe@hsgram.app", "envelope"), ("手机号", "+86 138 0000 1024", "phone"), ("两步验证", "建议开启", "lock.shield")]
         case .privacy: return [("最后在线", "联系人可见", "eye"), ("资料照片", "所有人可见", "person.crop.circle"), ("黑名单", "0 个用户", "hand.raised")]

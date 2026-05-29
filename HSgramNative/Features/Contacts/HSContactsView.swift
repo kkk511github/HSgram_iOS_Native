@@ -19,23 +19,23 @@ struct HSContactsView: View {
                         Section {
                             HSSearchBar(text: $query, placeholder: "搜索联系人")
                                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                .listRowBackground(HSPrototypeTheme.background)
+                                .listRowBackground(data.themeConfig.groupedBackgroundColor.color)
                         }
                         Section {
-                            actionRow(icon: "person.badge.plus", title: "添加好友", color: HSPrototypeTheme.accent) {
+                            actionRow(icon: "person.badge.plus", title: "添加好友", color: data.themeConfig.primaryAccentColor.color) {
                                 query = ""
                                 contactStatus = "已打开添加好友入口，可通过邮箱或手机号查找。"
                             }
-                            actionRow(icon: "envelope.badge", title: "好友申请", color: HSPrototypeTheme.orange) {
+                            actionRow(icon: "envelope.badge", title: "好友申请", color: data.themeConfig.warningColor.color) {
                                 contactStatus = "当前没有新的好友申请。"
                             }
-                            actionRow(icon: "person.crop.circle.badge.checkmark", title: "通讯录同步", color: HSPrototypeTheme.success) {
+                            actionRow(icon: "person.crop.circle.badge.checkmark", title: "通讯录同步", color: data.themeConfig.successColor.color) {
                                 contactStatus = "通讯录已同步，发现 \(data.contacts.count) 位联系人。"
                             }
                             if let contactStatus {
                                 Text(contactStatus)
                                     .font(.caption)
-                                    .foregroundStyle(HSPrototypeTheme.secondaryText)
+                                    .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                                     .padding(.vertical, 3)
                             }
                         }
@@ -43,7 +43,7 @@ struct HSContactsView: View {
                             Section {
                                 HSEmptyStateView(systemImage: "person.2", title: "没有找到联系人", message: "换个关键词试试，或通过邮箱/手机号添加好友。")
                                     .frame(height: 330)
-                                    .listRowBackground(HSPrototypeTheme.background)
+                                    .listRowBackground(data.themeConfig.groupedBackgroundColor.color)
                             }
                         } else {
                             ForEach(viewModel.groupedContacts, id: \.0) { section, contacts in
@@ -53,11 +53,11 @@ struct HSContactsView: View {
                                             HStack(spacing: 12) {
                                                 HSAvatarView(initials: contact.user.initials, colorHex: contact.user.accentHex, size: 44, isOnline: contact.user.isOnline)
                                                 VStack(alignment: .leading, spacing: 3) {
-                                                    Text(contact.user.displayName).font(.body.weight(.semibold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                                                    Text(contact.note.isEmpty ? "@\(contact.user.username)" : contact.note).font(.caption).foregroundStyle(HSPrototypeTheme.secondaryText)
+                                                    Text(contact.user.displayName).font(.body.weight(.semibold)).foregroundStyle(data.themeConfig.primaryTextColor.color)
+                                                    Text(contact.note.isEmpty ? "@\(contact.user.username)" : contact.note).font(.caption).foregroundStyle(data.themeConfig.secondaryTextColor.color)
                                                 }
                                                 Spacer()
-                                                if contact.isFavorite { Image(systemName: "star.fill").foregroundStyle(HSPrototypeTheme.orange) }
+                                                if contact.isFavorite { Image(systemName: "star.fill").foregroundStyle(data.themeConfig.warningColor.color) }
                                             }
                                         }
                                         .buttonStyle(.plain)
@@ -72,7 +72,7 @@ struct HSContactsView: View {
                     .safeAreaInset(edge: .bottom, spacing: 0) {
                         Color.clear.frame(height: HSLayoutMetrics.rootTabBarClearance)
                     }
-                    .background(HSPrototypeTheme.background)
+                    .background(data.themeConfig.groupedBackgroundColor.color)
                     if !viewModel.groupedContacts.isEmpty {
                         alphabetIndex(proxy: proxy)
                             .padding(.trailing, 4)
@@ -80,7 +80,7 @@ struct HSContactsView: View {
                 }
             }
         }
-        .background(HSPrototypeTheme.background.ignoresSafeArea())
+        .background(data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea())
     }
 
     private func alphabetIndex(proxy: ScrollViewProxy) -> some View {
@@ -93,7 +93,7 @@ struct HSContactsView: View {
                 } label: {
                     Text(section)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(HSPrototypeTheme.accent)
+                        .foregroundStyle(data.themeConfig.primaryAccentColor.color)
                         .frame(width: 20, height: 16)
                 }
                 .buttonStyle(.plain)
@@ -109,15 +109,15 @@ struct HSContactsView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     .frame(width: 32, height: 32)
                     .background(color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 Text(title)
-                    .foregroundStyle(HSPrototypeTheme.primaryText)
+                    .foregroundStyle(data.themeConfig.primaryTextColor.color)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(HSPrototypeTheme.tertiaryText)
+                    .foregroundStyle(data.themeConfig.mutedTextColor.color)
             }
         }
         .buttonStyle(.plain)
