@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HSPrototypeAuthView: View {
     @EnvironmentObject private var router: HSAppRouter
+    @EnvironmentObject private var data: HSMockChatService
     @State private var mode: HSAuthMode = .login
     @State private var loginMethod: HSAuthLoginMethod = .email
     @State private var email = "linhe@hsgram.app"
@@ -16,11 +17,11 @@ struct HSPrototypeAuthView: View {
 
     var body: some View {
         ZStack {
-            HSPrototypeTheme.background.ignoresSafeArea()
+            data.themeConfig.groupedBackgroundColor.color.ignoresSafeArea()
             ScrollView {
-                VStack(spacing: 22) {
+                VStack(spacing: 20) {
                     brandHeader
-                    VStack(spacing: 16) {
+                    VStack(spacing: 14) {
                         Picker("模式", selection: $mode) {
                             Text("登录").tag(HSAuthMode.login)
                             Text("注册").tag(HSAuthMode.register)
@@ -54,12 +55,13 @@ struct HSPrototypeAuthView: View {
                             }
                         } label: {
                             Text(viewModel.primaryActionTitle)
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(data.themeConfig.inverseTextColor.color)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 50)
+                                .frame(height: 46)
+                                .background(data.themeConfig.primaryAccentColor.color, in: Capsule())
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(HSPrototypeTheme.accent)
+                        .buttonStyle(.plain)
                         Button {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
                                 mode = viewModel.toggledMode()
@@ -69,52 +71,64 @@ struct HSPrototypeAuthView: View {
                         } label: {
                             Text(viewModel.switchPrompt)
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(HSPrototypeTheme.accent)
+                                .foregroundStyle(data.themeConfig.primaryAccentColor.color)
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(18)
-                    .background(HSPrototypeTheme.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 12)
+                    .padding(16)
+                    .background(data.themeConfig.cardBackgroundColor.color, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: data.themeConfig.shadowColor.color.opacity(0.68), radius: 18, x: 0, y: 9)
                     Text(viewModel.helperText)
                         .font(.footnote)
-                        .foregroundStyle(HSPrototypeTheme.secondaryText)
+                        .foregroundStyle(data.themeConfig.secondaryTextColor.color)
                         .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: 430)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 42)
+                .frame(maxWidth: 400)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 36)
                 .frame(maxWidth: .infinity)
             }
         }
     }
 
     private var brandHeader: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(LinearGradient(colors: [HSPrototypeTheme.accent, Color(hex: 0x62C6FF)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 94, height: 94)
-                    .shadow(color: HSPrototypeTheme.accent.opacity(0.35), radius: 22, x: 0, y: 12)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(LinearGradient(colors: [data.themeConfig.primaryAccentColor.color, data.themeConfig.secondaryAccentColor.color], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 82, height: 82)
+                    .shadow(color: data.themeConfig.primaryAccentColor.color.opacity(0.30), radius: 18, x: 0, y: 9)
                 Image(systemName: "paperplane.fill")
-                    .font(.system(size: 42, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 36, weight: .semibold))
+                    .foregroundStyle(data.themeConfig.inverseTextColor.color)
                     .rotationEffect(.degrees(-8))
             }
-            VStack(spacing: 8) {
-                Text("HSgram").font(.largeTitle.weight(.bold)).foregroundStyle(HSPrototypeTheme.primaryText)
-                Text("轻快、安全、清爽的聊天体验").font(.subheadline).foregroundStyle(HSPrototypeTheme.secondaryText)
+            VStack(spacing: 7) {
+                Text("HSgram")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(data.themeConfig.primaryTextColor.color)
+                Text("轻快、安全、清爽的聊天体验")
+                    .font(.subheadline)
+                    .foregroundStyle(data.themeConfig.secondaryTextColor.color)
             }
         }
     }
 
     private func authField(title: String, text: Binding<String>, icon: String, keyboard: UIKeyboardType) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundStyle(HSPrototypeTheme.accent).frame(width: 24)
-            TextField(title, text: text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled().font(.body)
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(data.themeConfig.primaryAccentColor.color)
+                .frame(width: 24)
+            TextField(title, text: text)
+                .keyboardType(keyboard)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .font(.system(size: 16))
+                .foregroundStyle(data.themeConfig.primaryTextColor.color)
         }
         .padding(.horizontal, 14)
-        .frame(height: 48)
-        .background(HSPrototypeTheme.secondarySurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(height: 44)
+        .background(data.themeConfig.groupedBackgroundColor.color, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

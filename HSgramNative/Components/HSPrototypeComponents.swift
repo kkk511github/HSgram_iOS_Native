@@ -1209,7 +1209,7 @@ struct HSGroupProfileHeader: View {
             .clipped()
 
             HStack(alignment: .top) {
-                HSFloatingBackButton(foreground: .white, action: onBack)
+                HSFloatingBackButton(foreground: data.themeConfig.inverseTextColor.color, action: onBack)
                 Spacer()
                 Button(action: onEdit) {
                     HStack(spacing: 12) {
