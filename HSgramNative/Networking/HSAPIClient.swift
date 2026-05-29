@@ -266,7 +266,7 @@ final class HSAPIClient {
     }
 
     func workspaceSummary(session: HSUserSession) async throws -> HSWorkspaceSummary {
-        try await request("workspace/summary", method: "GET", body: Optional<EmptyBody>.none, session: session)
+        try await serverTransport.request("v1/workspace/summary", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func dialogs(folderID: Int? = nil, session: HSUserSession) async throws -> [HSChat] {
@@ -308,6 +308,128 @@ final class HSAPIClient {
             "v1/dialog-filters/tags",
             method: "PUT",
             body: DialogFilterTagsBody(enabled: enabled),
+            session: session
+        )
+    }
+
+    func chatListSharedInvites(filterID: Int, session: HSUserSession) async throws -> HSChatListExportedInvitesPage {
+        try await request(
+            "v1/dialog-filters/\(filterID)/shared-links",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func exportChatListInvite(
+        filterID: Int,
+        title: String,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSChatListExportedInviteResult {
+        try await request(
+            "v1/dialog-filters/\(filterID)/shared-links",
+            method: "POST",
+            body: ChatListSharedInviteBody(title: title, peers: peers),
+            session: session
+        )
+    }
+
+    func editChatListInvite(
+        filterID: Int,
+        slug: String,
+        title: String?,
+        peers: [HSChatListFilterPeer]?,
+        session: HSUserSession
+    ) async throws -> HSChatListSharedInvite {
+        try await request(
+            "v1/dialog-filters/\(filterID)/shared-links/\(pathEncoded(slug))",
+            method: "PATCH",
+            body: ChatListSharedInviteBody(title: title, peers: peers),
+            session: session
+        )
+    }
+
+    func deleteChatListInvite(filterID: Int, slug: String, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialog-filters/\(filterID)/shared-links/\(pathEncoded(slug))",
+            method: "DELETE",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func checkChatListInvite(slug: String, session: HSUserSession) async throws -> HSChatListInvitePreview {
+        try await request(
+            "v1/chatlist-invites/\(pathEncoded(slug))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func joinChatListInvite(
+        slug: String,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/chatlist-invites/\(pathEncoded(slug))/join",
+            method: "POST",
+            body: ChatListSharedInviteJoinBody(peers: peers),
+            session: session
+        )
+    }
+
+    func chatListUpdates(filterID: Int, session: HSUserSession) async throws -> HSChatListUpdates {
+        try await request(
+            "v1/dialog-filters/\(filterID)/chatlist-updates",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func joinChatListUpdates(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialog-filters/\(filterID)/chatlist-updates",
+            method: "POST",
+            body: ChatListSharedInviteJoinBody(peers: peers),
+            session: session
+        )
+    }
+
+    func hideChatListUpdates(filterID: Int, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialog-filters/\(filterID)/chatlist-updates",
+            method: "DELETE",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func leaveChatListSuggestions(filterID: Int, session: HSUserSession) async throws -> [HSChatListSharedPeer] {
+        try await request(
+            "v1/dialog-filters/\(filterID)/leave-suggestions",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func leaveChatList(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialog-filters/\(filterID)/leave",
+            method: "POST",
+            body: ChatListSharedInviteJoinBody(peers: peers),
             session: session
         )
     }
@@ -399,6 +521,56 @@ final class HSAPIClient {
         )
     }
 
+    func sharedMediaCalendar(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64? = nil,
+        offsetDate: Date? = nil,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaCalendar {
+        guard configuration.allowsNativeRESTFacade else {
+            return try await serverTransport.sharedMediaCalendar(
+                dialogID: dialogID,
+                filter: filter,
+                offsetID: offsetID,
+                offsetDate: offsetDate,
+                session: session
+            )
+        }
+        var path = "v1/dialogs/\(dialogID)/shared-media/calendar?filter=\(filter.rawValue)"
+        if let offsetID {
+            path += "&offset_id=\(offsetID)"
+        }
+        if let offsetDate {
+            path += "&offset_date=\(Int64(offsetDate.timeIntervalSince1970))"
+        }
+        return try await request(path, method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func sharedMediaPositions(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64? = nil,
+        limit: Int = 1000,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaPositions {
+        let safeLimit = max(1, min(limit, 1000))
+        guard configuration.allowsNativeRESTFacade else {
+            return try await serverTransport.sharedMediaPositions(
+                dialogID: dialogID,
+                filter: filter,
+                offsetID: offsetID,
+                limit: safeLimit,
+                session: session
+            )
+        }
+        var path = "v1/dialogs/\(dialogID)/shared-media/positions?filter=\(filter.rawValue)&limit=\(safeLimit)"
+        if let offsetID {
+            path += "&offset_id=\(offsetID)"
+        }
+        return try await request(path, method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
     func sendMessage(dialogID: Int64, text: String, replyToMessageID: Int64? = nil, session: HSUserSession) async throws -> HSMessage {
         try await sendMessage(
             dialogID: dialogID,
@@ -476,6 +648,122 @@ final class HSAPIClient {
         return message
     }
 
+    func sendPoll(
+        dialogID: Int64,
+        question: String,
+        answers: [HSPollAnswerInput],
+        isMultipleChoice: Bool = false,
+        isQuiz: Bool = false,
+        isAnonymous: Bool = true,
+        correctAnswerOptions: [Data]? = nil,
+        solution: String? = nil,
+        closePeriod: Int? = nil,
+        replyToMessageID: Int64? = nil,
+        session: HSUserSession
+    ) async throws -> HSMessage {
+        let body = PollMessageBody(
+            question: question,
+            answers: answers,
+            isMultipleChoice: isMultipleChoice,
+            isQuiz: isQuiz,
+            isAnonymous: isAnonymous,
+            correctAnswerOptions: correctAnswerOptions,
+            solution: solution,
+            closePeriod: closePeriod,
+            replyToMessageID: replyToMessageID
+        )
+        return try await request(
+            "v1/dialogs/\(dialogID)/polls",
+            method: "POST",
+            body: body,
+            session: session
+        )
+    }
+
+    func votePoll(dialogID: Int64, messageID: Int64, options: [Data], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/poll/vote",
+            method: "POST",
+            body: PollVoteBody(options: options),
+            session: session
+        )
+    }
+
+    func refreshPoll(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/poll/refresh",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func pollVotes(
+        dialogID: Int64,
+        messageID: Int64,
+        option: Data? = nil,
+        offset: String? = nil,
+        limit: Int = 50,
+        session: HSUserSession
+    ) async throws -> HSPollVotesPage {
+        var path = "v1/dialogs/\(dialogID)/messages/\(messageID)/poll/votes?limit=\(max(1, min(100, limit)))"
+        if let option, !option.isEmpty {
+            path += "&option=\(queryEncoded(option.base64EncodedString()))"
+        }
+        if let offset, !offset.isEmpty {
+            path += "&offset=\(queryEncoded(offset))"
+        }
+        return try await request(path, method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func sendTodo(
+        dialogID: Int64,
+        title: String,
+        items: [HSTodoItem],
+        othersCanAppend: Bool = false,
+        othersCanComplete: Bool = false,
+        replyToMessageID: Int64? = nil,
+        session: HSUserSession
+    ) async throws -> HSMessage {
+        let body = TodoMessageBody(
+            title: title,
+            items: items,
+            othersCanAppend: othersCanAppend,
+            othersCanComplete: othersCanComplete,
+            replyToMessageID: replyToMessageID
+        )
+        return try await request(
+            "v1/dialogs/\(dialogID)/todos",
+            method: "POST",
+            body: body,
+            session: session
+        )
+    }
+
+    func toggleTodoCompleted(
+        dialogID: Int64,
+        messageID: Int64,
+        completedIDs: [Int],
+        incompletedIDs: [Int],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/todo/toggle",
+            method: "POST",
+            body: TodoToggleBody(completedIDs: completedIDs, incompletedIDs: incompletedIDs),
+            session: session
+        )
+    }
+
+    func appendTodoItems(dialogID: Int64, messageID: Int64, items: [HSTodoItem], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/todo/items",
+            method: "POST",
+            body: TodoItemsBody(items: items),
+            session: session
+        )
+    }
+
     func setTyping(
         dialogID: Int64,
         activity: HSInputActivityKind,
@@ -523,6 +811,49 @@ final class HSAPIClient {
             path += "?max_id=\(maxMessageID)"
         }
         return try await request(path, method: "POST", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func markMessageContentsRead(dialogID: Int64, messageIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/read-contents",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func messageViews(dialogID: Int64, messageIDs: [Int64], increment: Bool = true, session: HSUserSession) async throws -> [HSMessageViewState] {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/views?increment=\(increment)",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func messageReadParticipants(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> [HSMessageReadParticipant] {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/read-participants",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func messageReactions(
+        dialogID: Int64,
+        messageID: Int64,
+        reaction: String? = nil,
+        offset: String? = nil,
+        limit: Int = 50,
+        session: HSUserSession
+    ) async throws -> HSMessageReactionsPage {
+        try await request(
+            messageReactionsPath(scope: "dialogs", dialogID: dialogID, messageID: messageID, reaction: reaction, offset: offset, limit: limit),
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
     }
 
     func markDialogUnread(dialogID: Int64, unread: Bool = true, session: HSUserSession) async throws -> HSMessageAction {
@@ -619,12 +950,34 @@ final class HSAPIClient {
         )
     }
 
+    func discussionMessage(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSDiscussionMessage {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/discussion",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func markDiscussionRead(dialogID: Int64, messageID: Int64, readMaxID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/\(messageID)/discussion/read?read_max_id=\(readMaxID)",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
     func circles(session: HSUserSession) async throws -> [HSCircle] {
         try await request("v1/circles", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func channels(session: HSUserSession) async throws -> [HSChannel] {
         try await request("v1/channels", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func channelDiscussionGroups(session: HSUserSession) async throws -> [HSSupergroup] {
+        try await request("v1/channels/discussion-groups", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func createChannel(title: String, about: String = "", memberIDs: [Int64] = [], session: HSUserSession) async throws -> HSChannel {
@@ -658,12 +1011,39 @@ final class HSAPIClient {
         )
     }
 
+    func updateChannelDiscussionGroup(dialogID: Int64, groupDialogID: Int64?, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/channels/\(dialogID)/discussion-group",
+            method: "PATCH",
+            body: DiscussionGroupBody(groupDialogID: groupDialogID),
+            session: session
+        )
+    }
+
+    func checkChannelUsername(dialogID: Int64, username: String, session: HSUserSession) async throws -> HSAddressNameAvailability {
+        try await request(
+            "v1/channels/\(dialogID)/username/check?username=\(queryEncoded(username))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func updateChannelUsername(dialogID: Int64, username: String?, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/channels/\(dialogID)/username",
+            method: "PATCH",
+            body: UsernameBody(username: username),
+            session: session
+        )
+    }
+
     func leaveChannel(dialogID: Int64, session: HSUserSession) async throws -> HSMessageAction {
         try await request("v1/channels/\(dialogID)/leave", method: "POST", body: Optional<EmptyBody>.none, session: session)
     }
 
-    func channelSubscribers(dialogID: Int64, limit: Int = 50, offset: Int = 0, session: HSUserSession) async throws -> [HSSupergroupMember] {
-        try await request("v1/channels/\(dialogID)/subscribers?limit=\(limit)&offset=\(offset)", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    func channelSubscribers(dialogID: Int64, filter: HSSupergroupMemberFilter = .recent, query: String? = nil, limit: Int = 50, offset: Int = 0, session: HSUserSession) async throws -> [HSSupergroupMember] {
+        try await request(memberListPath(scope: "channels", dialogID: dialogID, collection: "subscribers", filter: filter, query: query, limit: limit, offset: offset), method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func inviteChannelSubscribers(dialogID: Int64, userIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
@@ -710,6 +1090,58 @@ final class HSAPIClient {
         )
     }
 
+    func reportChannelAntiSpamFalsePositive(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/channels/\(dialogID)/messages/\(messageID)/anti-spam/false-positive",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func markChannelMessageContentsRead(dialogID: Int64, messageIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/channels/\(dialogID)/messages/read-contents",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func channelMessageViews(dialogID: Int64, messageIDs: [Int64], increment: Bool = true, session: HSUserSession) async throws -> [HSMessageViewState] {
+        try await request(
+            "v1/channels/\(dialogID)/messages/views?increment=\(increment)",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func channelMessageReadParticipants(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> [HSMessageReadParticipant] {
+        try await request(
+            "v1/channels/\(dialogID)/messages/\(messageID)/read-participants",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func channelMessageReactions(
+        dialogID: Int64,
+        messageID: Int64,
+        reaction: String? = nil,
+        offset: String? = nil,
+        limit: Int = 50,
+        session: HSUserSession
+    ) async throws -> HSMessageReactionsPage {
+        try await request(
+            messageReactionsPath(scope: "channels", dialogID: dialogID, messageID: messageID, reaction: reaction, offset: offset, limit: limit),
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
     func exportChannelInvite(dialogID: Int64, title: String? = nil, expireDate: Int? = nil, usageLimit: Int? = nil, requestNeeded: Bool = false, session: HSUserSession) async throws -> HSExportedInvite {
         try await request(
             "v1/channels/\(dialogID)/invites",
@@ -717,6 +1149,44 @@ final class HSAPIClient {
             body: ExportInviteBody(title: title, expireDate: expireDate, usageLimit: usageLimit, requestNeeded: requestNeeded, legacyRevokePermanent: false),
             session: session
         )
+    }
+
+    func channelInvites(dialogID: Int64, revoked: Bool = false, adminID: Int64? = nil, offsetDate: Int? = nil, offsetLink: String? = nil, limit: Int = 50, session: HSUserSession) async throws -> HSExportedInvitesPage {
+        try await request(invitesPath(scope: "channels", dialogID: dialogID, revoked: revoked, adminID: adminID, offsetDate: offsetDate, offsetLink: offsetLink, limit: limit), method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func editChannelInvite(dialogID: Int64, link: String, title: String? = nil, expireDate: Int? = nil, usageLimit: Int? = nil, requestNeeded: Bool? = nil, revoked: Bool = false, session: HSUserSession) async throws -> HSExportedInvite {
+        try await request(
+            "v1/channels/\(dialogID)/invites",
+            method: "PATCH",
+            body: EditInviteBody(link: link, title: title, expireDate: expireDate, usageLimit: usageLimit, requestNeeded: requestNeeded, revoked: revoked),
+            session: session
+        )
+    }
+
+    func deleteChannelInvite(dialogID: Int64, link: String, session: HSUserSession) async throws -> HSMessageAction {
+        let encoded = queryEncoded(link)
+        return try await request("v1/channels/\(dialogID)/invites?link=\(encoded)", method: "DELETE", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func channelInviteImporters(dialogID: Int64, requested: Bool = false, link: String? = nil, query: String? = nil, offsetDate: Int = 0, offsetUserID: Int64? = nil, limit: Int = 50, session: HSUserSession) async throws -> HSInviteImportersPage {
+        try await request(inviteImportersPath(scope: "channels", dialogID: dialogID, requested: requested, link: link, query: query, offsetDate: offsetDate, offsetUserID: offsetUserID, limit: limit), method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func approveChannelJoinRequest(dialogID: Int64, userID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateJoinRequest(scope: "channels", dialogID: dialogID, userID: userID, approve: true, session: session)
+    }
+
+    func declineChannelJoinRequest(dialogID: Int64, userID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateJoinRequest(scope: "channels", dialogID: dialogID, userID: userID, approve: false, session: session)
+    }
+
+    func approveAllChannelJoinRequests(dialogID: Int64, link: String? = nil, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateAllJoinRequests(scope: "channels", dialogID: dialogID, link: link, approve: true, session: session)
+    }
+
+    func declineAllChannelJoinRequests(dialogID: Int64, link: String? = nil, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateAllJoinRequests(scope: "channels", dialogID: dialogID, link: link, approve: false, session: session)
     }
 
     func createSupergroup(title: String, about: String = "", memberIDs: [Int64] = [], session: HSUserSession) async throws -> HSSupergroup {
@@ -745,8 +1215,8 @@ final class HSAPIClient {
         try await request("v1/supergroups/\(dialogID)/leave", method: "POST", body: Optional<EmptyBody>.none, session: session)
     }
 
-    func supergroupMembers(dialogID: Int64, limit: Int = 50, offset: Int = 0, session: HSUserSession) async throws -> [HSSupergroupMember] {
-        try await request("v1/supergroups/\(dialogID)/members?limit=\(limit)&offset=\(offset)", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    func supergroupMembers(dialogID: Int64, filter: HSSupergroupMemberFilter = .recent, query: String? = nil, limit: Int = 50, offset: Int = 0, session: HSUserSession) async throws -> [HSSupergroupMember] {
+        try await request(memberListPath(scope: "supergroups", dialogID: dialogID, collection: "members", filter: filter, query: query, limit: limit, offset: offset), method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
     func inviteSupergroupMembers(dialogID: Int64, userIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
@@ -803,6 +1273,24 @@ final class HSAPIClient {
         )
     }
 
+    func checkSupergroupUsername(dialogID: Int64, username: String, session: HSUserSession) async throws -> HSAddressNameAvailability {
+        try await request(
+            "v1/supergroups/\(dialogID)/username/check?username=\(queryEncoded(username))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func updateSupergroupUsername(dialogID: Int64, username: String?, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/supergroups/\(dialogID)/username",
+            method: "PATCH",
+            body: UsernameBody(username: username),
+            session: session
+        )
+    }
+
     func pinSupergroupMessage(dialogID: Int64, messageID: Int64, silent: Bool = false, unpin: Bool = false, session: HSUserSession) async throws -> HSMessage {
         try await request(
             "v1/supergroups/\(dialogID)/messages/\(messageID)/pin",
@@ -838,6 +1326,58 @@ final class HSAPIClient {
         )
     }
 
+    func reportSupergroupAntiSpamFalsePositive(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/supergroups/\(dialogID)/messages/\(messageID)/anti-spam/false-positive",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func markSupergroupMessageContentsRead(dialogID: Int64, messageIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/supergroups/\(dialogID)/messages/read-contents",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func supergroupMessageViews(dialogID: Int64, messageIDs: [Int64], increment: Bool = true, session: HSUserSession) async throws -> [HSMessageViewState] {
+        try await request(
+            "v1/supergroups/\(dialogID)/messages/views?increment=\(increment)",
+            method: "POST",
+            body: MessageIDsBody(messageIDs: messageIDs),
+            session: session
+        )
+    }
+
+    func supergroupMessageReadParticipants(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> [HSMessageReadParticipant] {
+        try await request(
+            "v1/supergroups/\(dialogID)/messages/\(messageID)/read-participants",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func supergroupMessageReactions(
+        dialogID: Int64,
+        messageID: Int64,
+        reaction: String? = nil,
+        offset: String? = nil,
+        limit: Int = 50,
+        session: HSUserSession
+    ) async throws -> HSMessageReactionsPage {
+        try await request(
+            messageReactionsPath(scope: "supergroups", dialogID: dialogID, messageID: messageID, reaction: reaction, offset: offset, limit: limit),
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
     func exportSupergroupInvite(dialogID: Int64, title: String? = nil, expireDate: Int? = nil, usageLimit: Int? = nil, requestNeeded: Bool = false, session: HSUserSession) async throws -> HSExportedInvite {
         try await request(
             "v1/supergroups/\(dialogID)/invites",
@@ -847,8 +1387,77 @@ final class HSAPIClient {
         )
     }
 
+    func supergroupInvites(dialogID: Int64, revoked: Bool = false, adminID: Int64? = nil, offsetDate: Int? = nil, offsetLink: String? = nil, limit: Int = 50, session: HSUserSession) async throws -> HSExportedInvitesPage {
+        try await request(invitesPath(scope: "supergroups", dialogID: dialogID, revoked: revoked, adminID: adminID, offsetDate: offsetDate, offsetLink: offsetLink, limit: limit), method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func editSupergroupInvite(dialogID: Int64, link: String, title: String? = nil, expireDate: Int? = nil, usageLimit: Int? = nil, requestNeeded: Bool? = nil, revoked: Bool = false, session: HSUserSession) async throws -> HSExportedInvite {
+        try await request(
+            "v1/supergroups/\(dialogID)/invites",
+            method: "PATCH",
+            body: EditInviteBody(link: link, title: title, expireDate: expireDate, usageLimit: usageLimit, requestNeeded: requestNeeded, revoked: revoked),
+            session: session
+        )
+    }
+
+    func deleteSupergroupInvite(dialogID: Int64, link: String, session: HSUserSession) async throws -> HSMessageAction {
+        let encoded = queryEncoded(link)
+        return try await request("v1/supergroups/\(dialogID)/invites?link=\(encoded)", method: "DELETE", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func supergroupInviteImporters(dialogID: Int64, requested: Bool = false, link: String? = nil, query: String? = nil, offsetDate: Int = 0, offsetUserID: Int64? = nil, limit: Int = 50, session: HSUserSession) async throws -> HSInviteImportersPage {
+        try await request(inviteImportersPath(scope: "supergroups", dialogID: dialogID, requested: requested, link: link, query: query, offsetDate: offsetDate, offsetUserID: offsetUserID, limit: limit), method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func approveSupergroupJoinRequest(dialogID: Int64, userID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateJoinRequest(scope: "supergroups", dialogID: dialogID, userID: userID, approve: true, session: session)
+    }
+
+    func declineSupergroupJoinRequest(dialogID: Int64, userID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateJoinRequest(scope: "supergroups", dialogID: dialogID, userID: userID, approve: false, session: session)
+    }
+
+    func approveAllSupergroupJoinRequests(dialogID: Int64, link: String? = nil, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateAllJoinRequests(scope: "supergroups", dialogID: dialogID, link: link, approve: true, session: session)
+    }
+
+    func declineAllSupergroupJoinRequests(dialogID: Int64, link: String? = nil, session: HSUserSession) async throws -> HSMessageAction {
+        try await updateAllJoinRequests(scope: "supergroups", dialogID: dialogID, link: link, approve: false, session: session)
+    }
+
     func contacts(session: HSUserSession) async throws -> [HSContact] {
         try await request("v1/contacts", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func importContacts(_ contacts: [HSDeviceContactImport], session: HSUserSession) async throws -> HSImportedContactsSummary {
+        try await request(
+            "v1/contacts/import",
+            method: "POST",
+            body: ImportContactsBody(contacts: contacts),
+            session: session
+        )
+    }
+
+    func deleteImportedContactsByPhones(_ phones: [String], session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/contacts/import",
+            method: "DELETE",
+            body: ContactPhonesBody(phones: phones),
+            session: session
+        )
+    }
+
+    func exportContactToken(session: HSUserSession) async throws -> HSExportedContactToken {
+        try await request("v1/contacts/token", method: "POST", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func importContactToken(_ token: String, session: HSUserSession) async throws -> HSContact {
+        try await request(
+            "v1/contacts/token/import",
+            method: "POST",
+            body: ImportContactTokenBody(token: token),
+            session: session
+        )
     }
 
     func blockedContacts(offset: Int = 0, limit: Int = 100, session: HSUserSession) async throws -> [HSContact] {
@@ -873,11 +1482,35 @@ final class HSAPIClient {
         return try await request("v1/contacts/resolve?identifier=\(encoded)", method: "GET", body: Optional<EmptyBody>.none, session: session)
     }
 
-    func addContact(userID: Int64, firstName: String, lastName: String = "", phone: String = "", session: HSUserSession) async throws -> HSMessageAction {
+    func addContact(
+        userID: Int64,
+        firstName: String,
+        lastName: String = "",
+        phone: String = "",
+        note: String? = nil,
+        addPhonePrivacyException: Bool = false,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
         try await request(
             "v1/contacts",
             method: "POST",
-            body: ContactRequestBody(userID: userID, firstName: firstName, lastName: lastName, phone: phone),
+            body: ContactRequestBody(
+                userID: userID,
+                firstName: firstName,
+                lastName: lastName,
+                phone: phone,
+                note: note,
+                addPhonePrivacyException: addPhonePrivacyException
+            ),
+            session: session
+        )
+    }
+
+    func updateContactNote(userID: Int64, note: String, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/contacts/\(userID)/note",
+            method: "PATCH",
+            body: ContactNoteBody(note: note),
             session: session
         )
     }
@@ -916,6 +1549,30 @@ final class HSAPIClient {
             "v1/dialogs/\(dialogID)/report",
             method: "POST",
             body: ReportPeerBody(reason: reason, message: message),
+            session: session
+        )
+    }
+
+    func reportPeerPhoto(dialogID: Int64, reason: HSReportReason, message: String, session: HSUserSession) async throws -> HSMessageAction {
+        try await request(
+            "v1/dialogs/\(dialogID)/photo/report",
+            method: "POST",
+            body: ReportPeerBody(reason: reason, message: message),
+            session: session
+        )
+    }
+
+    func reportMessages(
+        dialogID: Int64,
+        messageIDs: [Int64],
+        option: Data? = nil,
+        message: String? = nil,
+        session: HSUserSession
+    ) async throws -> HSReportContentResult {
+        try await request(
+            "v1/dialogs/\(dialogID)/messages/report",
+            method: "POST",
+            body: ReportMessagesBody(messageIDs: messageIDs, option: option, message: message),
             session: session
         )
     }
@@ -980,11 +1637,38 @@ final class HSAPIClient {
         try await request("v1/settings/notifications", method: "PATCH", body: settings, session: session)
     }
 
+    func notificationExceptions(scope: HSNotificationException.Scope? = nil, compareSound: Bool = true, session: HSUserSession) async throws -> HSNotificationExceptions {
+        var items: [String] = []
+        if let scope, scope != .unknown {
+            items.append("scope=\(scope.rawValue)")
+        }
+        if compareSound {
+            items.append("compare_sound=true")
+        }
+        let suffix = items.isEmpty ? "" : "?\(items.joined(separator: "&"))"
+        return try await request(
+            "v1/settings/notifications/exceptions\(suffix)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func resetNotificationSettings(session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/settings/notifications/reset",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
     func updatePeerNotificationSettings(
         dialogID: Int64,
         muteInterval: Int?,
         showPreviews: Bool = true,
         silent: Bool = false,
+        sound: HSNotificationSound? = nil,
         session: HSUserSession
     ) async throws -> HSMessageAction {
         try await request(
@@ -993,7 +1677,8 @@ final class HSAPIClient {
             body: PeerNotificationSettingsBody(
                 muteInterval: muteInterval,
                 showPreviews: showPreviews,
-                silent: silent
+                silent: silent,
+                sound: sound
             ),
             session: session
         )
@@ -1005,6 +1690,441 @@ final class HSAPIClient {
 
     func assetCatalog(session: HSUserSession) async throws -> HSAssetCatalog {
         try await request("v1/assets", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func installStickerSet(_ set: HSStickerSet, archived: Bool = false, session: HSUserSession) async throws -> HSStickerSetInstallResult {
+        try await installStickerSet(id: set.id, accessHash: set.accessHash, archived: archived, session: session)
+    }
+
+    func installStickerSet(id: Int64, accessHash: Int64, archived: Bool = false, session: HSUserSession) async throws -> HSStickerSetInstallResult {
+        try await request(
+            "v1/stickers/sets/\(id)/install",
+            method: "POST",
+            body: StickerSetActionBody(accessHash: accessHash, archived: archived),
+            session: session
+        )
+    }
+
+    func uninstallStickerSet(_ set: HSStickerSet, session: HSUserSession) async throws -> Bool {
+        try await uninstallStickerSet(id: set.id, accessHash: set.accessHash, session: session)
+    }
+
+    func uninstallStickerSet(id: Int64, accessHash: Int64, session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/stickers/sets/\(id)/install",
+            method: "DELETE",
+            body: StickerSetActionBody(accessHash: accessHash, archived: nil),
+            session: session
+        )
+    }
+
+    func readFeaturedStickerSets(_ ids: [Int64], session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/stickers/featured/read",
+            method: "POST",
+            body: FeaturedStickerSetsReadBody(ids: ids),
+            session: session
+        )
+    }
+
+    func archivedStickerSets(kind: String = "stickers", offsetID: Int64 = 0, limit: Int = 200, session: HSUserSession) async throws -> HSArchivedStickerSetsPage {
+        try await request(
+            "v1/stickers/archived?kind=\(queryEncoded(kind))&offset_id=\(offsetID)&limit=\(limit)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func stickerSetDetails(_ set: HSStickerSet, hash: Int = 0, session: HSUserSession) async throws -> HSStickerSetDetails {
+        try await stickerSetDetails(id: set.id, accessHash: set.accessHash, hash: hash, session: session)
+    }
+
+    func stickerSetDetails(id: Int64, accessHash: Int64, hash: Int = 0, session: HSUserSession) async throws -> HSStickerSetDetails {
+        try await request(
+            "v1/stickers/sets/\(id)?access_hash=\(accessHash)&hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func stickerSetDetails(shortName: String, hash: Int = 0, session: HSUserSession) async throws -> HSStickerSetDetails {
+        try await request(
+            "v1/stickers/sets/by-short-name/\(queryEncoded(shortName))?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func stickersForEmoji(_ emoji: String, hash: Int64 = 0, session: HSUserSession) async throws -> HSStickerDocumentList {
+        try await request(
+            "v1/stickers/search?emoji=\(queryEncoded(emoji))&hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func customEmojiDocuments(ids: [Int64], session: HSUserSession) async throws -> HSStickerDocumentList {
+        let encodedIDs = ids.map(String.init).joined(separator: ",")
+        return try await request(
+            "v1/custom-emoji/documents?ids=\(queryEncoded(encodedIDs))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func customEmojiStickerSets(hash: Int64 = 0, session: HSUserSession) async throws -> [HSStickerSet] {
+        try await request(
+            "v1/custom-emoji/sticker-sets?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func searchCustomEmoji(_ emoji: String, hash: Int64 = 0, session: HSUserSession) async throws -> HSEmojiDocumentList {
+        try await request(
+            "v1/custom-emoji/search?emoji=\(queryEncoded(emoji))&hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func emojiKeywords(langCode: String, session: HSUserSession) async throws -> HSEmojiKeywordsDifference {
+        try await request(
+            "v1/emoji/keywords?lang_code=\(queryEncoded(langCode))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func emojiKeywordsDifference(langCode: String, fromVersion: Int, session: HSUserSession) async throws -> HSEmojiKeywordsDifference {
+        try await request(
+            "v1/emoji/keywords/difference?lang_code=\(queryEncoded(langCode))&from_version=\(fromVersion)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func emojiKeywordLanguages(langCodes: [String] = [], session: HSUserSession) async throws -> [HSEmojiLanguage] {
+        let encoded = langCodes.joined(separator: ",")
+        return try await request(
+            "v1/emoji/keywords/languages?lang_codes=\(queryEncoded(encoded))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func localizationLanguages(langPack: String = "", session: HSUserSession) async throws -> [HSLocalizationLanguage] {
+        try await request(
+            "v1/localization/languages?lang_pack=\(queryEncoded(langPack))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func localizationLanguage(langCode: String, langPack: String = "", session: HSUserSession) async throws -> HSLocalizationLanguage {
+        try await request(
+            "v1/localization/languages/\(queryEncoded(langCode))?lang_pack=\(queryEncoded(langPack))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func localizationPack(langCode: String, langPack: String = "", session: HSUserSession) async throws -> HSLocalizationPack {
+        try await request(
+            "v1/localization/packs/\(queryEncoded(langCode))?lang_pack=\(queryEncoded(langPack))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func localizationPackDifference(langCode: String, fromVersion: Int, langPack: String = "", session: HSUserSession) async throws -> HSLocalizationPack {
+        try await request(
+            "v1/localization/packs/\(queryEncoded(langCode))/difference?lang_pack=\(queryEncoded(langPack))&from_version=\(fromVersion)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func localizationStrings(langCode: String, keys: [String], langPack: String = "", session: HSUserSession) async throws -> [HSLocalizationEntry] {
+        try await request(
+            "v1/localization/strings?lang_pack=\(queryEncoded(langPack))&lang_code=\(queryEncoded(langCode))&keys=\(queryEncoded(keys.joined(separator: ",")))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func recentStickers(attached: Bool = false, hash: Int64 = 0, session: HSUserSession) async throws -> HSStickerDocumentList {
+        try await request(
+            "v1/stickers/recent?attached=\(attached)&hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func saveRecentSticker(_ sticker: HSStickerDocument, attached: Bool = false, session: HSUserSession) async throws -> Bool {
+        try await saveRecentSticker(
+            id: sticker.id,
+            accessHash: sticker.accessHash,
+            fileReference: sticker.fileReference,
+            attached: attached,
+            session: session
+        )
+    }
+
+    func saveRecentSticker(id: Int64, accessHash: Int64, fileReference: Data = Data(), attached: Bool = false, session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/stickers/recent/\(id)",
+            method: "POST",
+            body: StickerDocumentActionBody(accessHash: accessHash, fileReference: fileReference, attached: attached),
+            session: session
+        )
+    }
+
+    func removeRecentSticker(_ sticker: HSStickerDocument, attached: Bool = false, session: HSUserSession) async throws -> Bool {
+        try await removeRecentSticker(id: sticker.id, accessHash: sticker.accessHash, attached: attached, session: session)
+    }
+
+    func removeRecentSticker(id: Int64, accessHash: Int64, attached: Bool = false, session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/stickers/recent/\(id)",
+            method: "DELETE",
+            body: StickerDocumentActionBody(accessHash: accessHash, fileReference: Data(), attached: attached),
+            session: session
+        )
+    }
+
+    func clearRecentStickers(attached: Bool = false, session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/stickers/recent?attached=\(attached)",
+            method: "DELETE",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func favedStickers(hash: Int64 = 0, session: HSUserSession) async throws -> HSStickerDocumentList {
+        try await request(
+            "v1/stickers/faved?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func savedGifs(hash: Int64 = 0, session: HSUserSession) async throws -> HSStickerDocumentList {
+        try await request(
+            "v1/gifs/saved?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func saveGif(_ gif: HSStickerDocument, session: HSUserSession) async throws -> Bool {
+        try await saveGif(id: gif.id, accessHash: gif.accessHash, fileReference: gif.fileReference, session: session)
+    }
+
+    func saveGif(id: Int64, accessHash: Int64, fileReference: Data = Data(), session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/gifs/saved/\(id)",
+            method: "POST",
+            body: DocumentActionBody(accessHash: accessHash, fileReference: fileReference),
+            session: session
+        )
+    }
+
+    func removeSavedGif(_ gif: HSStickerDocument, session: HSUserSession) async throws -> Bool {
+        try await removeSavedGif(id: gif.id, accessHash: gif.accessHash, session: session)
+    }
+
+    func removeSavedGif(id: Int64, accessHash: Int64, session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/gifs/saved/\(id)",
+            method: "DELETE",
+            body: DocumentActionBody(accessHash: accessHash, fileReference: Data()),
+            session: session
+        )
+    }
+
+    func savedRingtones(hash: Int64 = 0, session: HSUserSession) async throws -> HSSavedRingtones {
+        try await request(
+            "v1/notifications/ringtones?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func saveRingtone(_ document: HSStickerDocument, session: HSUserSession) async throws -> HSSavedRingtoneAction {
+        try await saveRingtone(
+            id: document.id,
+            accessHash: document.accessHash,
+            fileReference: document.fileReference,
+            session: session
+        )
+    }
+
+    func saveRingtone(id: Int64, accessHash: Int64, fileReference: Data = Data(), session: HSUserSession) async throws -> HSSavedRingtoneAction {
+        try await request(
+            "v1/notifications/ringtones/\(id)",
+            method: "POST",
+            body: DocumentActionBody(accessHash: accessHash, fileReference: fileReference),
+            session: session
+        )
+    }
+
+    func removeSavedRingtone(_ document: HSStickerDocument, session: HSUserSession) async throws -> HSSavedRingtoneAction {
+        try await removeSavedRingtone(id: document.id, accessHash: document.accessHash, session: session)
+    }
+
+    func removeSavedRingtone(id: Int64, accessHash: Int64, session: HSUserSession) async throws -> HSSavedRingtoneAction {
+        try await request(
+            "v1/notifications/ringtones/\(id)",
+            method: "DELETE",
+            body: DocumentActionBody(accessHash: accessHash, fileReference: Data()),
+            session: session
+        )
+    }
+
+    func uploadRingtone(fileName: String, mimeType: String = "audio/mpeg", data: Data, session: HSUserSession) async throws -> HSStickerDocument {
+        try await request(
+            "v1/notifications/ringtones/upload",
+            method: "POST",
+            body: RingtoneUploadBody(fileName: fileName, mimeType: mimeType, data: data),
+            session: session
+        )
+    }
+
+    func wallpapers(hash: Int64 = 0, session: HSUserSession) async throws -> HSWallpaperList {
+        try await request(
+            "v1/wallpapers?hash=\(hash)",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func wallpaper(slug: String, session: HSUserSession) async throws -> HSWallpaper {
+        try await request(
+            "v1/wallpapers/\(queryEncoded(slug))",
+            method: "GET",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func saveWallpaper(_ wallpaper: HSWallpaper, session: HSUserSession) async throws -> Bool {
+        guard let slug = wallpaper.slug, !slug.isEmpty else {
+            return true
+        }
+        return try await saveWallpaper(slug: slug, settings: wallpaper.settings, session: session)
+    }
+
+    func saveWallpaper(slug: String, settings: HSWallpaperSettings = HSWallpaperSettings(), session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/wallpapers/\(queryEncoded(slug))/saved",
+            method: "POST",
+            body: WallpaperActionBody(settings: settings),
+            session: session
+        )
+    }
+
+    func removeSavedWallpaper(_ wallpaper: HSWallpaper, session: HSUserSession) async throws -> Bool {
+        guard let slug = wallpaper.slug, !slug.isEmpty else {
+            return true
+        }
+        return try await removeSavedWallpaper(slug: slug, settings: wallpaper.settings, session: session)
+    }
+
+    func removeSavedWallpaper(slug: String, settings: HSWallpaperSettings = HSWallpaperSettings(), session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/wallpapers/\(queryEncoded(slug))/saved",
+            method: "DELETE",
+            body: WallpaperActionBody(settings: settings),
+            session: session
+        )
+    }
+
+    func installWallpaper(_ wallpaper: HSWallpaper, session: HSUserSession) async throws -> Bool {
+        guard wallpaper.kind == .file, wallpaper.slug?.isEmpty == false else {
+            return try await installNoFileWallpaper(id: wallpaper.id, settings: wallpaper.settings, session: session)
+        }
+        try await installWallpaper(
+            slug: wallpaper.slug ?? "",
+            id: wallpaper.id,
+            accessHash: wallpaper.accessHash,
+            settings: wallpaper.settings,
+            session: session
+        )
+    }
+
+    func installWallpaper(
+        slug: String,
+        id: Int64 = 0,
+        accessHash: Int64 = 0,
+        settings: HSWallpaperSettings = HSWallpaperSettings(),
+        session: HSUserSession
+    ) async throws -> Bool {
+        try await request(
+            "v1/wallpapers/\(queryEncoded(slug))/install",
+            method: "POST",
+            body: WallpaperActionBody(id: id, accessHash: accessHash, settings: settings),
+            session: session
+        )
+    }
+
+    func installNoFileWallpaper(id: Int64 = 0, settings: HSWallpaperSettings = HSWallpaperSettings(), session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/wallpapers/no-file/\(id)/install",
+            method: "POST",
+            body: WallpaperActionBody(settings: settings),
+            session: session
+        )
+    }
+
+    func resetWallpapers(session: HSUserSession) async throws -> Bool {
+        try await request(
+            "v1/wallpapers/reset",
+            method: "POST",
+            body: Optional<EmptyBody>.none,
+            session: session
+        )
+    }
+
+    func recentReactions(limit: Int = 100, hash: Int64 = 0, session: HSUserSession) async throws -> HSReactionList {
+        try await request("v1/reactions/recent?limit=\(limit)&hash=\(hash)", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func topReactions(limit: Int = 32, hash: Int64 = 0, session: HSUserSession) async throws -> HSReactionList {
+        try await request("v1/reactions/top?limit=\(limit)&hash=\(hash)", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func defaultReaction(session: HSUserSession) async throws -> HSDefaultReaction {
+        try await request("v1/reactions/default", method: "GET", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    func setDefaultReaction(_ reaction: String, session: HSUserSession) async throws -> Bool {
+        try await request("v1/reactions/default", method: "PUT", body: DefaultReactionBody(reaction: reaction), session: session)
+    }
+
+    func clearRecentReactions(session: HSUserSession) async throws -> Bool {
+        try await request("v1/reactions/recent", method: "DELETE", body: Optional<EmptyBody>.none, session: session)
     }
 
     func entitlements(session: HSUserSession) async throws -> [HSEntitlement] {
@@ -1064,6 +2184,89 @@ final class HSAPIClient {
 
     func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
         try await serverTransport.dialogReadState(dialogID: dialogID, session: session)
+    }
+
+    private func invitesPath(scope: String, dialogID: Int64, revoked: Bool, adminID: Int64?, offsetDate: Int?, offsetLink: String?, limit: Int) -> String {
+        var items = ["limit=\(limit)"]
+        if revoked {
+            items.append("revoked=true")
+        }
+        if let adminID {
+            items.append("admin_id=\(adminID)")
+        }
+        if let offsetDate {
+            items.append("offset_date=\(offsetDate)")
+        }
+        if let offsetLink, !offsetLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("offset_link=\(queryEncoded(offsetLink))")
+        }
+        return "v1/\(scope)/\(dialogID)/invites?\(items.joined(separator: "&"))"
+    }
+
+    private func inviteImportersPath(scope: String, dialogID: Int64, requested: Bool, link: String?, query: String?, offsetDate: Int, offsetUserID: Int64?, limit: Int) -> String {
+        var items = ["limit=\(limit)", "offset_date=\(offsetDate)"]
+        if requested {
+            items.append("requested=true")
+        }
+        if let link, !link.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("link=\(queryEncoded(link))")
+        }
+        if let query, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("q=\(queryEncoded(query))")
+        }
+        if let offsetUserID {
+            items.append("offset_user_id=\(offsetUserID)")
+        }
+        return "v1/\(scope)/\(dialogID)/invite-importers?\(items.joined(separator: "&"))"
+    }
+
+    private func memberListPath(scope: String, dialogID: Int64, collection: String, filter: HSSupergroupMemberFilter, query: String?, limit: Int, offset: Int) -> String {
+        var items = ["limit=\(limit)", "offset=\(offset)"]
+        if filter != .recent {
+            items.append("filter=\(filter.rawValue)")
+        }
+        if let query, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("q=\(queryEncoded(query))")
+        }
+        return "v1/\(scope)/\(dialogID)/\(collection)?\(items.joined(separator: "&"))"
+    }
+
+    private func messageReactionsPath(scope: String, dialogID: Int64, messageID: Int64, reaction: String?, offset: String?, limit: Int) -> String {
+        var items = ["limit=\(limit)"]
+        if let reaction, !reaction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("reaction=\(queryEncoded(reaction))")
+        }
+        if let offset, !offset.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            items.append("offset=\(queryEncoded(offset))")
+        }
+        return "v1/\(scope)/\(dialogID)/messages/\(messageID)/reactions/list?\(items.joined(separator: "&"))"
+    }
+
+    private func updateJoinRequest(scope: String, dialogID: Int64, userID: Int64, approve: Bool, session: HSUserSession) async throws -> HSMessageAction {
+        let action = approve ? "approve" : "decline"
+        return try await request("v1/\(scope)/\(dialogID)/join-requests/\(userID)/\(action)", method: "POST", body: Optional<EmptyBody>.none, session: session)
+    }
+
+    private func updateAllJoinRequests(scope: String, dialogID: Int64, link: String?, approve: Bool, session: HSUserSession) async throws -> HSMessageAction {
+        let action = approve ? "approve-all" : "decline-all"
+        return try await request(
+            "v1/\(scope)/\(dialogID)/join-requests/\(action)",
+            method: "POST",
+            body: JoinRequestsBody(link: link),
+            session: session
+        )
+    }
+
+    private func queryEncoded(_ value: String) -> String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&=?+")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+    }
+
+    private func pathEncoded(_ value: String) -> String {
+        var allowed = CharacterSet.urlPathAllowed
+        allowed.remove(charactersIn: "/?#[]@!$&'()*+,;=:")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 
     private func request<Response: Decodable, Body: Encodable>(
@@ -1176,6 +2379,64 @@ private struct MediaMessageBody: Encodable {
     let waveform: Data?
 }
 
+private struct PollMessageBody: Encodable {
+    let question: String
+    let answers: [HSPollAnswerInput]
+    let isMultipleChoice: Bool
+    let isQuiz: Bool
+    let isAnonymous: Bool
+    let correctAnswerOptions: [Data]?
+    let solution: String?
+    let closePeriod: Int?
+    let replyToMessageID: Int64?
+
+    private enum CodingKeys: String, CodingKey {
+        case question
+        case answers
+        case isMultipleChoice = "is_multiple_choice"
+        case isQuiz = "is_quiz"
+        case isAnonymous = "is_anonymous"
+        case correctAnswerOptions = "correct_answer_options"
+        case solution
+        case closePeriod = "close_period"
+        case replyToMessageID
+    }
+}
+
+private struct PollVoteBody: Encodable {
+    let options: [Data]
+}
+
+private struct TodoMessageBody: Encodable {
+    let title: String
+    let items: [HSTodoItem]
+    let othersCanAppend: Bool
+    let othersCanComplete: Bool
+    let replyToMessageID: Int64?
+
+    private enum CodingKeys: String, CodingKey {
+        case title
+        case items
+        case othersCanAppend = "others_can_append"
+        case othersCanComplete = "others_can_complete"
+        case replyToMessageID
+    }
+}
+
+private struct TodoToggleBody: Encodable {
+    let completedIDs: [Int]
+    let incompletedIDs: [Int]
+
+    private enum CodingKeys: String, CodingKey {
+        case completedIDs = "completed_ids"
+        case incompletedIDs = "incompleted_ids"
+    }
+}
+
+private struct TodoItemsBody: Encodable {
+    let items: [HSTodoItem]
+}
+
 private struct TypingActivityBody: Encodable {
     let activity: HSInputActivityKind
     let progress: Int?
@@ -1211,6 +2472,15 @@ private struct DialogFilterTagsBody: Encodable {
     let enabled: Bool
 }
 
+private struct ChatListSharedInviteBody: Encodable {
+    let title: String?
+    let peers: [HSChatListFilterPeer]?
+}
+
+private struct ChatListSharedInviteJoinBody: Encodable {
+    let peers: [HSChatListFilterPeer]
+}
+
 private struct DialogFolderBody: Encodable {
     let folderID: Int
 
@@ -1223,17 +2493,39 @@ private struct PeerNotificationSettingsBody: Encodable {
     let muteInterval: Int?
     let showPreviews: Bool
     let silent: Bool
+    let sound: HSNotificationSound?
 
     enum CodingKeys: String, CodingKey {
         case muteInterval = "mute_interval"
         case showPreviews = "show_previews"
         case silent
+        case sound
     }
 }
 
 private struct ReportPeerBody: Encodable {
     let reason: HSReportReason
     let message: String
+}
+
+private struct ReportMessagesBody: Encodable {
+    let messageIDs: [Int64]
+    let option: Data?
+    let message: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case messageIDs = "message_ids"
+        case option
+        case message
+    }
+}
+
+private struct MessageIDsBody: Encodable {
+    let messageIDs: [Int64]
+
+    private enum CodingKeys: String, CodingKey {
+        case messageIDs = "message_ids"
+    }
 }
 
 private struct DraftBody: Encodable {
@@ -1251,6 +2543,76 @@ private struct DraftBody: Encodable {
 private struct ReactionBody: Encodable {
     let reaction: String
     let big: Bool
+}
+
+private struct DefaultReactionBody: Encodable {
+    let reaction: String
+}
+
+private struct StickerSetActionBody: Encodable {
+    let accessHash: Int64
+    let archived: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case archived
+    }
+}
+
+private struct FeaturedStickerSetsReadBody: Encodable {
+    let ids: [Int64]
+}
+
+private struct StickerDocumentActionBody: Encodable {
+    let accessHash: Int64
+    let fileReference: Data
+    let attached: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case fileReference = "file_reference"
+        case attached
+    }
+}
+
+private struct DocumentActionBody: Encodable {
+    let accessHash: Int64
+    let fileReference: Data
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case fileReference = "file_reference"
+    }
+}
+
+private struct RingtoneUploadBody: Encodable {
+    let fileName: String
+    let mimeType: String
+    let data: Data
+
+    private enum CodingKeys: String, CodingKey {
+        case fileName = "file_name"
+        case mimeType = "mime_type"
+        case data
+    }
+}
+
+private struct WallpaperActionBody: Encodable {
+    let id: Int64?
+    let accessHash: Int64?
+    let settings: HSWallpaperSettings
+
+    init(id: Int64? = nil, accessHash: Int64? = nil, settings: HSWallpaperSettings) {
+        self.id = id
+        self.accessHash = accessHash
+        self.settings = settings
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case accessHash = "access_hash"
+        case settings
+    }
 }
 
 private struct SupergroupCreateBody: Encodable {
@@ -1282,6 +2644,24 @@ private struct ContactRequestBody: Encodable {
     let firstName: String
     let lastName: String
     let phone: String
+    let note: String? = nil
+    let addPhonePrivacyException: Bool = false
+}
+
+private struct ContactNoteBody: Encodable {
+    let note: String
+}
+
+private struct ImportContactsBody: Encodable {
+    let contacts: [HSDeviceContactImport]
+}
+
+private struct ContactPhonesBody: Encodable {
+    let phones: [String]
+}
+
+private struct ImportContactTokenBody: Encodable {
+    let token: String
 }
 
 private struct PinMessageBody: Encodable {
@@ -1295,6 +2675,31 @@ private struct ExportInviteBody: Encodable {
     let usageLimit: Int?
     let requestNeeded: Bool
     let legacyRevokePermanent: Bool
+}
+
+private struct EditInviteBody: Encodable {
+    let link: String
+    let title: String?
+    let expireDate: Int?
+    let usageLimit: Int?
+    let requestNeeded: Bool?
+    let revoked: Bool
+}
+
+private struct JoinRequestsBody: Encodable {
+    let link: String?
+}
+
+private struct UsernameBody: Encodable {
+    let username: String?
+}
+
+private struct DiscussionGroupBody: Encodable {
+    let groupDialogID: Int64?
+
+    enum CodingKeys: String, CodingKey {
+        case groupDialogID = "group_dialog_id"
+    }
 }
 
 private struct AccountProfileBody: Encodable {

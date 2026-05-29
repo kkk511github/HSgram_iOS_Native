@@ -185,7 +185,15 @@ enum HSNativeMTProtoSchema {
     static let accountSetPrivacy: UInt32 = 0xc9f81ce8
     static let accountGetNotifySettings: UInt32 = 0x12b3ad31
     static let accountUpdateNotifySettings: UInt32 = 0x84be5b93
+    static let accountResetNotifySettings: UInt32 = 0xdb7e1747
+    static let accountGetNotifyExceptions: UInt32 = 0x53577479
+    static let accountGetWallPapers: UInt32 = 0x07967d36
+    static let accountGetWallPaper: UInt32 = 0xfc8ddbea
+    static let accountSaveWallPaper: UInt32 = 0x6c5a5b37
+    static let accountInstallWallPaper: UInt32 = 0xfeed5769
+    static let accountResetWallPapers: UInt32 = 0xbb3b9804
     static let accountReportPeer: UInt32 = 0xc5ba3d86
+    static let accountReportProfilePhoto: UInt32 = 0xfa8cc6f5
     static let accountRegisterDevice: UInt32 = 0xec86017a
     static let accountUnregisterDevice: UInt32 = 0x6a0d3206
     static let accountAuthorizations: UInt32 = 0x4bff8ea0
@@ -223,6 +231,8 @@ enum HSNativeMTProtoSchema {
     static let authAuthorization: UInt32 = 0x2ea2c0d4
     static let authAuthorizationSignUpRequired: UInt32 = 0x44747e9a
     static let helpTermsOfService: UInt32 = 0x780a0310
+    static let helpGetConfig: UInt32 = 0xc4f9186b
+    static let config: UInt32 = 0xcc1a241e
     static let dataJSON: UInt32 = 0x7d748d04
     static let authPasswordRecovery: UInt32 = 0x137948a5
     static let updatesGetState: UInt32 = 0xedd4882a
@@ -231,6 +241,10 @@ enum HSNativeMTProtoSchema {
     static let messagesGetPeerDialogs: UInt32 = 0xe470bcfd
     static let messagesGetHistory: UInt32 = 0x4423e6c5
     static let messagesReadHistory: UInt32 = 0x0e306d3a
+    static let messagesReadMessageContents: UInt32 = 0x36a73f77
+    static let messagesGetMessagesViews: UInt32 = 0x5784d3e1
+    static let messagesGetMessageReadParticipants: UInt32 = 0x31c1c44f
+    static let messagesGetMessageReactionsList: UInt32 = 0x461b3f48
     static let messagesMarkDialogUnread: UInt32 = 0x8c5006f8
     static let messagesGetDialogFilters: UInt32 = 0xefd48c89
     static let messagesUpdateDialogFilter: UInt32 = 0x1ad4a04a
@@ -242,11 +256,29 @@ enum HSNativeMTProtoSchema {
     static let foldersEditPeerFolders: UInt32 = 0x6847d0ab
     static let messagesSendMessage: UInt32 = 0x545cd15a
     static let messagesSendMedia: UInt32 = 0xa550cd78
+    static let messagesSendVote: UInt32 = 0x10ea6184
+    static let messagesGetPollResults: UInt32 = 0x73bb643b
+    static let messagesGetPollVotes: UInt32 = 0xb86e380e
+    static let messagesToggleTodoCompleted: UInt32 = 0xd3e03124
+    static let messagesAppendTodoList: UInt32 = 0x21a61057
     static let messagesSetTyping: UInt32 = 0x58943ee2
     static let messagesForwardMessages: UInt32 = 0xbb9fa475
     static let messagesSearchGlobal: UInt32 = 0x4bc6589a
     static let messagesSearch: UInt32 = 0x29ee847a
     static let messagesGetSearchCounters: UInt32 = 0x1bbcf300
+    static let messagesGetSearchResultsCalendar: UInt32 = 0x6aa3f6bd
+    static let messagesGetSearchResultsPositions: UInt32 = 0x9c7f2f10
+    static let chatlistsExportChatlistInvite: UInt32 = 0x8472478e
+    static let chatlistsDeleteExportedInvite: UInt32 = 0x719c5c5e
+    static let chatlistsEditExportedInvite: UInt32 = 0x653db63d
+    static let chatlistsGetExportedInvites: UInt32 = 0xce03da83
+    static let chatlistsCheckChatlistInvite: UInt32 = 0x41c10fff
+    static let chatlistsJoinChatlistInvite: UInt32 = 0xa6b1e39a
+    static let chatlistsGetChatlistUpdates: UInt32 = 0x89419521
+    static let chatlistsJoinChatlistUpdates: UInt32 = 0xe089f8f5
+    static let chatlistsHideChatlistUpdates: UInt32 = 0x66e486fb
+    static let chatlistsGetLeaveChatlistSuggestions: UInt32 = 0xfdbcd714
+    static let chatlistsLeaveChatlist: UInt32 = 0x74fae13a
     static let messagesEditMessage: UInt32 = 0x51e842e1
     static let messagesDeleteMessages: UInt32 = 0xe58e95d2
     static let messagesDeleteHistory: UInt32 = 0xb08f922a
@@ -255,29 +287,142 @@ enum HSNativeMTProtoSchema {
     static let messagesWebPagePreview: UInt32 = 0xb53e8b21
     static let messagesGetAllDrafts: UInt32 = 0x6a3f8d65
     static let messagesSendReaction: UInt32 = 0xd30d78d4
+    static let messagesReport: UInt32 = 0xfc78af9b
+    static let messagesGetDiscussionMessage: UInt32 = 0x446972fd
+    static let messagesReadDiscussion: UInt32 = 0xf731a9f4
+    static let reportResultAddComment: UInt32 = 0x6f09ac31
+    static let reportResultChooseOption: UInt32 = 0xf0e4e0b6
+    static let reportResultReported: UInt32 = 0x8db33c4b
+    static let messageReportOption: UInt32 = 0x7903e3d9
     static let messagesGetAllStickers: UInt32 = 0xb8a0a1a8
     static let messagesGetFeaturedStickers: UInt32 = 0x64780b14
+    static let messagesGetStickerSet: UInt32 = 0xc8a0ec74
+    static let messagesGetStickers: UInt32 = 0xd5a5d3a1
+    static let messagesGetCustomEmojiDocuments: UInt32 = 0xd9ab0f54
+    static let messagesGetEmojiStickers: UInt32 = 0xfbfca18f
+    static let messagesSearchCustomEmoji: UInt32 = 0x2c11c0d7
+    static let messagesGetEmojiKeywords: UInt32 = 0x35a0e062
+    static let messagesGetEmojiKeywordsDifference: UInt32 = 0x1508b6af
+    static let messagesGetEmojiKeywordsLanguages: UInt32 = 0x4e9963b2
+    static let langpackGetLangPack: UInt32 = 0xf2f2330a
+    static let langpackGetStrings: UInt32 = 0xefea3803
+    static let langpackGetDifference: UInt32 = 0xcd984aa5
+    static let langpackGetLanguages: UInt32 = 0x42c6978f
+    static let langpackGetLanguage: UInt32 = 0x6a596502
+    static let messagesInstallStickerSet: UInt32 = 0xc78fe460
+    static let messagesUninstallStickerSet: UInt32 = 0xf96e55de
+    static let messagesReadFeaturedStickers: UInt32 = 0x5b118126
     static let messagesGetAvailableReactions: UInt32 = 0x18dea0ac
+    static let messagesSetDefaultReaction: UInt32 = 0x4f47a016
+    static let messagesGetTopReactions: UInt32 = 0xbb8125ba
+    static let messagesGetRecentReactions: UInt32 = 0x39461db2
+    static let messagesClearRecentReactions: UInt32 = 0x9dfeefb4
     static let messagesEditChatAbout: UInt32 = 0xdef60797
     static let messagesGetFullChat: UInt32 = 0xaeb00b34
     static let messagesUpdatePinnedMessage: UInt32 = 0xd2aaf7ec
     static let messagesExportChatInvite: UInt32 = 0xa455de90
+    static let messagesGetExportedChatInvites: UInt32 = 0xa2b5a3f6
+    static let messagesEditExportedChatInvite: UInt32 = 0xbdca2f75
+    static let messagesDeleteExportedChatInvite: UInt32 = 0xd464a42b
+    static let messagesGetChatInviteImporters: UInt32 = 0xdf04dd4e
+    static let messagesHideChatJoinRequest: UInt32 = 0x7fe7e815
+    static let messagesHideAllChatJoinRequests: UInt32 = 0xe085f4ea
+    static let messagesExportedChatInvite: UInt32 = 0x1871be50
+    static let messagesExportedChatInviteReplaced: UInt32 = 0x222600ef
+    static let messagesExportedChatInvites: UInt32 = 0xbdc62dcc
+    static let messagesChatInviteImporters: UInt32 = 0x81b6b00a
+    static let chatInviteImporter: UInt32 = 0x8c5adfd9
     static let messagesAffectedMessages: UInt32 = 0x84d19185
     static let messagesAffectedHistory: UInt32 = 0xb45c69d1
+    static let messagesMessageViews: UInt32 = 0xb6c4f543
+    static let messagesMessageReactionsList: UInt32 = 0x31bd492d
+    static let messageViews: UInt32 = 0x455b853d
+    static let messagePeerReaction: UInt32 = 0x8c79b63c
+    static let readParticipantDate: UInt32 = 0x4a4ff172
     static let messagesSearchCounter: UInt32 = 0xe844ebff
+    static let messagesSearchResultsCalendar: UInt32 = 0x147ee23c
+    static let messagesSearchResultsPositions: UInt32 = 0x53b22baf
+    static let searchResultsCalendarPeriod: UInt32 = 0xc9b0539f
+    static let searchResultPosition: UInt32 = 0x7f648b67
+    static let exportedChatlistInvite: UInt32 = 0x0c5181ac
+    static let chatlistsExportedChatlistInvite: UInt32 = 0x10e6e3a6
+    static let chatlistsExportedInvites: UInt32 = 0x10ab6dc7
+    static let chatlistsChatlistInvite: UInt32 = 0xf10ece2f
+    static let chatlistsChatlistInviteV2: UInt32 = 0x1dcd839d
+    static let chatlistsChatlistInviteAlready: UInt32 = 0xfa87f659
+    static let chatlistsChatlistUpdates: UInt32 = 0x93bd878d
     static let messagesInvitedUsers: UInt32 = 0x7f5defa6
     static let messagesAllStickers: UInt32 = 0xcdbbcebb
     static let messagesAllStickersNotModified: UInt32 = 0xe86602c3
     static let messagesFeaturedStickers: UInt32 = 0xbe382906
     static let messagesFeaturedStickersNotModified: UInt32 = 0xc6dc0c66
+    static let messagesStickerSet: UInt32 = 0x6e153f16
+    static let messagesStickerSetLegacy: UInt32 = 0xb60a24a6
+    static let messagesStickerSetNotModified: UInt32 = 0xd3f924eb
+    static let messagesStickers: UInt32 = 0x30a6ec7e
+    static let messagesStickersNotModified: UInt32 = 0xf1749a22
+    static let emojiList: UInt32 = 0x7a1e11d1
+    static let emojiListNotModified: UInt32 = 0x481eadfa
+    static let emojiKeywordsDifference: UInt32 = 0x5cc761bd
+    static let emojiKeyword: UInt32 = 0xd5b3b9f9
+    static let emojiKeywordDeleted: UInt32 = 0x236df622
+    static let emojiLanguage: UInt32 = 0xb3fb5361
+    static let langPackDifference: UInt32 = 0xf385c1f6
+    static let langPackLanguage: UInt32 = 0xeeca5ce3
+    static let langPackString: UInt32 = 0xcad181f6
+    static let langPackStringDeleted: UInt32 = 0x2979eeb2
+    static let langPackStringPluralized: UInt32 = 0x6c47ac9f
+    static let messagesGetArchivedStickers: UInt32 = 0x57f17692
+    static let messagesArchivedStickers: UInt32 = 0x4fcba9c8
+    static let messagesGetRecentStickers: UInt32 = 0x9da9403b
+    static let messagesSaveRecentSticker: UInt32 = 0x392718f8
+    static let messagesClearRecentStickers: UInt32 = 0x8999602d
+    static let messagesGetFavedStickers: UInt32 = 0x04f1aaa9
+    static let messagesGetSavedGifs: UInt32 = 0x5cf09635
+    static let messagesSaveGif: UInt32 = 0x327a30cb
+    static let messagesStickerSetInstallResultSuccess: UInt32 = 0x38641628
+    static let messagesStickerSetInstallResultArchive: UInt32 = 0x35e410a8
+    static let messagesRecentStickers: UInt32 = 0x88d37c56
+    static let messagesRecentStickersNotModified: UInt32 = 0x0b17f890
+    static let messagesFavedStickers: UInt32 = 0x2cb51097
+    static let messagesFavedStickersNotModified: UInt32 = 0x9e8fa6d3
+    static let messagesSavedGifs: UInt32 = 0x84a02a0d
+    static let messagesSavedGifsNotModified: UInt32 = 0xe8025ca2
+    static let accountGetSavedRingtones: UInt32 = 0xe1902288
+    static let accountSaveRingtone: UInt32 = 0x3dea5b03
+    static let accountUploadRingtone: UInt32 = 0x831a83a2
+    static let accountSavedRingtone: UInt32 = 0xb7263f6d
+    static let accountSavedRingtoneConverted: UInt32 = 0x1f307eb7
+    static let accountSavedRingtones: UInt32 = 0xc1e92cc5
+    static let accountSavedRingtonesNotModified: UInt32 = 0xfbf6e8b1
     static let messagesAvailableReactions: UInt32 = 0x768e3aad
     static let messagesAvailableReactionsNotModified: UInt32 = 0x9f071957
+    static let messagesReactions: UInt32 = 0xeafdf716
+    static let messagesReactionsNotModified: UInt32 = 0xb06fdbdf
     static let availableReaction: UInt32 = 0xc077ec01
+    static let inputDocument: UInt32 = 0x1abfb575
+    static let inputWallPaper: UInt32 = 0xe630b979
+    static let inputWallPaperSlug: UInt32 = 0x72091c80
+    static let inputWallPaperNoFile: UInt32 = 0x967a462e
+    static let wallPaper: UInt32 = 0xa437c3ed
+    static let wallPaperNoFile: UInt32 = 0xe0804116
+    static let wallPaperSettings: UInt32 = 0x372efcd0
+    static let accountWallPapers: UInt32 = 0xcdc3858c
+    static let accountWallPapersNotModified: UInt32 = 0x1c199183
+    static let inputStickerSetID: UInt32 = 0x9de7a269
+    static let inputStickerSetShortName: UInt32 = 0x861cc8a0
+    static let stickerPack: UInt32 = 0x12b299d4
+    static let stickerKeyword: UInt32 = 0xfcfeb29c
+    static let dcOption: UInt32 = 0x18b7a10d
     static let contactsGetContacts: UInt32 = 0x5dd69e12
     static let contactsGetBlocked: UInt32 = 0x9a868f80
     static let contactsSearch: UInt32 = 0x11f812d8
     static let contactsResolveUsername: UInt32 = 0x725afbbc
     static let contactsResolvePhone: UInt32 = 0x8af94344
+    static let contactsImportContacts: UInt32 = 0x2c800be5
+    static let contactsDeleteByPhones: UInt32 = 0x1013fd9e
+    static let contactsExportContactToken: UInt32 = 0xf8654027
+    static let contactsImportContactToken: UInt32 = 0x13005788
     static let contactsAddContact: UInt32 = 0xd9ba2e54
     static let contactsDeleteContacts: UInt32 = 0x096a0e00
     static let contactsBlock: UInt32 = 0x2e2e8734
@@ -285,13 +430,19 @@ enum HSNativeMTProtoSchema {
     static let contactsAcceptContact: UInt32 = 0xf831a20f
     static let contactsRequestContact: UInt32 = 0xf6f360ce
     static let contactsDeclineContact: UInt32 = 0x46b0174e
+    static let contactsUpdateContactNote: UInt32 = 0x139f63fb
     static let contactsContacts: UInt32 = 0xeae87e42
     static let contactsContactsNotModified: UInt32 = 0xb74ba9d2
+    static let contactsImportedContacts: UInt32 = 0x77d01c3b
     static let contactsBlocked: UInt32 = 0x0ade1591
     static let contactsBlockedSlice: UInt32 = 0xe1664194
     static let contactsFound: UInt32 = 0xb3134d9d
     static let contactsResolvedPeer: UInt32 = 0x7f077ad9
     static let contact: UInt32 = 0x145ade0b
+    static let inputPhoneContact: UInt32 = 0x6a1dc4be
+    static let importedContact: UInt32 = 0xc13e3c50
+    static let popularContact: UInt32 = 0x5ce14175
+    static let exportedContactToken: UInt32 = 0x41bf109b
     static let peerBlocked: UInt32 = 0xe8fd8014
     static let boolFalse: UInt32 = 0xbc799737
     static let boolTrue: UInt32 = 0x997275b5
@@ -317,6 +468,7 @@ enum HSNativeMTProtoSchema {
     static let dialogPeer: UInt32 = 0xe56dbf05
     static let dialogPeerFolder: UInt32 = 0x514519e2
     static let folderPeer: UInt32 = 0xe9baa668
+    static let inputUserEmpty: UInt32 = 0xb98886cf
     static let inputUserSelf: UInt32 = 0xf7c1b13f
     static let inputUser: UInt32 = 0xf21158c6
     static let inputNotifyPeer: UInt32 = 0xb8bc5b0c
@@ -353,6 +505,7 @@ enum HSNativeMTProtoSchema {
     static let dialogFilter: UInt32 = 0xaa472651
     static let dialogFilterChatlist: UInt32 = 0x96537bd7
     static let dialogFilterDefault: UInt32 = 0x363293ae
+    static let inputChatlistDialogFilter: UInt32 = 0xf3e0da33
     static let messagesDialogFilters: UInt32 = 0x2ad93719
     static let inputReplyToMessage: UInt32 = 0x869fbe10
     static let inputMessagesFilterEmpty: UInt32 = 0x57e2f66c
@@ -362,7 +515,10 @@ enum HSNativeMTProtoSchema {
     static let inputMessagesFilterGif: UInt32 = 0xffc86587
     static let inputMessagesFilterMusic: UInt32 = 0x3751b49e
     static let inputMessagesFilterRoundVoice: UInt32 = 0x7a7c17a4
+    static let reactionEmpty: UInt32 = 0x79f5d419
     static let reactionEmoji: UInt32 = 0x1b2286b8
+    static let reactionCustomEmoji: UInt32 = 0x8935fc73
+    static let reactionPaid: UInt32 = 0x523da4eb
     static let uploadSaveFilePart: UInt32 = 0xb304a621
     static let uploadSaveBigFilePart: UInt32 = 0xde7b673d
     static let uploadGetFile: UInt32 = 0xbe5335be
@@ -374,6 +530,15 @@ enum HSNativeMTProtoSchema {
     static let inputDocumentFileLocation: UInt32 = 0xbad07584
     static let inputMediaUploadedPhoto: UInt32 = 0x1e287d04
     static let inputMediaUploadedDocument: UInt32 = 0x037c9330
+    static let inputMediaPoll: UInt32 = 0x0f94e5f1
+    static let inputMediaTodo: UInt32 = 0x9fc55fde
+    static let poll: UInt32 = 0x58747131
+    static let pollAnswer: UInt32 = 0xff16e2ca
+    static let pollAnswerVoters: UInt32 = 0x3b6ddad2
+    static let pollResults: UInt32 = 0x7adf2420
+    static let todoItem: UInt32 = 0xcba9a52f
+    static let todoList: UInt32 = 0x49b92a26
+    static let todoCompletion: UInt32 = 0x221bb5e4
     static let documentAttributeFilename: UInt32 = 0x15590068
     static let documentAttributeVideo: UInt32 = 0x43c57c48
     static let documentAttributeAnimated: UInt32 = 0x11b58939
@@ -381,9 +546,15 @@ enum HSNativeMTProtoSchema {
     static let channelsGetParticipants: UInt32 = 0x77ced9d0
     static let channelsCreateChannel: UInt32 = 0x91006707
     static let channelsGetFullChannel: UInt32 = 0x08736a09
+    static let channelsReadHistory: UInt32 = 0xcc104937
+    static let channelsReadMessageContents: UInt32 = 0xeab5dc38
+    static let channelsDeleteMessages: UInt32 = 0x84c1fd4e
+    static let channelsDeleteHistory: UInt32 = 0x9baa9647
     static let channelsEditAdmin: UInt32 = 0xd33c8902
     static let channelsEditTitle: UInt32 = 0x566decd0
     static let channelsLeaveChannel: UInt32 = 0xf836aa95
+    static let channelsGetGroupsForDiscussion: UInt32 = 0xf5dad378
+    static let channelsSetDiscussionGroup: UInt32 = 0x40582bb2
     static let channelsInviteToChannel: UInt32 = 0xc9e33d54
     static let channelsExportMessageLink: UInt32 = 0xe63fadeb
     static let channelsEditBanned: UInt32 = 0x96e6cd81
@@ -393,8 +564,19 @@ enum HSNativeMTProtoSchema {
     static let channelsToggleJoinToSend: UInt32 = 0xe4cb9580
     static let channelsToggleJoinRequest: UInt32 = 0x4c2985b6
     static let channelsToggleParticipantsHidden: UInt32 = 0x6a6e7854
+    static let channelsToggleSignatures: UInt32 = 0x1f69b606
+    static let channelsToggleAntiSpam: UInt32 = 0x68f3e4eb
+    static let channelsReportAntiSpamFalsePositive: UInt32 = 0xa850a693
     static let channelsGetAdminLog: UInt32 = 0x33ddf480
+    static let channelsCheckUsername: UInt32 = 0x10e6bd2c
+    static let channelsUpdateUsername: UInt32 = 0x3514b3de
     static let channelParticipantsRecent: UInt32 = 0xde3f3c79
+    static let channelParticipantsSearch: UInt32 = 0x0656ac4b
+    static let channelParticipantsAdmins: UInt32 = 0xb4608969
+    static let channelParticipantsContacts: UInt32 = 0xbb6ae88d
+    static let channelParticipantsBots: UInt32 = 0xb0d1865b
+    static let channelParticipantsBanned: UInt32 = 0x1427a5e1
+    static let channelParticipantsKicked: UInt32 = 0xa3b54985
     static let channelsChannelParticipants: UInt32 = 0x9ab0feaf
     static let channelsChannelParticipantsNotModified: UInt32 = 0xf0173fe9
     static let channelParticipant: UInt32 = 0xcb397619
@@ -413,6 +595,8 @@ enum HSNativeMTProtoSchema {
     static let stickerSetFullCovered: UInt32 = 0x40d13c0e
     static let stickerSetMultiCovered: UInt32 = 0x3407e51b
     static let stickerSetNoCovered: UInt32 = 0x77b15d1c
+    static let messagesChats: UInt32 = 0x64ff9fd5
+    static let messagesChatsSlice: UInt32 = 0x9cd81144
     static let messagesDialogs: UInt32 = 0x15ba6c40
     static let messagesPeerDialogs: UInt32 = 0x3371c354
     static let messagesDialogsSlice: UInt32 = 0x71e094f3
@@ -421,6 +605,7 @@ enum HSNativeMTProtoSchema {
     static let messagesMessagesSlice: UInt32 = 0x5f206716
     static let messagesChannelMessages: UInt32 = 0xc776ba4e
     static let messagesMessagesNotModified: UInt32 = 0x74535f21
+    static let messagesDiscussionMessage: UInt32 = 0xa6341782
     static let messagesChatFull: UInt32 = 0xe5d7d19c
     static let chatFull: UInt32 = 0x2633421b
     static let channelFull: UInt32 = 0xe4e0b29d
@@ -557,6 +742,10 @@ enum HSNativeMTProtoSchema {
     static let chatAdminRights: UInt32 = 0x5fb224d5
     static let chatBannedRights: UInt32 = 0x9f120418
     static let peerNotifySettings: UInt32 = 0x99622c0c
+    static let notificationSoundDefault: UInt32 = 0x97e8bebe
+    static let notificationSoundNone: UInt32 = 0x6f0c34df
+    static let notificationSoundLocal: UInt32 = 0x830b9ae4
+    static let notificationSoundRingtone: UInt32 = 0xff6c8049
     static let draftMessageEmpty: UInt32 = 0x1b0c841a
     static let draftMessage: UInt32 = 0x96eaa5eb
     static let messageReplyHeader: UInt32 = 0x6917560b
@@ -572,6 +761,12 @@ enum HSNativeMTProtoSchema {
     static let messageMediaDice: UInt32 = 0x8cbec07
     static let messageMediaStory: UInt32 = 0x68cb6283
     static let messageMediaPaidMedia: UInt32 = 0xa8852491
+    static let messageMediaPoll: UInt32 = 0x4bd6e798
+    static let messageMediaToDo: UInt32 = 0x8a53b014
+    static let messagesVotesList: UInt32 = 0x4899484e
+    static let messagePeerVote: UInt32 = 0xb6cc2d5c
+    static let messagePeerVoteInputOption: UInt32 = 0x74cda504
+    static let messagePeerVoteMultiple: UInt32 = 0x4628f6e6
     static let messageFwdHeader: UInt32 = 0x4e4df4bb
     static let photoEmpty: UInt32 = 0x2331b22d
     static let photo: UInt32 = 0xfb197a65
@@ -772,6 +967,9 @@ private struct HSNativeParsedChat: Equatable {
     let noForwards: Bool
     let disableSocialActions: Bool
     let participantsCountHidden: Bool
+    let signaturesEnabled: Bool
+    let signatureProfilesEnabled: Bool
+    let antiSpamEnabled: Bool
 
     init(
         peer: HSNativePeer,
@@ -785,7 +983,10 @@ private struct HSNativeParsedChat: Equatable {
         isBroadcast: Bool,
         noForwards: Bool = false,
         disableSocialActions: Bool = false,
-        participantsCountHidden: Bool = false
+        participantsCountHidden: Bool = false,
+        signaturesEnabled: Bool = false,
+        signatureProfilesEnabled: Bool = false,
+        antiSpamEnabled: Bool = false
     ) {
         self.peer = peer
         self.accessHash = accessHash
@@ -799,6 +1000,9 @@ private struct HSNativeParsedChat: Equatable {
         self.noForwards = noForwards
         self.disableSocialActions = disableSocialActions
         self.participantsCountHidden = participantsCountHidden
+        self.signaturesEnabled = signaturesEnabled
+        self.signatureProfilesEnabled = signatureProfilesEnabled
+        self.antiSpamEnabled = antiSpamEnabled
     }
 }
 
@@ -865,6 +1069,11 @@ private struct HSNativeParsedDifferenceUpdate: Equatable {
     }
 }
 
+private struct HSNativeNotifyExceptionPayload: Equatable {
+    let peer: HSNativePeer
+    let settings: HSNotifyScopeSettings
+}
+
 private struct HSNativeParsedMediaSize: Equatable {
     let type: String?
     let width: Int?
@@ -884,6 +1093,8 @@ private struct HSNativeParsedDocumentAttributes: Equatable {
     var waveform: Data?
     var isSticker = false
     var isCustomEmoji = false
+    var stickerAlt: String?
+    var stickerSetID: Int64?
 }
 
 private struct HSNativeDialogsPayload: Equatable {
@@ -893,14 +1104,121 @@ private struct HSNativeDialogsPayload: Equatable {
     let users: [HSNativeParsedUser]
 }
 
+private struct HSNativeMessagesChatsPayload: Equatable {
+    let chats: [HSNativeParsedChat]
+}
+
 private struct HSNativeMessagesPayload: Equatable {
     let messages: [HSNativeParsedMessage]
     let chats: [HSNativeParsedChat]
     let users: [HSNativeParsedUser]
 }
 
+private struct HSNativeSharedMediaCalendarPayload: Equatable {
+    struct Period: Equatable {
+        let date: Int32
+        let minMessageID: Int32
+        let maxMessageID: Int32
+        let count: Int32
+    }
+
+    let inexact: Bool
+    let count: Int32
+    let minDate: Int32
+    let minMessageID: Int32
+    let offsetIDOffset: Int32?
+    let periods: [Period]
+    let messages: [HSNativeParsedMessage]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeChatListRawInvite: Equatable {
+    let title: String
+    let url: String
+    let peers: [HSNativePeer]
+}
+
+private struct HSNativeChatListExportedInvitePayload: Equatable {
+    let filter: HSChatListFilter
+    let invite: HSNativeChatListRawInvite
+}
+
+private struct HSNativeChatListExportedInvitesPayload: Equatable {
+    let invites: [HSNativeChatListRawInvite]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeChatListInvitePreviewPayload: Equatable {
+    let title: String
+    let emoticon: String?
+    let filterID: Int?
+    let isAlreadyJoined: Bool
+    let peers: [HSNativePeer]
+    let missingPeers: [HSNativePeer]
+    let alreadyPeers: [HSNativePeer]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeChatListUpdatesPayload: Equatable {
+    let missingPeers: [HSNativePeer]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativePeerVectorPayload: Equatable {
+    let peers: [HSNativePeer]
+}
+
+private struct HSNativePollVotesPayload: Equatable {
+    let page: HSPollVotesPage
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeDiscussionMessagePayload: Equatable {
+    let messages: [HSNativeParsedMessage]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+    let maxMessageID: Int64?
+    let readInboxMaxID: Int64?
+    let readOutboxMaxID: Int64?
+    let unreadCount: Int
+}
+
+private struct HSNativeMessageViewsPayload: Equatable {
+    let counters: [HSMessageCounters]
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeMessageReactionsListPayload: Equatable {
+    let page: HSMessageReactionsPage
+    let chats: [HSNativeParsedChat]
+    let users: [HSNativeParsedUser]
+}
+
 private struct HSNativeContactsPayload: Equatable {
     let contactUserIDs: Set<Int64>
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeImportedContactPayload: Equatable {
+    let userID: Int64
+    let clientID: Int64
+}
+
+private struct HSNativePopularContactPayload: Equatable {
+    let clientID: Int64
+    let importers: Int
+}
+
+private struct HSNativeImportedContactsPayload: Equatable {
+    let imported: [HSNativeImportedContactPayload]
+    let popularInvites: [HSNativePopularContactPayload]
+    let retryContactIDs: [Int64]
     let users: [HSNativeParsedUser]
 }
 
@@ -935,6 +1253,30 @@ private struct HSNativeAdminLogPayload: Equatable {
     let users: [HSNativeParsedUser]
 }
 
+private struct HSNativeExportedInvitesPayload: Equatable {
+    let page: HSExportedInvitesPage
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeEditedInvitePayload: Equatable {
+    let invite: HSExportedInvite
+    let users: [HSNativeParsedUser]
+}
+
+private struct HSNativeInviteImporterPayload: Equatable {
+    let userID: Int64
+    let date: Int
+    let about: String?
+    let approvedBy: Int64?
+    let requested: Bool
+    let joinedViaFolderLink: Bool
+}
+
+private struct HSNativeInviteImportersPayload: Equatable {
+    let page: HSInviteImportersPage
+    let users: [HSNativeParsedUser]
+}
+
 private struct HSNativeDraftsPayload: Equatable {
     let drafts: [HSDraft]
     let chats: [HSNativeParsedChat]
@@ -956,6 +1298,10 @@ private struct HSNativeParsedChatFull: Equatable {
     let noForwards: Bool
     let disableSocialActions: Bool
     let participantsCountHidden: Bool
+    let signaturesEnabled: Bool
+    let signatureProfilesEnabled: Bool
+    let antiSpamEnabled: Bool
+    let linkedDiscussionGroupID: Int64?
 
     init(
         peer: HSNativePeer,
@@ -966,7 +1312,11 @@ private struct HSNativeParsedChatFull: Equatable {
         isBroadcast: Bool,
         noForwards: Bool = false,
         disableSocialActions: Bool = false,
-        participantsCountHidden: Bool = false
+        participantsCountHidden: Bool = false,
+        signaturesEnabled: Bool = false,
+        signatureProfilesEnabled: Bool = false,
+        antiSpamEnabled: Bool = false,
+        linkedDiscussionGroupID: Int64? = nil
     ) {
         self.peer = peer
         self.about = about
@@ -977,6 +1327,10 @@ private struct HSNativeParsedChatFull: Equatable {
         self.noForwards = noForwards
         self.disableSocialActions = disableSocialActions
         self.participantsCountHidden = participantsCountHidden
+        self.signaturesEnabled = signaturesEnabled
+        self.signatureProfilesEnabled = signatureProfilesEnabled
+        self.antiSpamEnabled = antiSpamEnabled
+        self.linkedDiscussionGroupID = linkedDiscussionGroupID
     }
 }
 
@@ -1474,6 +1828,176 @@ final class HSNativeMTProtoClient {
         return HSMessageAction(ok: ok, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
     }
 
+    func exportChatListInvite(
+        filterID: Int,
+        title: String,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSChatListExportedInviteResult {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: try chatlistsExportChatlistInvitePayload(
+                filterID: filterID,
+                title: title,
+                peers: peers,
+                sessionUserID: session.userID
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseChatListExportedInviteResult(result, sessionUserID: session.userID)
+        return HSChatListExportedInviteResult(
+            filter: payload.filter,
+            invite: sharedInvite(from: payload.invite, users: [], chats: [])
+        )
+    }
+
+    func chatListSharedInvites(filterID: Int, session: HSUserSession) async throws -> HSChatListExportedInvitesPage {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsGetExportedInvitesPayload(filterID: filterID),
+            credentials: credentials
+        )
+        let payload = try Self.parseChatListExportedInvitesResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return HSChatListExportedInvitesPage(
+            invites: payload.invites.map { sharedInvite(from: $0, users: payload.users, chats: payload.chats) }
+        )
+    }
+
+    func editChatListInvite(
+        filterID: Int,
+        slug: String,
+        title: String?,
+        peers: [HSChatListFilterPeer]?,
+        session: HSUserSession
+    ) async throws -> HSChatListSharedInvite {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: try chatlistsEditExportedInvitePayload(
+                filterID: filterID,
+                slug: slug,
+                title: title,
+                peers: peers,
+                sessionUserID: session.userID
+            ),
+            credentials: credentials
+        )
+        let invite = try Self.parseChatListSharedInviteResult(result)
+        return sharedInvite(from: invite, users: [], chats: [])
+    }
+
+    func deleteChatListInvite(filterID: Int, slug: String, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsDeleteExportedInvitePayload(filterID: filterID, slug: slug),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
+    func checkChatListInvite(slug: String, session: HSUserSession) async throws -> HSChatListInvitePreview {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsCheckChatlistInvitePayload(slug: slug),
+            credentials: credentials
+        )
+        let payload = try Self.parseChatListInvitePreviewResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return HSChatListInvitePreview(
+            title: payload.title,
+            emoticon: payload.emoticon,
+            filterID: payload.filterID,
+            isAlreadyJoined: payload.isAlreadyJoined,
+            peers: payload.peers.map { sharedPeer(from: $0, users: payload.users, chats: payload.chats) },
+            missingPeers: payload.missingPeers.map { sharedPeer(from: $0, users: payload.users, chats: payload.chats) },
+            alreadyPeers: payload.alreadyPeers.map { sharedPeer(from: $0, users: payload.users, chats: payload.chats) }
+        )
+    }
+
+    func joinChatListInvite(
+        slug: String,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: try chatlistsJoinChatlistInvitePayload(slug: slug, peers: peers, sessionUserID: session.userID),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
+    func chatListUpdates(filterID: Int, session: HSUserSession) async throws -> HSChatListUpdates {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsGetChatlistUpdatesPayload(filterID: filterID),
+            credentials: credentials
+        )
+        let payload = try Self.parseChatListUpdatesResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return HSChatListUpdates(
+            missingPeers: payload.missingPeers.map { sharedPeer(from: $0, users: payload.users, chats: payload.chats) }
+        )
+    }
+
+    func joinChatListUpdates(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: try chatlistsJoinChatlistUpdatesPayload(
+                filterID: filterID,
+                peers: peers,
+                sessionUserID: session.userID
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
+    func hideChatListUpdates(filterID: Int, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsHideChatlistUpdatesPayload(filterID: filterID),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
+    func leaveChatListSuggestions(filterID: Int, session: HSUserSession) async throws -> [HSChatListSharedPeer] {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: chatlistsGetLeaveChatlistSuggestionsPayload(filterID: filterID),
+            credentials: credentials
+        )
+        let payload = try Self.parsePeerVectorResult(result)
+        return payload.peers.map { sharedPeer(from: $0, users: [], chats: []) }
+    }
+
+    func leaveChatList(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: try chatlistsLeaveChatlistPayload(
+                filterID: filterID,
+                peers: peers,
+                sessionUserID: session.userID
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
     func groups(limit: Int = 80, broadcastOnly: Bool?, session: HSUserSession) async throws -> [HSSupergroup] {
         _ = try await dialogs(limit: limit, session: session)
         let groups = peerCacheQueue.sync {
@@ -1538,7 +2062,11 @@ final class HSNativeMTProtoClient {
             isBroadcast: parsed?.isBroadcast ?? (full.isBroadcast || base.isBroadcast),
             noForwards: parsed?.noForwards ?? (full.noForwards || base.noForwards),
             disableSocialActions: full.disableSocialActions,
-            participantsCountHidden: full.participantsCountHidden
+            participantsCountHidden: full.participantsCountHidden,
+            signaturesEnabled: parsed?.signaturesEnabled ?? (full.signaturesEnabled || base.signaturesEnabled),
+            signatureProfilesEnabled: parsed?.signatureProfilesEnabled ?? (full.signatureProfilesEnabled || base.signatureProfilesEnabled),
+            antiSpamEnabled: full.antiSpamEnabled,
+            linkedDiscussionGroupID: full.linkedDiscussionGroupID ?? base.linkedDiscussionGroupID
         )
         peerCacheQueue.sync {
             cachedGroupsByDialogID[dialogID] = group
@@ -1601,7 +2129,11 @@ final class HSNativeMTProtoClient {
                 isBroadcast: current.isBroadcast,
                 noForwards: current.noForwards,
                 disableSocialActions: current.disableSocialActions,
-                participantsCountHidden: current.participantsCountHidden
+                participantsCountHidden: current.participantsCountHidden,
+                signaturesEnabled: current.signaturesEnabled,
+                signatureProfilesEnabled: current.signatureProfilesEnabled,
+                antiSpamEnabled: current.antiSpamEnabled,
+                linkedDiscussionGroupID: current.linkedDiscussionGroupID
             )
             peerCacheQueue.sync {
                 cachedGroupsByDialogID[dialogID] = current
@@ -1622,11 +2154,13 @@ final class HSNativeMTProtoClient {
         return HSMessageAction(ok: true, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
     }
 
-    func groupMembers(dialogID: Int64, limit: Int, offset: Int, session: HSUserSession) async throws -> [HSSupergroupMember] {
+    func groupMembers(dialogID: Int64, filter: HSSupergroupMemberFilter, query: String?, limit: Int, offset: Int, session: HSUserSession) async throws -> [HSSupergroupMember] {
         let credentials = try authorizedAuthKey(for: session)
         let result = try await sendEncryptedRPC(
             query: channelsGetParticipantsPayload(
                 channel: try inputChannelPayload(dialogID: dialogID),
+                filter: filter,
+                query: query,
                 offset: offset,
                 limit: limit
             ),
@@ -1744,6 +2278,12 @@ final class HSNativeMTProtoClient {
                 credentials: credentials
             ))
         }
+        if let antiSpamEnabled = settings.antiSpamEnabled {
+            try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
+                query: channelsToggleAntiSpamPayload(channel: try requireChannelPayload(), enabled: antiSpamEnabled),
+                credentials: credentials
+            ))
+        }
         if let noForwards = settings.noForwards {
             try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
                 query: messagesToggleNoForwardsPayload(
@@ -1773,16 +2313,44 @@ final class HSNativeMTProtoClient {
                 credentials: credentials
             ))
         }
+        if settings.signaturesEnabled != nil || settings.signatureProfilesEnabled != nil {
+            let current = try await group(dialogID: dialogID, session: session)
+            if settings.signatureProfilesEnabled == true {
+                throw HSAPIError.server(
+                    code: "SIGNATURE_PROFILES_UNSUPPORTED",
+                    message: "Current HSgram server reads channels.toggleSignatures signatures from the legacy enabled:Bool constructor, so enabling signature profiles requires a server compatibility fix before the native client can send it."
+                )
+            }
+            if settings.signaturesEnabled != nil, current.signatureProfilesEnabled, settings.signatureProfilesEnabled == nil {
+                throw HSAPIError.server(
+                    code: "SIGNATURE_PROFILES_UNSUPPORTED",
+                    message: "Current HSgram server legacy signature toggle would clear signature profiles. Pass signatureProfilesEnabled=false explicitly to disable profiles, or wait for the server compatibility fix to preserve them."
+                )
+            }
+            try Self.parseUpdatesSuccess(try await sendEncryptedRPC(
+                query: channelsToggleSignaturesPayload(
+                    channel: try requireChannelPayload(),
+                    signaturesEnabled: settings.signaturesEnabled ?? current.signaturesEnabled
+                ),
+                credentials: credentials
+            ))
+        }
         var updated = try await group(dialogID: dialogID, session: session)
         let needsLocalOverride =
             (settings.noForwards.map { updated.noForwards != $0 } ?? false) ||
             (settings.disableSocialActions.map { updated.disableSocialActions != $0 } ?? false) ||
-            (settings.participantsCountHidden.map { updated.participantsCountHidden != $0 } ?? false)
+            (settings.participantsCountHidden.map { updated.participantsCountHidden != $0 } ?? false) ||
+            (settings.signaturesEnabled.map { updated.signaturesEnabled != $0 } ?? false) ||
+            (settings.signatureProfilesEnabled.map { updated.signatureProfilesEnabled != $0 } ?? false) ||
+            (settings.antiSpamEnabled.map { updated.antiSpamEnabled != $0 } ?? false)
         if needsLocalOverride {
             updated = updated.withFeatureOverrides(
                 noForwards: settings.noForwards,
                 disableSocialActions: settings.disableSocialActions,
-                participantsCountHidden: settings.participantsCountHidden
+                participantsCountHidden: settings.participantsCountHidden,
+                signaturesEnabled: settings.signaturesEnabled,
+                signatureProfilesEnabled: settings.signatureProfilesEnabled,
+                antiSpamEnabled: settings.antiSpamEnabled
             )
             peerCacheQueue.sync {
                 cachedGroupsByDialogID[dialogID] = updated
@@ -1838,6 +2406,298 @@ final class HSNativeMTProtoClient {
             credentials: credentials
         )
         return try Self.parseExportedInviteResult(result, requestNeeded: requestNeeded, fallbackTitle: title)
+    }
+
+    func exportedInvites(dialogID: Int64, revoked: Bool, adminID: Int64?, offsetDate: Int?, offsetLink: String?, limit: Int, session: HSUserSession) async throws -> HSExportedInvitesPage {
+        let credentials = try authorizedAuthKey(for: session)
+        let admin = try adminID.map(inputUserPayload(userID:)) ?? inputUserSelfPayload()
+        let result = try await sendEncryptedRPC(
+            query: messagesGetExportedChatInvitesPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                revoked: revoked,
+                admin: admin,
+                offsetDate: offsetDate,
+                offsetLink: offsetLink,
+                limit: limit
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseExportedInvitesPageResult(result)
+        cache(users: payload.users, chats: [])
+        return payload.page
+    }
+
+    func editInvite(dialogID: Int64, link: String, title: String?, expireDate: Int?, usageLimit: Int?, requestNeeded: Bool?, revoked: Bool, session: HSUserSession) async throws -> HSExportedInvite {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesEditExportedChatInvitePayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                link: link,
+                title: title,
+                expireDate: expireDate,
+                usageLimit: usageLimit,
+                requestNeeded: requestNeeded,
+                revoked: revoked
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseEditedExportedInviteResult(result, fallbackTitle: title)
+        cache(users: payload.users, chats: [])
+        return payload.invite
+    }
+
+    func deleteInvite(dialogID: Int64, link: String, session: HSUserSession) async throws -> HSMessageAction {
+        let cleanLink = link.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanLink.isEmpty else {
+            throw HSAPIError.server(code: "EMPTY_INVITE_LINK", message: "Invite link is required.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesDeleteExportedChatInvitePayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                link: cleanLink
+            ),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func inviteImporters(dialogID: Int64, requested: Bool, link: String?, query: String?, offsetDate: Int, offsetUserID: Int64?, limit: Int, session: HSUserSession) async throws -> HSInviteImportersPage {
+        let cleanLink = link?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let credentials = try authorizedAuthKey(for: session)
+        let offsetUser = try offsetUserID.map(inputUserPayload(userID:)) ?? inputUserEmptyPayload()
+        let result = try await sendEncryptedRPC(
+            query: messagesGetChatInviteImportersPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                requested: requested || cleanLink?.isEmpty != false,
+                link: cleanLink,
+                query: query,
+                offsetDate: offsetDate,
+                offsetUser: offsetUser,
+                limit: limit
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseInviteImportersPageResult(result)
+        cache(users: payload.users, chats: [])
+        return payload.page
+    }
+
+    func updateJoinRequest(dialogID: Int64, userID: Int64, approve: Bool, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesHideChatJoinRequestPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                user: try inputUserPayload(userID: userID),
+                approve: approve
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func updateAllJoinRequests(dialogID: Int64, link: String?, approve: Bool, session: HSUserSession) async throws -> HSMessageAction {
+        let cleanLink = link?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesHideAllChatJoinRequestsPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                link: cleanLink,
+                approve: approve
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func reportAntiSpamFalsePositive(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: channelsReportAntiSpamFalsePositivePayload(
+                channel: try inputChannelPayload(dialogID: dialogID),
+                messageID: messageID
+            ),
+            credentials: credentials
+        ))
+        return HSMessageAction(ok: ok, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func readChannelMessageContents(dialogID: Int64, messageIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
+        let ids = normalizedMessageIDs(messageIDs)
+        guard !ids.isEmpty else {
+            return HSMessageAction(ok: true, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: channelsReadMessageContentsPayload(
+                channel: try inputChannelPayload(dialogID: dialogID),
+                messageIDs: ids
+            ),
+            credentials: credentials
+        ))
+        return HSMessageAction(ok: ok, messageID: ids.last, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func messageViews(dialogID: Int64, messageIDs: [Int64], increment: Bool, session: HSUserSession) async throws -> [HSMessageViewState] {
+        let ids = normalizedMessageIDs(messageIDs)
+        guard !ids.isEmpty else {
+            return []
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetMessagesViewsPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageIDs: ids,
+                increment: increment
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseMessageViewsResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return ids.enumerated().map { index, id in
+            let counters = payload.counters.indices.contains(index) ? payload.counters[index] : HSMessageCounters()
+            HSMessageViewState(messageID: id, counters: counters)
+        }
+    }
+
+    func messageReadParticipants(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> [HSMessageReadParticipant] {
+        guard messageID > 0 else {
+            return []
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        return try Self.parseMessageReadParticipantsResult(try await sendEncryptedRPC(
+            query: messagesGetMessageReadParticipantsPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID
+            ),
+            credentials: credentials
+        ))
+    }
+
+    func messageReactions(
+        dialogID: Int64,
+        messageID: Int64,
+        reaction: String?,
+        offset: String?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSMessageReactionsPage {
+        guard messageID > 0 else {
+            return HSMessageReactionsPage(totalCount: 0, reactions: [], nextOffset: nil)
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let payload = try Self.parseMessageReactionsListResult(try await sendEncryptedRPC(
+            query: messagesGetMessageReactionsListPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                reaction: reaction,
+                offset: offset,
+                limit: limit
+            ),
+            credentials: credentials
+        ))
+        cache(users: payload.users, chats: payload.chats)
+        return payload.page
+    }
+
+    func recentReactions(limit: Int, hash: Int64, session: HSUserSession) async throws -> HSReactionList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetRecentReactionsPayload(limit: limit, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseReactionsResult(result, previousHash: hash)
+    }
+
+    func topReactions(limit: Int, hash: Int64, session: HSUserSession) async throws -> HSReactionList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetTopReactionsPayload(limit: limit, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseReactionsResult(result, previousHash: hash)
+    }
+
+    func defaultReaction(session: HSUserSession) async throws -> HSDefaultReaction {
+        let result = try await sendEncryptedRPC(
+            query: helpGetConfigPayload(),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try HSDefaultReaction(reaction: Self.parseConfigDefaultReaction(result))
+    }
+
+    func setDefaultReaction(_ reaction: String, session: HSUserSession) async throws -> Bool {
+        try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: messagesSetDefaultReactionPayload(reaction: reaction),
+            credentials: try authorizedAuthKey(for: session)
+        ))
+    }
+
+    func clearRecentReactions(session: HSUserSession) async throws -> Bool {
+        try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: messagesClearRecentReactionsPayload(),
+            credentials: try authorizedAuthKey(for: session)
+        ))
+    }
+
+    func checkChannelUsername(dialogID: Int64, username: String, session: HSUserSession) async throws -> HSAddressNameAvailability {
+        let cleanUsername = username.trimmingCharacters(in: CharacterSet(charactersIn: "@").union(.whitespacesAndNewlines))
+        guard !cleanUsername.isEmpty else {
+            return .invalid
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        do {
+            let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+                query: channelsCheckUsernamePayload(channel: try inputChannelPayload(dialogID: dialogID), username: cleanUsername),
+                credentials: credentials
+            ))
+            return ok ? .available : .taken
+        } catch let error as HSAPIError {
+            if error.serverCode == "USERNAME_PURCHASE_AVAILABLE" {
+                return .purchaseAvailable
+            }
+            return .invalid
+        }
+    }
+
+    func updateChannelUsername(dialogID: Int64, username: String?, session: HSUserSession) async throws -> HSMessageAction {
+        let cleanUsername = username?
+            .trimmingCharacters(in: CharacterSet(charactersIn: "@").union(.whitespacesAndNewlines)) ?? ""
+        let credentials = try authorizedAuthKey(for: session)
+        let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: channelsUpdateUsernamePayload(channel: try inputChannelPayload(dialogID: dialogID), username: cleanUsername),
+            credentials: credentials
+        ))
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func discussionGroups(session: HSUserSession) async throws -> [HSSupergroup] {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: channelsGetGroupsForDiscussionPayload(),
+            credentials: credentials
+        )
+        let payload = try Self.parseMessagesChatsResult(result)
+        cache(users: [], chats: payload.chats)
+        return payload.chats.compactMap(Self.supergroup(from:))
+    }
+
+    func updateChannelDiscussionGroup(channelDialogID: Int64, groupDialogID: Int64?, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let group = try groupDialogID.map(inputChannelPayload(dialogID:)) ?? inputChannelEmptyPayload()
+        do {
+            let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+                query: channelsSetDiscussionGroupPayload(
+                    broadcast: try inputChannelPayload(dialogID: channelDialogID),
+                    group: group
+                ),
+                credentials: credentials
+            ))
+            return HSMessageAction(ok: ok, messageID: nil, dialogID: channelDialogID, pts: nil, ptsCount: nil)
+        } catch let error as HSAPIError where error.serverCode == "LINK_NOT_MODIFIED" {
+            return HSMessageAction(ok: true, messageID: nil, dialogID: channelDialogID, pts: nil, ptsCount: nil)
+        }
     }
 
     func groupAdminLog(dialogID: Int64, query: String?, adminIDs: [Int64], limit: Int, session: HSUserSession) async throws -> [HSSupergroupAdminLogEvent] {
@@ -1978,6 +2838,47 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    func discussionMessage(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSDiscussionMessage {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetDiscussionMessagePayload(peer: inputPeer, messageID: messageID),
+            credentials: credentials
+        )
+        let payload = try Self.parseDiscussionMessageResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        let messages = payload.messages.compactMap { message in
+            Self.hsMessage(
+                from: message,
+                fallbackDialogID: dialogID,
+                users: payload.users,
+                chats: payload.chats,
+                sessionUserID: session.userID
+            )
+        }
+        return HSDiscussionMessage(
+            rootMessage: messages.first,
+            messages: messages,
+            maxMessageID: payload.maxMessageID,
+            readInboxMaxID: payload.readInboxMaxID,
+            readOutboxMaxID: payload.readOutboxMaxID,
+            unreadCount: payload.unreadCount
+        )
+    }
+
+    func readDiscussion(dialogID: Int64, messageID: Int64, readMaxID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+            query: messagesReadDiscussionPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                readMaxID: readMaxID
+            ),
+            credentials: credentials
+        ))
+        return HSMessageAction(ok: ok, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
     func sharedMediaCounters(
         dialogID: Int64,
         filters: [HSSharedMediaFilter],
@@ -1994,6 +2895,79 @@ final class HSNativeMTProtoClient {
             credentials: credentials
         )
         return try Self.parseSearchCountersResult(result)
+    }
+
+    func sharedMediaCalendar(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        offsetDate: Date?,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaCalendar {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetSearchResultsCalendarPayload(
+                peer: inputPeer,
+                filter: filter,
+                offsetID: offsetID,
+                offsetDate: offsetDate
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parseSearchResultsCalendarResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        let messages = payload.messages.compactMap { message in
+            Self.hsMessage(
+                from: message,
+                fallbackDialogID: dialogID,
+                users: payload.users,
+                chats: payload.chats,
+                sessionUserID: session.userID
+            )
+        }
+        let messagesByID = messages.reduce(into: [Int64: HSMessage]()) { result, message in
+            result[message.id] = message
+        }
+        let periods = payload.periods.map { period in
+            HSSharedMediaCalendarPeriod(
+                date: Date(timeIntervalSince1970: TimeInterval(period.date)),
+                minMessageID: Int64(period.minMessageID),
+                maxMessageID: Int64(period.maxMessageID),
+                count: max(0, Int(period.count)),
+                message: messagesByID[Int64(period.minMessageID)]
+            )
+        }
+        return HSSharedMediaCalendar(
+            count: max(0, Int(payload.count)),
+            minDate: payload.minDate > 0 ? Date(timeIntervalSince1970: TimeInterval(payload.minDate)) : nil,
+            minMessageID: payload.minMessageID > 0 ? Int64(payload.minMessageID) : nil,
+            offsetIDOffset: payload.offsetIDOffset.map(Int.init),
+            periods: periods,
+            messages: messages,
+            inexact: payload.inexact
+        )
+    }
+
+    func sharedMediaPositions(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaPositions {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetSearchResultsPositionsPayload(
+                peer: inputPeer,
+                filter: filter,
+                offsetID: offsetID,
+                limit: limit
+            ),
+            credentials: credentials
+        )
+        return try Self.parseSearchResultsPositionsResult(result)
     }
 
     func webPagePreview(text: String, session: HSUserSession) async throws -> HSWebPagePreview? {
@@ -2083,6 +3057,197 @@ final class HSNativeMTProtoClient {
             replyToMessageID: replyToMessageID,
             sessionUserID: session.userID
         )
+    }
+
+    func sendPollMessage(
+        dialogID: Int64,
+        question: String,
+        answers: [HSPollAnswerInput],
+        isMultipleChoice: Bool,
+        isQuiz: Bool,
+        isAnonymous: Bool,
+        correctAnswerOptions: [Data]?,
+        solution: String?,
+        closePeriod: Int?,
+        replyToMessageID: Int64?,
+        session: HSUserSession
+    ) async throws -> HSMessage {
+        let normalizedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedAnswers = Self.normalizedPollAnswers(answers)
+        guard !normalizedQuestion.isEmpty else {
+            throw HSAPIError.server(code: "POLL_QUESTION_EMPTY", message: "Poll question cannot be empty.")
+        }
+        guard normalizedAnswers.count >= 2, normalizedAnswers.count <= 10 else {
+            throw HSAPIError.server(code: "POLL_ANSWERS_INVALID", message: "Polls need 2 to 10 answers.")
+        }
+        guard !(isQuiz && isMultipleChoice) else {
+            throw HSAPIError.server(code: "QUIZ_MULTIPLE_INVALID", message: "Quiz polls cannot allow multiple answers.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let media = inputPollMediaPayload(
+            question: normalizedQuestion,
+            answers: normalizedAnswers,
+            isMultipleChoice: isMultipleChoice,
+            isQuiz: isQuiz,
+            isAnonymous: isAnonymous,
+            correctAnswerOptions: correctAnswerOptions,
+            solution: solution,
+            closePeriod: closePeriod
+        )
+        let result = try await sendEncryptedRPC(
+            query: messagesSendMediaPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                media: media,
+                caption: "",
+                replyToMessageID: replyToMessageID
+            ),
+            credentials: credentials
+        )
+        return try Self.parseSendMessageResult(
+            result,
+            dialogID: dialogID,
+            text: normalizedQuestion,
+            replyToMessageID: replyToMessageID,
+            sessionUserID: session.userID
+        )
+    }
+
+    func sendTodoMessage(
+        dialogID: Int64,
+        title: String,
+        items: [HSTodoItem],
+        othersCanAppend: Bool,
+        othersCanComplete: Bool,
+        replyToMessageID: Int64?,
+        session: HSUserSession
+    ) async throws -> HSMessage {
+        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedItems = Self.normalizedTodoItems(items)
+        guard !normalizedTitle.isEmpty, !normalizedItems.isEmpty else {
+            throw HSAPIError.server(code: "TODO_INVALID", message: "Todo messages need a title and at least one item.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let media = inputTodoMediaPayload(
+            title: normalizedTitle,
+            items: normalizedItems,
+            othersCanAppend: othersCanAppend,
+            othersCanComplete: othersCanComplete
+        )
+        let result = try await sendEncryptedRPC(
+            query: messagesSendMediaPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                media: media,
+                caption: "",
+                replyToMessageID: replyToMessageID
+            ),
+            credentials: credentials
+        )
+        return try Self.parseSendMessageResult(
+            result,
+            dialogID: dialogID,
+            text: normalizedTitle,
+            replyToMessageID: replyToMessageID,
+            sessionUserID: session.userID
+        )
+    }
+
+    func votePoll(dialogID: Int64, messageID: Int64, options: [Data], session: HSUserSession) async throws -> HSMessageAction {
+        let normalizedOptions = options.filter { !$0.isEmpty }
+        guard !normalizedOptions.isEmpty else {
+            throw HSAPIError.server(code: "POLL_OPTION_EMPTY", message: "Poll vote option cannot be empty.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesSendVotePayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                options: normalizedOptions
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func refreshPoll(dialogID: Int64, messageID: Int64, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetPollResultsPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func pollVotes(
+        dialogID: Int64,
+        messageID: Int64,
+        option: Data?,
+        offset: String?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSPollVotesPage {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesGetPollVotesPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                option: option?.isEmpty == true ? nil : option,
+                offset: offset?.isEmpty == true ? nil : offset,
+                limit: max(1, min(100, limit))
+            ),
+            credentials: credentials
+        )
+        let payload = try Self.parsePollVotesResult(result)
+        cache(users: payload.users, chats: payload.chats)
+        return payload.page
+    }
+
+    func toggleTodoCompleted(
+        dialogID: Int64,
+        messageID: Int64,
+        completedIDs: [Int],
+        incompletedIDs: [Int],
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
+        let completed = Self.normalizedTodoIDs(completedIDs)
+        let incompleted = Self.normalizedTodoIDs(incompletedIDs)
+        guard !completed.isEmpty || !incompleted.isEmpty else {
+            throw HSAPIError.server(code: "TODO_COMPLETION_EMPTY", message: "Todo completion update cannot be empty.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesToggleTodoCompletedPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                completed: completed,
+                incompleted: incompleted
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func appendTodoItems(dialogID: Int64, messageID: Int64, items: [HSTodoItem], session: HSUserSession) async throws -> HSMessageAction {
+        let normalizedItems = Self.normalizedTodoItems(items)
+        guard !normalizedItems.isEmpty else {
+            throw HSAPIError.server(code: "TODO_ITEMS_EMPTY", message: "Todo item list cannot be empty.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: messagesAppendTodoListPayload(
+                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                messageID: messageID,
+                items: normalizedItems
+            ),
+            credentials: credentials
+        )
+        try Self.parseUpdatesSuccess(result)
+        return HSMessageAction(ok: true, messageID: messageID, dialogID: dialogID, pts: nil, ptsCount: nil)
     }
 
     func setTyping(
@@ -2181,12 +3346,36 @@ final class HSNativeMTProtoClient {
 
     func markRead(dialogID: Int64, maxMessageID: Int64?, session: HSUserSession) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
-        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        if dialogID <= HSNativePeer.channelDialogPrefix {
+            let ok = try Self.parseBoolResult(try await sendEncryptedRPC(
+                query: channelsReadHistoryPayload(
+                    channel: try inputChannelPayload(dialogID: dialogID),
+                    maxMessageID: maxMessageID
+                ),
+                credentials: credentials
+            ))
+            return HSMessageAction(ok: ok, messageID: maxMessageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+        } else {
+            let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+            let result = try await sendEncryptedRPC(
+                query: messagesReadHistoryPayload(peer: inputPeer, maxMessageID: maxMessageID),
+                credentials: credentials
+            )
+            return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: maxMessageID)
+        }
+    }
+
+    func readMessageContents(dialogID: Int64, messageIDs: [Int64], session: HSUserSession) async throws -> HSMessageAction {
+        let ids = normalizedMessageIDs(messageIDs)
+        guard !ids.isEmpty else {
+            return HSMessageAction(ok: true, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+        }
+        let credentials = try authorizedAuthKey(for: session)
         let result = try await sendEncryptedRPC(
-            query: messagesReadHistoryPayload(peer: inputPeer, maxMessageID: maxMessageID),
+            query: messagesReadMessageContentsPayload(messageIDs: ids),
             credentials: credentials
         )
-        return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: maxMessageID)
+        return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: ids.last)
     }
 
     func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState {
@@ -2278,10 +3467,21 @@ final class HSNativeMTProtoClient {
 
     func deleteMessage(dialogID: Int64, messageID: Int64, revoke: Bool, session: HSUserSession) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
-        let result = try await sendEncryptedRPC(
-            query: messagesDeleteMessagesPayload(messageID: messageID, revoke: revoke),
-            credentials: credentials
-        )
+        let result: Data
+        if dialogID <= HSNativePeer.channelDialogPrefix {
+            result = try await sendEncryptedRPC(
+                query: channelsDeleteMessagesPayload(
+                    channel: try inputChannelPayload(dialogID: dialogID),
+                    messageIDs: [messageID]
+                ),
+                credentials: credentials
+            )
+        } else {
+            result = try await sendEncryptedRPC(
+                query: messagesDeleteMessagesPayload(messageID: messageID, revoke: revoke),
+                credentials: credentials
+            )
+        }
         return try Self.parseAffectedMessagesResult(result, dialogID: dialogID, messageID: messageID)
     }
 
@@ -2293,16 +3493,29 @@ final class HSNativeMTProtoClient {
         session: HSUserSession
     ) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
-        let result = try await sendEncryptedRPC(
-            query: messagesDeleteHistoryPayload(
-                peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
-                justClear: justClear,
-                revoke: revoke,
-                maxMessageID: maxMessageID
-            ),
-            credentials: credentials
-        )
-        return try Self.parseAffectedHistoryResult(result, dialogID: dialogID)
+        if dialogID <= HSNativePeer.channelDialogPrefix {
+            let result = try await sendEncryptedRPC(
+                query: channelsDeleteHistoryPayload(
+                    channel: try inputChannelPayload(dialogID: dialogID),
+                    forEveryone: revoke || !justClear,
+                    maxMessageID: maxMessageID
+                ),
+                credentials: credentials
+            )
+            try Self.parseUpdatesSuccess(result)
+            return HSMessageAction(ok: true, messageID: maxMessageID, dialogID: dialogID, pts: nil, ptsCount: nil)
+        } else {
+            let result = try await sendEncryptedRPC(
+                query: messagesDeleteHistoryPayload(
+                    peer: try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID),
+                    justClear: justClear,
+                    revoke: revoke,
+                    maxMessageID: maxMessageID
+                ),
+                credentials: credentials
+            )
+            return try Self.parseAffectedHistoryResult(result, dialogID: dialogID)
+        }
     }
 
     func forwardMessage(dialogID: Int64, messageID: Int64, toDialogID: Int64, session: HSUserSession) async throws -> HSMessage {
@@ -2397,6 +3610,74 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    func importContacts(_ contacts: [HSDeviceContactImport], session: HSUserSession) async throws -> HSImportedContactsSummary {
+        let importable = contacts.filter { !$0.phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !importable.isEmpty else {
+            return HSImportedContactsSummary(importedContacts: [], importedCount: 0, popularInviteCount: 0, retryContactIDs: [])
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: contactsImportContactsPayload(importable),
+            credentials: credentials
+        )
+        let payload = try Self.parseImportedContactsResult(result)
+        cache(users: payload.users, chats: [])
+        let importedUserIDs = Set(payload.imported.map(\.userID))
+        let importedContacts = payload.users.compactMap { user -> HSContact? in
+            guard importedUserIDs.contains(user.id) else {
+                return nil
+            }
+            return Self.hsContact(from: user, forcedStatus: "contact")
+        }
+        let popularInviteCount = payload.popularInvites.reduce(0) { partial, item in
+            partial + max(item.importers, 1)
+        }
+        return HSImportedContactsSummary(
+            importedContacts: importedContacts,
+            importedCount: payload.imported.count,
+            popularInviteCount: popularInviteCount,
+            retryContactIDs: payload.retryContactIDs
+        )
+    }
+
+    func exportContactToken(session: HSUserSession) async throws -> HSExportedContactToken {
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: contactsExportContactTokenPayload(),
+            credentials: credentials
+        )
+        return try Self.parseExportedContactTokenResult(result)
+    }
+
+    func importContactToken(_ token: String, session: HSUserSession) async throws -> HSContact {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw HSAPIError.server(code: "EMPTY_CONTACT_TOKEN", message: "Please enter a contact token or share link.")
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: contactsImportContactTokenPayload(token: trimmed),
+            credentials: credentials
+        )
+        let user = try Self.parseUserResult(result)
+        cache(users: [user], chats: [])
+        return Self.hsContact(from: user, forcedStatus: nil)
+    }
+
+    func deleteImportedContactsByPhones(_ phones: [String], session: HSUserSession) async throws -> HSMessageAction {
+        let normalizedPhones = Array(Set(phones.map(Self.normalizedImportPhone).filter { !$0.isEmpty })).sorted()
+        guard !normalizedPhones.isEmpty else {
+            return HSMessageAction(ok: true, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+        }
+        let credentials = try authorizedAuthKey(for: session)
+        let result = try await sendEncryptedRPC(
+            query: contactsDeleteByPhonesPayload(phones: normalizedPhones),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: nil, pts: nil, ptsCount: nil)
+    }
+
     func blockedContacts(offset: Int = 0, limit: Int = 100, session: HSUserSession) async throws -> [HSContact] {
         let credentials = try authorizedAuthKey(for: session)
         let result = try await sendEncryptedRPC(
@@ -2456,15 +3737,41 @@ final class HSNativeMTProtoClient {
         return Self.hsContact(from: user, forcedStatus: nil)
     }
 
-    func addContact(userID: Int64, firstName: String, lastName: String, phone: String, session: HSUserSession) async throws -> HSMessageAction {
+    func addContact(
+        userID: Int64,
+        firstName: String,
+        lastName: String,
+        phone: String,
+        note: String? = nil,
+        addPhonePrivacyException: Bool = false,
+        session: HSUserSession
+    ) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
         let inputUser = try inputUserPayload(userID: userID)
         let result = try await sendEncryptedRPC(
-            query: contactsAddContactPayload(user: inputUser, firstName: firstName, lastName: lastName, phone: phone),
+            query: contactsAddContactPayload(
+                user: inputUser,
+                firstName: firstName,
+                lastName: lastName,
+                phone: phone,
+                note: note,
+                addPhonePrivacyException: addPhonePrivacyException
+            ),
             credentials: credentials
         )
         try Self.parseUpdatesSuccess(result)
         return HSMessageAction(ok: true, messageID: nil, dialogID: userID, pts: nil, ptsCount: nil)
+    }
+
+    func updateContactNote(userID: Int64, note: String, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputUser = try inputUserPayload(userID: userID)
+        let result = try await sendEncryptedRPC(
+            query: contactsUpdateContactNotePayload(user: inputUser, note: note),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: userID, pts: nil, ptsCount: nil)
     }
 
     func requestContact(userID: Int64, firstName: String, lastName: String, phone: String, session: HSUserSession) async throws -> HSMessageAction {
@@ -2777,6 +4084,7 @@ final class HSNativeMTProtoClient {
         muteInterval: Int?,
         showPreviews: Bool = true,
         silent: Bool = false,
+        sound: HSNotificationSound? = nil,
         session: HSUserSession
     ) async throws -> HSMessageAction {
         let credentials = try authorizedAuthKey(for: session)
@@ -2788,13 +4096,34 @@ final class HSNativeMTProtoClient {
                     enabled: muteInterval.map { $0 == 0 } ?? true,
                     showPreviews: showPreviews,
                     silent: silent,
-                    muteUntil: muteUntilTimestamp(from: muteInterval)
+                    muteUntil: muteUntilTimestamp(from: muteInterval),
+                    sound: sound
                 )
             ),
             credentials: credentials
         )
         let ok = try Self.parseBoolResult(result)
         return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func notificationExceptions(
+        scope: HSNotificationException.Scope?,
+        compareSound: Bool,
+        session: HSUserSession
+    ) async throws -> HSNotificationExceptions {
+        let result = try await sendEncryptedRPC(
+            query: accountGetNotifyExceptionsPayload(scope: scope, compareSound: compareSound),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseNotifyExceptionsResult(result)
+    }
+
+    func resetNotificationSettings(session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: accountResetNotifySettingsPayload(),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
     }
 
     func reportPeer(dialogID: Int64, reason: HSReportReason, message: String, session: HSUserSession) async throws -> HSMessageAction {
@@ -2806,6 +4135,34 @@ final class HSNativeMTProtoClient {
         )
         let ok = try Self.parseBoolResult(result)
         return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func reportPeerPhoto(dialogID: Int64, reason: HSReportReason, message: String, session: HSUserSession) async throws -> HSMessageAction {
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: accountReportProfilePhotoPayload(peer: inputPeer, reason: reason, message: message),
+            credentials: credentials
+        )
+        let ok = try Self.parseBoolResult(result)
+        return HSMessageAction(ok: ok, messageID: nil, dialogID: dialogID, pts: nil, ptsCount: nil)
+    }
+
+    func reportMessages(
+        dialogID: Int64,
+        messageIDs: [Int64],
+        option: Data?,
+        message: String?,
+        session: HSUserSession
+    ) async throws -> HSReportContentResult {
+        let ids = messageIDs.map { Int32(clamping: $0) }
+        let credentials = try authorizedAuthKey(for: session)
+        let inputPeer = try inputPeerPayload(dialogID: dialogID, sessionUserID: session.userID)
+        let result = try await sendEncryptedRPC(
+            query: messagesReportPayload(peer: inputPeer, messageIDs: ids, option: option ?? Data(), message: message ?? ""),
+            credentials: credentials
+        )
+        return try Self.parseReportContentResult(result)
     }
 
     func storageSettings(session: HSUserSession) async throws -> HSStorageSettings {
@@ -2842,6 +4199,307 @@ final class HSNativeMTProtoClient {
             featuredStickers: try Self.parseFeaturedStickersResult(featuredData),
             reactions: try Self.parseAvailableReactionsResult(reactionsData)
         )
+    }
+
+    func installStickerSet(id: Int64, accessHash: Int64, archived: Bool, session: HSUserSession) async throws -> HSStickerSetInstallResult {
+        let result = try await sendEncryptedRPC(
+            query: messagesInstallStickerSetPayload(id: id, accessHash: accessHash, archived: archived),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseStickerSetInstallResult(result)
+    }
+
+    func uninstallStickerSet(id: Int64, accessHash: Int64, session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: messagesUninstallStickerSetPayload(id: id, accessHash: accessHash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func readFeaturedStickerSets(_ ids: [Int64], session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: messagesReadFeaturedStickersPayload(ids: ids),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func archivedStickerSets(kind: String, offsetID: Int64, limit: Int, session: HSUserSession) async throws -> HSArchivedStickerSetsPage {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetArchivedStickersPayload(kind: kind, offsetID: offsetID, limit: limit),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseArchivedStickerSetsResult(result)
+    }
+
+    func stickerSetDetails(id: Int64, accessHash: Int64, hash: Int, session: HSUserSession) async throws -> HSStickerSetDetails {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetStickerSetPayload(id: id, accessHash: accessHash, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseStickerSetDetailsResult(result)
+    }
+
+    func stickerSetDetails(shortName: String, hash: Int, session: HSUserSession) async throws -> HSStickerSetDetails {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetStickerSetPayload(shortName: shortName, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseStickerSetDetailsResult(result)
+    }
+
+    func stickersForEmoji(_ emoji: String, hash: Int64, session: HSUserSession) async throws -> HSStickerDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetStickersPayload(emoji: emoji, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseStickersResult(result, previousHash: hash)
+    }
+
+    func customEmojiDocuments(ids: [Int64], session: HSUserSession) async throws -> HSStickerDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetCustomEmojiDocumentsPayload(ids: ids),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseCustomEmojiDocumentsResult(result)
+    }
+
+    func customEmojiStickerSets(hash: Int64, session: HSUserSession) async throws -> [HSStickerSet] {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetEmojiStickersPayload(hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseAllStickersResult(result)
+    }
+
+    func searchCustomEmoji(_ emoji: String, hash: Int64, session: HSUserSession) async throws -> HSEmojiDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesSearchCustomEmojiPayload(emoji: emoji, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseEmojiListResult(result, previousHash: hash)
+    }
+
+    func emojiKeywords(langCode: String, session: HSUserSession) async throws -> HSEmojiKeywordsDifference {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetEmojiKeywordsPayload(langCode: langCode),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseEmojiKeywordsDifferenceResult(result)
+    }
+
+    func emojiKeywordsDifference(langCode: String, fromVersion: Int, session: HSUserSession) async throws -> HSEmojiKeywordsDifference {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetEmojiKeywordsDifferencePayload(langCode: langCode, fromVersion: fromVersion),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseEmojiKeywordsDifferenceResult(result)
+    }
+
+    func emojiKeywordLanguages(_ langCodes: [String], session: HSUserSession) async throws -> [HSEmojiLanguage] {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetEmojiKeywordsLanguagesPayload(langCodes: langCodes),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseEmojiKeywordLanguagesResult(result)
+    }
+
+    func localizationLanguages(langPack: String, session: HSUserSession) async throws -> [HSLocalizationLanguage] {
+        let result = try await sendEncryptedRPC(
+            query: langpackGetLanguagesPayload(langPack: langPack),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseLocalizationLanguagesResult(result)
+    }
+
+    func localizationLanguage(langPack: String, langCode: String, session: HSUserSession) async throws -> HSLocalizationLanguage {
+        let result = try await sendEncryptedRPC(
+            query: langpackGetLanguagePayload(langPack: langPack, langCode: langCode),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseLocalizationLanguageResult(result)
+    }
+
+    func localizationPack(langPack: String, langCode: String, session: HSUserSession) async throws -> HSLocalizationPack {
+        let result = try await sendEncryptedRPC(
+            query: langpackGetLangPackPayload(langPack: langPack, langCode: langCode),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseLocalizationPackResult(result)
+    }
+
+    func localizationStrings(langPack: String, langCode: String, keys: [String], session: HSUserSession) async throws -> [HSLocalizationEntry] {
+        let result = try await sendEncryptedRPC(
+            query: langpackGetStringsPayload(langPack: langPack, langCode: langCode, keys: keys),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseLocalizationStringsResult(result)
+    }
+
+    func localizationPackDifference(langPack: String, langCode: String, fromVersion: Int, session: HSUserSession) async throws -> HSLocalizationPack {
+        let result = try await sendEncryptedRPC(
+            query: langpackGetDifferencePayload(langPack: langPack, langCode: langCode, fromVersion: fromVersion),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseLocalizationPackResult(result)
+    }
+
+    func recentStickers(attached: Bool, hash: Int64, session: HSUserSession) async throws -> HSStickerDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetRecentStickersPayload(attached: attached, hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseRecentStickersResult(result, previousHash: hash)
+    }
+
+    func saveRecentSticker(
+        id: Int64,
+        accessHash: Int64,
+        fileReference: Data,
+        attached: Bool,
+        unsave: Bool,
+        session: HSUserSession
+    ) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: messagesSaveRecentStickerPayload(
+                id: id,
+                accessHash: accessHash,
+                fileReference: fileReference,
+                attached: attached,
+                unsave: unsave
+            ),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func clearRecentStickers(attached: Bool, session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: messagesClearRecentStickersPayload(attached: attached),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func favedStickers(hash: Int64, session: HSUserSession) async throws -> HSStickerDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetFavedStickersPayload(hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseFavedStickersResult(result, previousHash: hash)
+    }
+
+    func savedGifs(hash: Int64, session: HSUserSession) async throws -> HSStickerDocumentList {
+        let result = try await sendEncryptedRPC(
+            query: messagesGetSavedGifsPayload(hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseSavedGifsResult(result, previousHash: hash)
+    }
+
+    func saveGif(
+        id: Int64,
+        accessHash: Int64,
+        fileReference: Data,
+        unsave: Bool,
+        session: HSUserSession
+    ) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: messagesSaveGifPayload(
+                id: id,
+                accessHash: accessHash,
+                fileReference: fileReference,
+                unsave: unsave
+            ),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func savedRingtones(hash: Int64, session: HSUserSession) async throws -> HSSavedRingtones {
+        let result = try await sendEncryptedRPC(
+            query: accountGetSavedRingtonesPayload(hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseSavedRingtonesResult(result, previousHash: hash)
+    }
+
+    func saveRingtone(
+        id: Int64,
+        accessHash: Int64,
+        fileReference: Data,
+        unsave: Bool,
+        session: HSUserSession
+    ) async throws -> HSSavedRingtoneAction {
+        let result = try await sendEncryptedRPC(
+            query: accountSaveRingtonePayload(
+                id: id,
+                accessHash: accessHash,
+                fileReference: fileReference,
+                unsave: unsave
+            ),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseSavedRingtoneResult(result, saved: !unsave)
+    }
+
+    func uploadRingtone(fileName: String, mimeType: String, data: Data, session: HSUserSession) async throws -> HSStickerDocument {
+        let credentials = try authorizedAuthKey(for: session)
+        let file = try await uploadMediaFile(data: data, fileName: fileName, credentials: credentials, progress: nil)
+        let result = try await sendEncryptedRPC(
+            query: accountUploadRingtonePayload(file: file, fileName: fileName, mimeType: mimeType),
+            credentials: credentials
+        )
+        return try Self.parseStickerDocumentResult(result)
+    }
+
+    func wallpapers(hash: Int64, session: HSUserSession) async throws -> HSWallpaperList {
+        let result = try await sendEncryptedRPC(
+            query: accountGetWallPapersPayload(hash: hash),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseWallpapersResult(result, previousHash: hash)
+    }
+
+    func wallpaper(slug: String, session: HSUserSession) async throws -> HSWallpaper {
+        let result = try await sendEncryptedRPC(
+            query: accountGetWallPaperPayload(slug: slug),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseWallpaperResult(result)
+    }
+
+    func saveWallpaper(slug: String, settings: HSWallpaperSettings, unsave: Bool, session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: accountSaveWallPaperPayload(slug: slug, settings: settings, unsave: unsave),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func installWallpaper(slug: String, id: Int64, accessHash: Int64, settings: HSWallpaperSettings, session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: accountInstallWallPaperPayload(slug: slug, id: id, accessHash: accessHash, settings: settings),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func installWallpaperNoFile(id: Int64, settings: HSWallpaperSettings, session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: accountInstallWallPaperNoFilePayload(id: id, settings: settings),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
+    }
+
+    func resetWallpapers(session: HSUserSession) async throws -> Bool {
+        let result = try await sendEncryptedRPC(
+            query: accountResetWallPapersPayload(),
+            credentials: try authorizedAuthKey(for: session)
+        )
+        return try Self.parseBoolResult(result)
     }
 
     private func notifySettings(scope: HSNativeNotifyScope, credentials: HSNativeAuthKeyCredentials) async throws -> HSNotifyScopeSettings {
@@ -3089,6 +4747,18 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func inputUserEmptyPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputUserEmpty)
+        return writer.data
+    }
+
+    func inputChannelEmptyPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputChannelEmpty)
+        return writer.data
+    }
+
     func accountGetAuthorizationsPayload() -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.accountGetAuthorizations)
@@ -3193,11 +4863,49 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    private func accountResetNotifySettingsPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountResetNotifySettings)
+        return writer.data
+    }
+
+    private func accountGetNotifyExceptionsPayload(scope: HSNotificationException.Scope?, compareSound: Bool) -> Data {
+        var flags: UInt32 = 0
+        let peerConstructor: UInt32?
+        switch scope {
+        case .privateChats:
+            peerConstructor = HSNativeMTProtoSchema.inputNotifyUsers
+            flags |= 1 << 0
+        case .groups:
+            peerConstructor = HSNativeMTProtoSchema.inputNotifyChats
+            flags |= 1 << 0
+        case .channels:
+            peerConstructor = HSNativeMTProtoSchema.inputNotifyBroadcasts
+            flags |= 1 << 0
+        case .unknown, .none:
+            peerConstructor = nil
+        }
+        if compareSound {
+            flags |= 1 << 1
+        }
+
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountGetNotifyExceptions)
+        writer.int32(Int32(bitPattern: flags))
+        if let peerConstructor {
+            writer.constructor(peerConstructor)
+        }
+        return writer.data
+    }
+
     private func inputPeerNotifySettingsPayload(_ settings: HSNotifyScopeSettings) -> Data {
         var flags: UInt32 = 0
         flags |= 1 << 0
         flags |= 1 << 1
         flags |= 1 << 2
+        if settings.sound != nil {
+            flags |= 1 << 3
+        }
 
         let muteUntil: Int32
         if settings.enabled {
@@ -3215,7 +4923,26 @@ final class HSNativeMTProtoClient {
         writer.constructor(settings.showPreviews ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
         writer.constructor(settings.silent ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
         writer.int32(muteUntil)
+        if let sound = settings.sound {
+            writeNotificationSound(sound, writer: &writer)
+        }
         return writer.data
+    }
+
+    private func writeNotificationSound(_ sound: HSNotificationSound, writer: inout HSTLWriter) {
+        switch sound {
+        case .default:
+            writer.constructor(HSNativeMTProtoSchema.notificationSoundDefault)
+        case .none:
+            writer.constructor(HSNativeMTProtoSchema.notificationSoundNone)
+        case let .local(title, data):
+            writer.constructor(HSNativeMTProtoSchema.notificationSoundLocal)
+            writer.string(title)
+            writer.string(data)
+        case let .ringtone(id):
+            writer.constructor(HSNativeMTProtoSchema.notificationSoundRingtone)
+            writer.int64(id)
+        }
     }
 
     private func accountReportPeerPayload(peer: Data, reason: HSReportReason, message: String) -> Data {
@@ -3223,6 +4950,30 @@ final class HSNativeMTProtoClient {
         writer.constructor(HSNativeMTProtoSchema.accountReportPeer)
         writer.raw(peer)
         writer.constructor(inputReportReasonConstructor(for: reason))
+        writer.string(message)
+        return writer.data
+    }
+
+    private func accountReportProfilePhotoPayload(peer: Data, reason: HSReportReason, message: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountReportProfilePhoto)
+        writer.raw(peer)
+        writer.raw(inputPhotoEmptyPayload())
+        writer.constructor(inputReportReasonConstructor(for: reason))
+        writer.string(message)
+        return writer.data
+    }
+
+    private func messagesReportPayload(peer: Data, messageIDs: [Int32], option: Data, message: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesReport)
+        writer.raw(peer)
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: messageIDs.count))
+        for id in messageIDs {
+            writer.int32(id)
+        }
+        writer.bytes(option)
         writer.string(message)
         return writer.data
     }
@@ -3336,6 +5087,130 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func chatlistsExportChatlistInvitePayload(
+        filterID: Int,
+        title: String,
+        peers: [HSChatListFilterPeer],
+        sessionUserID: Int64
+    ) throws -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsExportChatlistInvite)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        writer.string(title)
+        try writeInputPeerVector(peers, writer: &writer, sessionUserID: sessionUserID)
+        return writer.data
+    }
+
+    func chatlistsDeleteExportedInvitePayload(filterID: Int, slug: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsDeleteExportedInvite)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        writer.string(Self.chatListInviteSlug(from: slug))
+        return writer.data
+    }
+
+    func chatlistsEditExportedInvitePayload(
+        filterID: Int,
+        slug: String,
+        title: String?,
+        peers: [HSChatListFilterPeer]?,
+        sessionUserID: Int64
+    ) throws -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsEditExportedInvite)
+        var flags: UInt32 = 0
+        if title != nil { flags |= 1 << 1 }
+        if peers != nil { flags |= 1 << 2 }
+        writer.uint32(flags)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        writer.string(Self.chatListInviteSlug(from: slug))
+        if let title {
+            writer.string(title)
+        }
+        if let peers {
+            try writeInputPeerVector(peers, writer: &writer, sessionUserID: sessionUserID)
+        }
+        return writer.data
+    }
+
+    func chatlistsGetExportedInvitesPayload(filterID: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsGetExportedInvites)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        return writer.data
+    }
+
+    func chatlistsCheckChatlistInvitePayload(slug: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsCheckChatlistInvite)
+        writer.string(Self.chatListInviteSlug(from: slug))
+        return writer.data
+    }
+
+    func chatlistsJoinChatlistInvitePayload(
+        slug: String,
+        peers: [HSChatListFilterPeer],
+        sessionUserID: Int64
+    ) throws -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsJoinChatlistInvite)
+        writer.string(Self.chatListInviteSlug(from: slug))
+        try writeInputPeerVector(peers, writer: &writer, sessionUserID: sessionUserID)
+        return writer.data
+    }
+
+    func chatlistsGetChatlistUpdatesPayload(filterID: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsGetChatlistUpdates)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        return writer.data
+    }
+
+    func chatlistsJoinChatlistUpdatesPayload(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        sessionUserID: Int64
+    ) throws -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsJoinChatlistUpdates)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        try writeInputPeerVector(peers, writer: &writer, sessionUserID: sessionUserID)
+        return writer.data
+    }
+
+    func chatlistsHideChatlistUpdatesPayload(filterID: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsHideChatlistUpdates)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        return writer.data
+    }
+
+    func chatlistsGetLeaveChatlistSuggestionsPayload(filterID: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsGetLeaveChatlistSuggestions)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        return writer.data
+    }
+
+    func chatlistsLeaveChatlistPayload(
+        filterID: Int,
+        peers: [HSChatListFilterPeer],
+        sessionUserID: Int64
+    ) throws -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.chatlistsLeaveChatlist)
+        writer.raw(inputChatlistDialogFilterPayload(filterID: filterID))
+        try writeInputPeerVector(peers, writer: &writer, sessionUserID: sessionUserID)
+        return writer.data
+    }
+
+    private func inputChatlistDialogFilterPayload(filterID: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputChatlistDialogFilter)
+        writer.int32(Int32(clamping: filterID))
+        return writer.data
+    }
+
     func messagesGetHistoryPayload(peer: Data, beforeID: Int64?, limit: Int) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.messagesGetHistory)
@@ -3422,10 +5297,304 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func messagesInstallStickerSetPayload(id: Int64, accessHash: Int64, archived: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesInstallStickerSet)
+        writeInputStickerSetID(id: id, accessHash: accessHash, writer: &writer)
+        writer.constructor(archived ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func messagesUninstallStickerSetPayload(id: Int64, accessHash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesUninstallStickerSet)
+        writeInputStickerSetID(id: id, accessHash: accessHash, writer: &writer)
+        return writer.data
+    }
+
+    func messagesReadFeaturedStickersPayload(ids: [Int64]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesReadFeaturedStickers)
+        writeInt64Vector(ids, writer: &writer)
+        return writer.data
+    }
+
+    func messagesGetArchivedStickersPayload(kind: String, offsetID: Int64, limit: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetArchivedStickers)
+        writer.int32(archivedStickerKindFlags(kind))
+        writer.int64(offsetID)
+        writer.int32(Int32(clamping: max(1, min(limit, 200))))
+        return writer.data
+    }
+
+    func messagesGetStickerSetPayload(id: Int64, accessHash: Int64, hash: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetStickerSet)
+        writeInputStickerSetID(id: id, accessHash: accessHash, writer: &writer)
+        writer.int32(Int32(clamping: hash))
+        return writer.data
+    }
+
+    func messagesGetStickerSetPayload(shortName: String, hash: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetStickerSet)
+        writeInputStickerSetShortName(shortName, writer: &writer)
+        writer.int32(Int32(clamping: hash))
+        return writer.data
+    }
+
+    func messagesGetStickersPayload(emoji: String, hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetStickers)
+        writer.string(emoji)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesGetCustomEmojiDocumentsPayload(ids: [Int64]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetCustomEmojiDocuments)
+        writeInt64Vector(ids, writer: &writer)
+        return writer.data
+    }
+
+    func messagesGetEmojiStickersPayload(hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetEmojiStickers)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesSearchCustomEmojiPayload(emoji: String, hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSearchCustomEmoji)
+        writer.string(emoji)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesGetEmojiKeywordsPayload(langCode: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetEmojiKeywords)
+        writer.string(langCode)
+        return writer.data
+    }
+
+    func messagesGetEmojiKeywordsDifferencePayload(langCode: String, fromVersion: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetEmojiKeywordsDifference)
+        writer.string(langCode)
+        writer.int32(Int32(clamping: fromVersion))
+        return writer.data
+    }
+
+    func messagesGetEmojiKeywordsLanguagesPayload(langCodes: [String]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetEmojiKeywordsLanguages)
+        writeStringVector(langCodes, writer: &writer)
+        return writer.data
+    }
+
+    func langpackGetLanguagesPayload(langPack: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.langpackGetLanguages)
+        writer.string(langPack)
+        return writer.data
+    }
+
+    func langpackGetLanguagePayload(langPack: String, langCode: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.langpackGetLanguage)
+        writer.string(langPack)
+        writer.string(langCode)
+        return writer.data
+    }
+
+    func langpackGetLangPackPayload(langPack: String, langCode: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.langpackGetLangPack)
+        writer.string(langPack)
+        writer.string(langCode)
+        return writer.data
+    }
+
+    func langpackGetStringsPayload(langPack: String, langCode: String, keys: [String]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.langpackGetStrings)
+        writer.string(langPack)
+        writer.string(langCode)
+        writeStringVector(keys, writer: &writer)
+        return writer.data
+    }
+
+    func langpackGetDifferencePayload(langPack: String, langCode: String, fromVersion: Int) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.langpackGetDifference)
+        writer.string(langPack)
+        writer.string(langCode)
+        writer.int32(Int32(clamping: fromVersion))
+        return writer.data
+    }
+
+    func messagesGetRecentStickersPayload(attached: Bool, hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetRecentStickers)
+        writer.int32(attached ? 1 : 0)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesSaveRecentStickerPayload(id: Int64, accessHash: Int64, fileReference: Data, attached: Bool, unsave: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSaveRecentSticker)
+        writer.int32(attached ? 1 : 0)
+        writeInputDocument(id: id, accessHash: accessHash, fileReference: fileReference, writer: &writer)
+        writer.constructor(unsave ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func messagesClearRecentStickersPayload(attached: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesClearRecentStickers)
+        writer.int32(attached ? 1 : 0)
+        return writer.data
+    }
+
+    func messagesGetFavedStickersPayload(hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetFavedStickers)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesGetSavedGifsPayload(hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetSavedGifs)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesSaveGifPayload(id: Int64, accessHash: Int64, fileReference: Data, unsave: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSaveGif)
+        writeInputDocument(id: id, accessHash: accessHash, fileReference: fileReference, writer: &writer)
+        writer.constructor(unsave ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func accountGetSavedRingtonesPayload(hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountGetSavedRingtones)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func accountSaveRingtonePayload(id: Int64, accessHash: Int64, fileReference: Data, unsave: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountSaveRingtone)
+        writeInputDocument(id: id, accessHash: accessHash, fileReference: fileReference, writer: &writer)
+        writer.constructor(unsave ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func accountUploadRingtonePayload(file: Data, fileName: String, mimeType: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountUploadRingtone)
+        writer.raw(file)
+        writer.string(Self.safeFileName(fileName))
+        writer.string(mimeType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "audio/mpeg" : mimeType)
+        return writer.data
+    }
+
+    func accountGetWallPapersPayload(hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountGetWallPapers)
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func accountGetWallPaperPayload(slug: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountGetWallPaper)
+        writeInputWallPaperSlug(slug, writer: &writer)
+        return writer.data
+    }
+
+    func accountSaveWallPaperPayload(slug: String, settings: HSWallpaperSettings, unsave: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountSaveWallPaper)
+        writeInputWallPaperSlug(slug, writer: &writer)
+        writer.constructor(unsave ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        writeWallPaperSettings(settings, writer: &writer)
+        return writer.data
+    }
+
+    func accountInstallWallPaperPayload(slug: String, id: Int64, accessHash: Int64, settings: HSWallpaperSettings) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountInstallWallPaper)
+        if id != 0, accessHash != 0 {
+            writeInputWallPaper(id: id, accessHash: accessHash, writer: &writer)
+        } else {
+            writeInputWallPaperSlug(slug, writer: &writer)
+        }
+        writeWallPaperSettings(settings, writer: &writer)
+        return writer.data
+    }
+
+    func accountInstallWallPaperNoFilePayload(id: Int64, settings: HSWallpaperSettings) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountInstallWallPaper)
+        writeInputWallPaperNoFile(id: id, writer: &writer)
+        writeWallPaperSettings(settings, writer: &writer)
+        return writer.data
+    }
+
+    func accountResetWallPapersPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.accountResetWallPapers)
+        return writer.data
+    }
+
     func messagesGetAvailableReactionsPayload(hash: Int32) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.messagesGetAvailableReactions)
         writer.int32(hash)
+        return writer.data
+    }
+
+    func helpGetConfigPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.helpGetConfig)
+        return writer.data
+    }
+
+    func messagesGetRecentReactionsPayload(limit: Int, hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetRecentReactions)
+        writer.int32(Int32(clamping: max(1, min(limit, 100))))
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesGetTopReactionsPayload(limit: Int, hash: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetTopReactions)
+        writer.int32(Int32(clamping: max(1, min(limit, 100))))
+        writer.int64(hash)
+        return writer.data
+    }
+
+    func messagesSetDefaultReactionPayload(reaction: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSetDefaultReaction)
+        writeReaction(reaction, writer: &writer)
+        return writer.data
+    }
+
+    func messagesClearRecentReactionsPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesClearRecentReactions)
         return writer.data
     }
 
@@ -3434,6 +5603,80 @@ final class HSNativeMTProtoClient {
         writer.constructor(HSNativeMTProtoSchema.messagesReadHistory)
         writer.raw(peer)
         writer.int32(Int32(clamping: maxMessageID ?? 0))
+        return writer.data
+    }
+
+    func channelsReadHistoryPayload(channel: Data, maxMessageID: Int64?) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsReadHistory)
+        writer.raw(channel)
+        writer.int32(Int32(clamping: maxMessageID ?? 0))
+        return writer.data
+    }
+
+    func messagesReadMessageContentsPayload(messageIDs: [Int64]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesReadMessageContents)
+        writeInt32Vector(messageIDs, writer: &writer)
+        return writer.data
+    }
+
+    func messagesGetMessagesViewsPayload(peer: Data, messageIDs: [Int64], increment: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetMessagesViews)
+        writer.raw(peer)
+        writeInt32Vector(messageIDs, writer: &writer)
+        writer.constructor(increment ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func messagesGetMessageReadParticipantsPayload(peer: Data, messageID: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetMessageReadParticipants)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        return writer.data
+    }
+
+    func messagesGetMessageReactionsListPayload(peer: Data, messageID: Int64, reaction: String?, offset: String?, limit: Int) -> Data {
+        let cleanReaction = reaction?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanOffset = offset?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: Int32 = 0
+        if cleanReaction?.isEmpty == false {
+            flags |= 1 << 0
+        }
+        if cleanOffset?.isEmpty == false {
+            flags |= 1 << 1
+        }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetMessageReactionsList)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        if let cleanReaction, !cleanReaction.isEmpty {
+            writeReaction(cleanReaction, writer: &writer)
+        }
+        if let cleanOffset, !cleanOffset.isEmpty {
+            writer.string(cleanOffset)
+        }
+        writer.int32(Int32(clamping: max(1, min(limit, 100))))
+        return writer.data
+    }
+
+    func messagesGetDiscussionMessagePayload(peer: Data, messageID: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetDiscussionMessage)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        return writer.data
+    }
+
+    func messagesReadDiscussionPayload(peer: Data, messageID: Int64, readMaxID: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesReadDiscussion)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        writer.int32(Int32(clamping: readMaxID))
         return writer.data
     }
 
@@ -3524,6 +5767,14 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func channelsDeleteMessagesPayload(channel: Data, messageIDs: [Int64]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsDeleteMessages)
+        writer.raw(channel)
+        writeInt32Vector(messageIDs, writer: &writer)
+        return writer.data
+    }
+
     func messagesDeleteHistoryPayload(peer: Data, justClear: Bool, revoke: Bool, maxMessageID: Int64?) -> Data {
         var flags: Int32 = 0
         if justClear { flags |= 1 << 0 }
@@ -3532,6 +5783,15 @@ final class HSNativeMTProtoClient {
         writer.constructor(HSNativeMTProtoSchema.messagesDeleteHistory)
         writer.int32(flags)
         writer.raw(peer)
+        writer.int32(Int32(clamping: maxMessageID ?? Int64(Int32.max - 1)))
+        return writer.data
+    }
+
+    func channelsDeleteHistoryPayload(channel: Data, forEveryone: Bool, maxMessageID: Int64?) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsDeleteHistory)
+        writer.int32(forEveryone ? 1 : 0)
+        writer.raw(channel)
         writer.int32(Int32(clamping: maxMessageID ?? Int64(Int32.max - 1)))
         return writer.data
     }
@@ -3640,6 +5900,38 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func messagesGetSearchResultsCalendarPayload(
+        peer: Data,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        offsetDate: Date?
+    ) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetSearchResultsCalendar)
+        writer.int32(0)
+        writer.raw(peer)
+        writeMessagesFilter(filter, writer: &writer)
+        writer.int32(Int32(clamping: offsetID ?? 0))
+        writer.int32(Int32(clamping: Int64(offsetDate?.timeIntervalSince1970 ?? 0)))
+        return writer.data
+    }
+
+    func messagesGetSearchResultsPositionsPayload(
+        peer: Data,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        limit: Int
+    ) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetSearchResultsPositions)
+        writer.int32(0)
+        writer.raw(peer)
+        writeMessagesFilter(filter, writer: &writer)
+        writer.int32(Int32(clamping: offsetID ?? 0))
+        writer.int32(Int32(clamping: max(1, min(limit, 1000))))
+        return writer.data
+    }
+
     func writeMessagesFilter(_ filter: HSSharedMediaFilter, writer: inout HSTLWriter) {
         switch filter {
         case .media:
@@ -3667,8 +5959,7 @@ final class HSNativeMTProtoClient {
         writer.int32(Int32(clamping: messageID))
         writer.constructor(HSNativeMTProtoSchema.vector)
         writer.int32(1)
-        writer.constructor(HSNativeMTProtoSchema.reactionEmoji)
-        writer.string(reaction)
+        writeReaction(reaction, writer: &writer)
         return writer.data
     }
 
@@ -3685,6 +5976,65 @@ final class HSNativeMTProtoClient {
         writer.raw(media)
         writer.string(caption)
         writer.int64(Int64.random(in: Int64.min...Int64.max))
+        return writer.data
+    }
+
+    func messagesSendVotePayload(peer: Data, messageID: Int64, options: [Data]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesSendVote)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: options.count))
+        for option in options {
+            writer.bytes(option)
+        }
+        return writer.data
+    }
+
+    func messagesGetPollResultsPayload(peer: Data, messageID: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetPollResults)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        return writer.data
+    }
+
+    func messagesGetPollVotesPayload(peer: Data, messageID: Int64, option: Data?, offset: String?, limit: Int) -> Data {
+        var flags: Int32 = 0
+        if option != nil { flags |= 1 << 0 }
+        if offset != nil { flags |= 1 << 1 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetPollVotes)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        if let option {
+            writer.bytes(option)
+        }
+        if let offset {
+            writer.string(offset)
+        }
+        writer.int32(Int32(clamping: max(1, min(100, limit))))
+        return writer.data
+    }
+
+    func messagesToggleTodoCompletedPayload(peer: Data, messageID: Int64, completed: [Int32], incompleted: [Int32]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesToggleTodoCompleted)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        writeInt32Vector(completed, writer: &writer)
+        writeInt32Vector(incompleted, writer: &writer)
+        return writer.data
+    }
+
+    func messagesAppendTodoListPayload(peer: Data, messageID: Int64, items: [HSTodoItem]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesAppendTodoList)
+        writer.raw(peer)
+        writer.int32(Int32(clamping: messageID))
+        writeTodoItemVector(items, writer: &writer)
         return writer.data
     }
 
@@ -3816,6 +6166,70 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func inputPollMediaPayload(
+        question: String,
+        answers: [HSPollAnswerInput],
+        isMultipleChoice: Bool,
+        isQuiz: Bool,
+        isAnonymous: Bool,
+        correctAnswerOptions: [Data]?,
+        solution: String?,
+        closePeriod: Int?
+    ) -> Data {
+        var mediaFlags: Int32 = 0
+        let cleanSolution = solution?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let answerOptions = Self.pollOptionData(for: answers)
+        let cleanCorrectAnswerOptions = Self.normalizedCorrectPollOptions(
+            correctAnswerOptions ?? [],
+            answers: answers,
+            answerOptions: answerOptions
+        )
+        if !cleanCorrectAnswerOptions.isEmpty {
+            mediaFlags |= 1 << 0
+        }
+        if cleanSolution?.isEmpty == false {
+            mediaFlags |= 1 << 1
+        }
+
+        var pollFlags: Int32 = 0
+        if !isAnonymous { pollFlags |= 1 << 1 }
+        if isMultipleChoice { pollFlags |= 1 << 2 }
+        if isQuiz { pollFlags |= 1 << 3 }
+        if let closePeriod, closePeriod > 0 { pollFlags |= 1 << 4 }
+
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputMediaPoll)
+        writer.int32(mediaFlags)
+        writer.constructor(HSNativeMTProtoSchema.poll)
+        writer.int64(0)
+        writer.int32(pollFlags)
+        writeTextWithEntities(question, writer: &writer)
+        writePollAnswerVector(answers, optionData: answerOptions, writer: &writer)
+        if let closePeriod, closePeriod > 0 {
+            writer.int32(Int32(clamping: closePeriod))
+        }
+        if !cleanCorrectAnswerOptions.isEmpty {
+            writer.constructor(HSNativeMTProtoSchema.vector)
+            writer.int32(Int32(clamping: cleanCorrectAnswerOptions.count))
+            for option in cleanCorrectAnswerOptions {
+                writer.bytes(option)
+            }
+        }
+        if let cleanSolution, !cleanSolution.isEmpty {
+            writer.string(cleanSolution)
+            writer.constructor(HSNativeMTProtoSchema.vector)
+            writer.int32(0)
+        }
+        return writer.data
+    }
+
+    func inputTodoMediaPayload(title: String, items: [HSTodoItem], othersCanAppend: Bool, othersCanComplete: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.inputMediaTodo)
+        writeTodoListPayload(title: title, items: items, othersCanAppend: othersCanAppend, othersCanComplete: othersCanComplete, writer: &writer)
+        return writer.data
+    }
+
     func contactsGetContactsPayload() -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.contactsGetContacts)
@@ -3862,18 +6276,85 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
-    func contactsAddContactPayload(user: Data, firstName: String, lastName: String, phone: String) -> Data {
+    func contactsImportContactsPayload(_ contacts: [HSDeviceContactImport]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsImportContacts)
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: contacts.count))
+        for contact in contacts {
+            let trimmedNote = contact.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+            writer.constructor(HSNativeMTProtoSchema.inputPhoneContact)
+            writer.int32(trimmedNote?.isEmpty == false ? 1 : 0)
+            writer.int64(contact.clientID)
+            writer.string(Self.normalizedImportPhone(contact.phone))
+            writer.string(contact.firstName)
+            writer.string(contact.lastName)
+            if let trimmedNote, !trimmedNote.isEmpty {
+                writeTextWithEntities(trimmedNote, writer: &writer)
+            }
+        }
+        return writer.data
+    }
+
+    func contactsExportContactTokenPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsExportContactToken)
+        return writer.data
+    }
+
+    func contactsImportContactTokenPayload(token: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsImportContactToken)
+        writer.string(token)
+        return writer.data
+    }
+
+    func contactsDeleteByPhonesPayload(phones: [String]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsDeleteByPhones)
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: phones.count))
+        for phone in phones {
+            writer.string(phone)
+        }
+        return writer.data
+    }
+
+    func contactsAddContactPayload(
+        user: Data,
+        firstName: String,
+        lastName: String,
+        phone: String,
+        note: String?,
+        addPhonePrivacyException: Bool
+    ) -> Data {
         var normalizedPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
         if !normalizedPhone.isEmpty && !normalizedPhone.hasPrefix("+") {
             normalizedPhone = "+\(normalizedPhone)"
         }
+        let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: UInt32 = 0
+        if addPhonePrivacyException { flags |= 1 << 0 }
+        if trimmedNote?.isEmpty == false { flags |= 1 << 1 }
+
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.contactsAddContact)
-        writer.int32(0)
+        writer.int32(Int32(bitPattern: flags))
         writer.raw(user)
         writer.string(firstName)
         writer.string(lastName)
         writer.string(normalizedPhone)
+        if let trimmedNote, !trimmedNote.isEmpty {
+            writeTextWithEntities(trimmedNote, writer: &writer)
+        }
+        return writer.data
+    }
+
+    func contactsUpdateContactNotePayload(user: Data, note: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.contactsUpdateContactNote)
+        writer.raw(user)
+        writeTextWithEntities(note, writer: &writer)
         return writer.data
     }
 
@@ -3942,6 +6423,36 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func channelsCheckUsernamePayload(channel: Data, username: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsCheckUsername)
+        writer.raw(channel)
+        writer.string(username)
+        return writer.data
+    }
+
+    func channelsUpdateUsernamePayload(channel: Data, username: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsUpdateUsername)
+        writer.raw(channel)
+        writer.string(username)
+        return writer.data
+    }
+
+    func channelsGetGroupsForDiscussionPayload() -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsGetGroupsForDiscussion)
+        return writer.data
+    }
+
+    func channelsSetDiscussionGroupPayload(broadcast: Data, group: Data) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsSetDiscussionGroup)
+        writer.raw(broadcast)
+        writer.raw(group)
+        return writer.data
+    }
+
     func channelsEditTitlePayload(channel: Data, title: String) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.channelsEditTitle)
@@ -3965,15 +6476,44 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
-    func channelsGetParticipantsPayload(channel: Data, offset: Int, limit: Int) -> Data {
+    func channelsGetParticipantsPayload(channel: Data, filter: HSSupergroupMemberFilter, query: String?, offset: Int, limit: Int) -> Data {
         var writer = HSTLWriter()
         writer.constructor(HSNativeMTProtoSchema.channelsGetParticipants)
         writer.raw(channel)
-        writer.constructor(HSNativeMTProtoSchema.channelParticipantsRecent)
+        writeChannelParticipantsFilter(filter, query: query, writer: &writer)
         writer.int32(Int32(clamping: offset))
         writer.int32(Int32(clamping: limit))
         writer.int64(0)
         return writer.data
+    }
+
+    func writeChannelParticipantsFilter(_ filter: HSSupergroupMemberFilter, query: String?, writer: inout HSTLWriter) {
+        let cleanQuery = query?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        switch filter {
+        case .recent:
+            if cleanQuery.isEmpty {
+                writer.constructor(HSNativeMTProtoSchema.channelParticipantsRecent)
+            } else {
+                writer.constructor(HSNativeMTProtoSchema.channelParticipantsSearch)
+                writer.string(cleanQuery)
+            }
+        case .search:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsSearch)
+            writer.string(cleanQuery)
+        case .admins:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsAdmins)
+        case .contacts:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsContacts)
+            writer.string(cleanQuery)
+        case .bots:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsBots)
+        case .restricted:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsBanned)
+            writer.string(cleanQuery)
+        case .banned:
+            writer.constructor(HSNativeMTProtoSchema.channelParticipantsKicked)
+            writer.string(cleanQuery)
+        }
     }
 
     func channelsInviteToChannelPayload(channel: Data, users: [Data]) -> Data {
@@ -4036,6 +6576,34 @@ final class HSNativeMTProtoClient {
         channelBoolPayload(HSNativeMTProtoSchema.channelsToggleJoinRequest, channel: channel, enabled: enabled)
     }
 
+    func channelsToggleSignaturesPayload(channel: Data, signaturesEnabled: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsToggleSignatures)
+        writer.raw(channel)
+        writer.constructor(signaturesEnabled ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        return writer.data
+    }
+
+    func channelsToggleAntiSpamPayload(channel: Data, enabled: Bool) -> Data {
+        channelBoolPayload(HSNativeMTProtoSchema.channelsToggleAntiSpam, channel: channel, enabled: enabled)
+    }
+
+    func channelsReportAntiSpamFalsePositivePayload(channel: Data, messageID: Int64) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsReportAntiSpamFalsePositive)
+        writer.raw(channel)
+        writer.int32(Int32(clamping: messageID))
+        return writer.data
+    }
+
+    func channelsReadMessageContentsPayload(channel: Data, messageIDs: [Int64]) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.channelsReadMessageContents)
+        writer.raw(channel)
+        writeInt32Vector(messageIDs, writer: &writer)
+        return writer.data
+    }
+
     func messagesUpdatePinnedMessagePayload(peer: Data, messageID: Int64, silent: Bool, unpin: Bool) -> Data {
         var flags: Int32 = 0
         if silent { flags |= 1 << 0 }
@@ -4080,6 +6648,106 @@ final class HSNativeMTProtoClient {
         return writer.data
     }
 
+    func messagesGetExportedChatInvitesPayload(peer: Data, revoked: Bool, admin: Data, offsetDate: Int?, offsetLink: String?, limit: Int) -> Data {
+        let cleanOffsetLink = offsetLink?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: Int32 = 0
+        if cleanOffsetLink?.isEmpty == false || offsetDate != nil { flags |= 1 << 2 }
+        if revoked { flags |= 1 << 3 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetExportedChatInvites)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.raw(admin)
+        if flags & (1 << 2) != 0 {
+            writer.int32(Int32(clamping: offsetDate ?? 0))
+            writer.string(cleanOffsetLink ?? "")
+        }
+        writer.int32(Int32(clamping: limit))
+        return writer.data
+    }
+
+    func messagesEditExportedChatInvitePayload(peer: Data, link: String, title: String?, expireDate: Int?, usageLimit: Int?, requestNeeded: Bool?, revoked: Bool) -> Data {
+        let cleanTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: Int32 = 0
+        if expireDate != nil { flags |= 1 << 0 }
+        if usageLimit != nil { flags |= 1 << 1 }
+        if revoked { flags |= 1 << 2 }
+        if requestNeeded != nil { flags |= 1 << 3 }
+        if cleanTitle?.isEmpty == false { flags |= 1 << 4 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesEditExportedChatInvite)
+        writer.int32(flags)
+        writer.raw(peer)
+        writer.string(link)
+        if let expireDate {
+            writer.int32(Int32(clamping: expireDate))
+        }
+        if let usageLimit {
+            writer.int32(Int32(clamping: usageLimit))
+        }
+        if let requestNeeded {
+            writer.constructor(requestNeeded ? HSNativeMTProtoSchema.boolTrue : HSNativeMTProtoSchema.boolFalse)
+        }
+        if let cleanTitle, !cleanTitle.isEmpty {
+            writer.string(cleanTitle)
+        }
+        return writer.data
+    }
+
+    func messagesDeleteExportedChatInvitePayload(peer: Data, link: String) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesDeleteExportedChatInvite)
+        writer.raw(peer)
+        writer.string(link)
+        return writer.data
+    }
+
+    func messagesGetChatInviteImportersPayload(peer: Data, requested: Bool, link: String?, query: String?, offsetDate: Int, offsetUser: Data, limit: Int) -> Data {
+        let cleanLink = link?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanQuery = query?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: Int32 = 0
+        if requested { flags |= 1 << 0 }
+        if cleanLink?.isEmpty == false { flags |= 1 << 1 }
+        if cleanQuery?.isEmpty == false { flags |= 1 << 2 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesGetChatInviteImporters)
+        writer.int32(flags)
+        writer.raw(peer)
+        if let cleanLink, !cleanLink.isEmpty {
+            writer.string(cleanLink)
+        }
+        if let cleanQuery, !cleanQuery.isEmpty {
+            writer.string(cleanQuery)
+        }
+        writer.int32(Int32(clamping: offsetDate))
+        writer.raw(offsetUser)
+        writer.int32(Int32(clamping: limit))
+        return writer.data
+    }
+
+    func messagesHideChatJoinRequestPayload(peer: Data, user: Data, approve: Bool) -> Data {
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesHideChatJoinRequest)
+        writer.int32(approve ? 1 : 0)
+        writer.raw(peer)
+        writer.raw(user)
+        return writer.data
+    }
+
+    func messagesHideAllChatJoinRequestsPayload(peer: Data, link: String?, approve: Bool) -> Data {
+        let cleanLink = link?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var flags: Int32 = approve ? 1 : 0
+        if cleanLink?.isEmpty == false { flags |= 1 << 1 }
+        var writer = HSTLWriter()
+        writer.constructor(HSNativeMTProtoSchema.messagesHideAllChatJoinRequests)
+        writer.int32(flags)
+        writer.raw(peer)
+        if let cleanLink, !cleanLink.isEmpty {
+            writer.string(cleanLink)
+        }
+        return writer.data
+    }
+
     func channelsGetAdminLogPayload(channel: Data, query: String?, admins: [Data], limit: Int) -> Data {
         let cleanQuery = query?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         var flags: Int32 = 0
@@ -4112,6 +6780,115 @@ final class HSNativeMTProtoClient {
         for item in items {
             writer.raw(item)
         }
+    }
+
+    private func writeInt32Vector(_ items: [Int64], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: items.count))
+        for item in items {
+            writer.int32(Int32(clamping: item))
+        }
+    }
+
+    private func writeInt64Vector(_ items: [Int64], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: items.count))
+        for item in items {
+            writer.int64(item)
+        }
+    }
+
+    private func writeStringVector(_ items: [String], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: items.count))
+        for item in items {
+            writer.string(item)
+        }
+    }
+
+    private func writeInputStickerSetID(id: Int64, accessHash: Int64, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputStickerSetID)
+        writer.int64(id)
+        writer.int64(accessHash)
+    }
+
+    private func writeInputStickerSetShortName(_ shortName: String, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputStickerSetShortName)
+        writer.string(shortName)
+    }
+
+    private func writeInputDocument(id: Int64, accessHash: Int64, fileReference: Data, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputDocument)
+        writer.int64(id)
+        writer.int64(accessHash)
+        writer.bytes(fileReference)
+    }
+
+    private func writeInputWallPaper(id: Int64, accessHash: Int64, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputWallPaper)
+        writer.int64(id)
+        writer.int64(accessHash)
+    }
+
+    private func writeInputWallPaperSlug(_ slug: String, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputWallPaperSlug)
+        writer.string(slug)
+    }
+
+    private func writeInputWallPaperNoFile(id: Int64, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.inputWallPaperNoFile)
+        writer.int64(id)
+    }
+
+    private func writeWallPaperSettings(_ settings: HSWallpaperSettings, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.wallPaperSettings)
+        var flags: UInt32 = 0
+        if settings.colors.indices.contains(0) { flags |= 1 << 0 }
+        if settings.blur { flags |= 1 << 1 }
+        if settings.motion { flags |= 1 << 2 }
+        if settings.intensity != nil { flags |= 1 << 3 }
+        if settings.colors.indices.contains(1) { flags |= 1 << 4 }
+        if settings.colors.indices.contains(2) { flags |= 1 << 5 }
+        if settings.colors.indices.contains(3) { flags |= 1 << 6 }
+        if settings.emoticon != nil { flags |= 1 << 7 }
+        writer.uint32(flags)
+        if settings.colors.indices.contains(0) { writer.int32(settings.colors[0]) }
+        if settings.colors.indices.contains(1) { writer.int32(settings.colors[1]) }
+        if settings.colors.indices.contains(2) { writer.int32(settings.colors[2]) }
+        if settings.colors.indices.contains(3) { writer.int32(settings.colors[3]) }
+        if let intensity = settings.intensity { writer.int32(intensity) }
+        if flags & (1 << 4) != 0 { writer.int32(settings.rotation ?? 0) }
+        if let emoticon = settings.emoticon { writer.string(emoticon) }
+    }
+
+    private func archivedStickerKindFlags(_ kind: String) -> Int32 {
+        switch kind.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "masks", "mask":
+            return 1 << 0
+        case "emoji", "custom_emoji", "custom-emoji":
+            return 1 << 1
+        default:
+            return 0
+        }
+    }
+
+    private func writeReaction(_ reaction: String, writer: inout HSTLWriter) {
+        let cleanReaction = reaction.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanReaction.hasPrefix("custom:"), let id = Int64(cleanReaction.dropFirst("custom:".count)) {
+            writer.constructor(HSNativeMTProtoSchema.reactionCustomEmoji)
+            writer.int64(id)
+            return
+        }
+        if cleanReaction == "paid" {
+            writer.constructor(HSNativeMTProtoSchema.reactionPaid)
+            return
+        }
+        if cleanReaction.isEmpty {
+            writer.constructor(HSNativeMTProtoSchema.reactionEmpty)
+            return
+        }
+        writer.constructor(HSNativeMTProtoSchema.reactionEmoji)
+        writer.string(cleanReaction)
     }
 
     private func writeChatAdminRights(_ rights: HSSupergroupAdminRights, writer: inout HSTLWriter) {
@@ -4450,10 +7227,7 @@ final class HSNativeMTProtoClient {
 
         writer.int32(Int32(bitPattern: flags))
         writer.int32(Int32(clamping: filter.id))
-        writer.constructor(HSNativeMTProtoSchema.textWithEntities)
-        writer.string(filter.title)
-        writer.constructor(HSNativeMTProtoSchema.vector)
-        writer.int32(0)
+        writeTextWithEntities(filter.title, writer: &writer)
         if let emoticon = filter.emoticon {
             writer.string(emoticon)
         }
@@ -4476,6 +7250,134 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private func writePollAnswerVector(_ answers: [HSPollAnswerInput], optionData: [Data], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: answers.count))
+        for (index, answer) in answers.enumerated() {
+            writer.constructor(HSNativeMTProtoSchema.pollAnswer)
+            writeTextWithEntities(answer.text, writer: &writer)
+            writer.bytes(optionData.indices.contains(index) ? optionData[index] : Data(String(index).utf8))
+        }
+    }
+
+    private func writeTodoItemVector(_ items: [HSTodoItem], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: items.count))
+        for item in items {
+            writeTodoItem(item, writer: &writer)
+        }
+    }
+
+    private func writeTodoListPayload(
+        title: String,
+        items: [HSTodoItem],
+        othersCanAppend: Bool,
+        othersCanComplete: Bool,
+        writer: inout HSTLWriter
+    ) {
+        var flags: Int32 = 0
+        if othersCanAppend { flags |= 1 << 0 }
+        if othersCanComplete { flags |= 1 << 1 }
+        writer.constructor(HSNativeMTProtoSchema.todoList)
+        writer.int32(flags)
+        writeTextWithEntities(title, writer: &writer)
+        writeTodoItemVector(items, writer: &writer)
+    }
+
+    private func writeTodoItem(_ item: HSTodoItem, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.todoItem)
+        writer.int32(Int32(clamping: item.id))
+        writeTextWithEntities(item.title, writer: &writer)
+    }
+
+    private func writeInt32Vector(_ values: [Int32], writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(Int32(clamping: values.count))
+        for value in values {
+            writer.int32(value)
+        }
+    }
+
+    private func writeTextWithEntities(_ text: String, writer: inout HSTLWriter) {
+        writer.constructor(HSNativeMTProtoSchema.textWithEntities)
+        writer.string(text)
+        writer.constructor(HSNativeMTProtoSchema.vector)
+        writer.int32(0)
+    }
+
+    private static func normalizedPollAnswers(_ answers: [HSPollAnswerInput]) -> [HSPollAnswerInput] {
+        answers.compactMap { answer in
+            let text = answer.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else {
+                return nil
+            }
+            return HSPollAnswerInput(text: text, option: answer.option)
+        }
+    }
+
+    private static func pollOptionData(for answer: HSPollAnswerInput, index: Int) -> Data {
+        if let option = answer.option, !option.isEmpty {
+            return Data(option.prefix(64))
+        }
+        return Data(String(index).utf8)
+    }
+
+    private static func pollOptionData(for answers: [HSPollAnswerInput]) -> [Data] {
+        answers.enumerated().map { index, answer in
+            pollOptionData(for: answer, index: index)
+        }
+    }
+
+    private static func normalizedCorrectPollOptions(_ options: [Data], answers: [HSPollAnswerInput], answerOptions: [Data]) -> [Data] {
+        guard !options.isEmpty else {
+            return []
+        }
+        var normalized: [Data] = []
+        for option in options {
+            let clean = Data(option.prefix(64))
+            guard !clean.isEmpty else {
+                continue
+            }
+            if answerOptions.contains(clean) {
+                normalized.append(clean)
+                continue
+            }
+            if let answerIndex = answers.firstIndex(where: { $0.option == option }), answerOptions.indices.contains(answerIndex) {
+                normalized.append(answerOptions[answerIndex])
+            }
+        }
+        return Array(Set(normalized)).sorted { lhs, rhs in
+            let lhsIndex = answerOptions.firstIndex(of: lhs) ?? Int.max
+            let rhsIndex = answerOptions.firstIndex(of: rhs) ?? Int.max
+            return lhsIndex < rhsIndex
+        }
+    }
+
+    private static func normalizedTodoItems(_ items: [HSTodoItem]) -> [HSTodoItem] {
+        var seenIDs = Set<Int>()
+        var nextID = max(1, (items.map(\.id).max() ?? 0) + 1)
+        return items.compactMap { item in
+            let title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else {
+                return nil
+            }
+            var id = item.id
+            if id <= 0 || seenIDs.contains(id) {
+                while seenIDs.contains(nextID) {
+                    nextID += 1
+                }
+                id = nextID
+                nextID += 1
+            }
+            seenIDs.insert(id)
+            return HSTodoItem(id: id, title: title)
+        }
+    }
+
+    private static func normalizedTodoIDs(_ ids: [Int]) -> [Int32] {
+        Array(Set(ids.filter { $0 > 0 })).sorted().map(Int32.init(clamping:))
+    }
+
     private func inputChannelPayload(dialogID: Int64) throws -> Data {
         if let payload = peerCacheQueue.sync(execute: { cachedPeersByDialogID[dialogID]?.inputChannelPayload }) {
             return payload
@@ -4484,6 +7386,10 @@ final class HSNativeMTProtoClient {
             code: "CHANNEL_NOT_RESOLVED",
             message: "这个会话不是可管理的超级群或频道，请先刷新会话列表后再操作。"
         )
+    }
+
+    private func normalizedMessageIDs(_ messageIDs: [Int64]) -> [Int64] {
+        Array(Set(messageIDs.filter { $0 > 0 })).sorted()
     }
 
     private static func normalizedEmailKey(_ email: String) -> String {
@@ -5063,6 +7969,24 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private static func parseMessagesChatsResult(_ result: Data) throws -> HSNativeMessagesChatsPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesChats:
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            return HSNativeMessagesChatsPayload(chats: chats)
+        case HSNativeMTProtoSchema.messagesChatsSlice:
+            _ = try reader.int32()
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            return HSNativeMessagesChatsPayload(chats: chats)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.Chats, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parsePeerDialogsResult(_ result: Data) throws -> HSNativeDialogsPayload {
         var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
         let constructor = try reader.uint32()
@@ -5107,6 +8031,200 @@ final class HSNativeMTProtoClient {
         default:
             throw HSNativeMTProtoError.malformedPacket("expected messages.DialogFilters, got 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseChatListExportedInviteResult(
+        _ result: Data,
+        sessionUserID: Int64
+    ) throws -> HSNativeChatListExportedInvitePayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.chatlistsExportedChatlistInvite:
+            let filter = try parseDialogFilter(reader: &reader, sessionUserID: sessionUserID)
+            let invite = try parseChatListSharedInvite(reader: &reader)
+            return HSNativeChatListExportedInvitePayload(filter: filter, invite: invite)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected chatlists.ExportedChatlistInvite, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseChatListExportedInvitesResult(_ result: Data) throws -> HSNativeChatListExportedInvitesPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.chatlistsExportedInvites:
+            let invites = try parseVector(reader: &reader, elementName: "ExportedChatlistInvite", parseChatListSharedInvite)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeChatListExportedInvitesPayload(invites: invites, chats: chats, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected chatlists.ExportedInvites, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseChatListSharedInviteResult(_ result: Data) throws -> HSNativeChatListRawInvite {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.exportedChatlistInvite:
+            reader.rewindUInt32()
+            return try parseChatListSharedInvite(reader: &reader)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected ExportedChatlistInvite, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseChatListInvitePreviewResult(_ result: Data) throws -> HSNativeChatListInvitePreviewPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.chatlistsChatlistInvite:
+            let flags = try reader.uint32()
+            let title = try parseTextWithEntitiesText(reader: &reader)
+            let emoticon = flags & 1 != 0 ? try reader.string() : nil
+            let peers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeChatListInvitePreviewPayload(
+                title: title,
+                emoticon: emoticon,
+                filterID: nil,
+                isAlreadyJoined: false,
+                peers: peers,
+                missingPeers: [],
+                alreadyPeers: [],
+                chats: chats,
+                users: users
+            )
+        case HSNativeMTProtoSchema.chatlistsChatlistInviteV2:
+            let flags = try reader.uint32()
+            let title = try reader.string()
+            let emoticon = flags & 1 != 0 ? try reader.string() : nil
+            let peers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeChatListInvitePreviewPayload(
+                title: title,
+                emoticon: emoticon,
+                filterID: nil,
+                isAlreadyJoined: false,
+                peers: peers,
+                missingPeers: [],
+                alreadyPeers: [],
+                chats: chats,
+                users: users
+            )
+        case HSNativeMTProtoSchema.chatlistsChatlistInviteAlready:
+            let filterID = Int(try reader.int32())
+            let missingPeers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+            let alreadyPeers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeChatListInvitePreviewPayload(
+                title: "",
+                emoticon: nil,
+                filterID: filterID,
+                isAlreadyJoined: true,
+                peers: alreadyPeers + missingPeers,
+                missingPeers: missingPeers,
+                alreadyPeers: alreadyPeers,
+                chats: chats,
+                users: users
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected chatlists.ChatlistInvite, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseChatListUpdatesResult(_ result: Data) throws -> HSNativeChatListUpdatesPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.chatlistsChatlistUpdates:
+            let missingPeers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeChatListUpdatesPayload(missingPeers: missingPeers, chats: chats, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected chatlists.ChatlistUpdates, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parsePeerVectorResult(_ result: Data) throws -> HSNativePeerVectorPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            reader.rewindUInt32()
+            return HSNativePeerVectorPayload(peers: try parseVector(reader: &reader, elementName: "Peer", parsePeer))
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected Peer vector, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parsePollVotesResult(_ result: Data) throws -> HSNativePollVotesPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesVotesList:
+            let flags = try reader.uint32()
+            let count = Int(try reader.int32())
+            let votes = try parseVector(reader: &reader, elementName: "MessagePeerVote", parsePollVote)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            let nextOffset = flags & 1 != 0 ? try reader.string() : nil
+            return HSNativePollVotesPayload(
+                page: HSPollVotesPage(count: count, votes: votes, nextOffset: nextOffset),
+                chats: chats,
+                users: users
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.VotesList, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parsePollVote(reader: inout HSTLReader) throws -> HSPollVote {
+        let constructor = try reader.uint32()
+        let peer: HSNativePeer
+        let options: [Data]
+        let date: Int32
+        switch constructor {
+        case HSNativeMTProtoSchema.messagePeerVote:
+            peer = try parsePeer(reader: &reader)
+            options = [try reader.bytes()]
+            date = try reader.int32()
+        case HSNativeMTProtoSchema.messagePeerVoteInputOption:
+            peer = try parsePeer(reader: &reader)
+            options = []
+            date = try reader.int32()
+        case HSNativeMTProtoSchema.messagePeerVoteMultiple:
+            peer = try parsePeer(reader: &reader)
+            options = try parseBytesVector(reader: &reader)
+            date = try reader.int32()
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported MessagePeerVote constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSPollVote(
+            peerID: rawPeerID(from: peer),
+            dialogID: peer.dialogID,
+            options: options,
+            date: Date(timeIntervalSince1970: TimeInterval(date))
+        )
     }
 
     private static func parseSyncStateResult(_ result: Data) throws -> HSSyncState {
@@ -5274,6 +8392,111 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private static func parseDiscussionMessageResult(_ result: Data) throws -> HSNativeDiscussionMessagePayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesDiscussionMessage:
+            let flags = try reader.uint32()
+            let messages = try parseVector(reader: &reader, elementName: "Message", parseMessage)
+            let maxMessageID: Int64?
+            if flags & (1 << 0) != 0 {
+                maxMessageID = Int64(try reader.int32())
+            } else {
+                maxMessageID = nil
+            }
+            let readInboxMaxID: Int64?
+            if flags & (1 << 1) != 0 {
+                readInboxMaxID = Int64(try reader.int32())
+            } else {
+                readInboxMaxID = nil
+            }
+            let readOutboxMaxID: Int64?
+            if flags & (1 << 2) != 0 {
+                readOutboxMaxID = Int64(try reader.int32())
+            } else {
+                readOutboxMaxID = nil
+            }
+            let unreadCount = Int(try reader.int32())
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeDiscussionMessagePayload(
+                messages: messages,
+                chats: chats,
+                users: users,
+                maxMessageID: maxMessageID,
+                readInboxMaxID: readInboxMaxID,
+                readOutboxMaxID: readOutboxMaxID,
+                unreadCount: unreadCount
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.DiscussionMessage, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseMessageViewsResult(_ result: Data) throws -> HSNativeMessageViewsPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesMessageViews:
+            let counters = try parseVector(reader: &reader, elementName: "MessageViews", parseMessageViewCounters)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeMessageViewsPayload(counters: counters, chats: chats, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.MessageViews, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseMessageReadParticipantsResult(_ result: Data) throws -> [HSMessageReadParticipant] {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            let count = Int(try reader.int32())
+            guard count >= 0 else {
+                throw HSNativeMTProtoError.malformedPacket("negative ReadParticipantDate vector count")
+            }
+            var participants: [HSMessageReadParticipant] = []
+            participants.reserveCapacity(count)
+            for _ in 0..<count {
+                participants.append(try parseReadParticipantDate(reader: &reader))
+            }
+            return participants
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected ReadParticipantDate vector, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseMessageReactionsListResult(_ result: Data) throws -> HSNativeMessageReactionsListPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesMessageReactionsList:
+            let flags = try reader.uint32()
+            let count = Int(try reader.int32())
+            let reactions = try parseVector(reader: &reader, elementName: "MessagePeerReaction", parseMessagePeerReaction)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            let nextOffset = flags & (1 << 0) == 0 ? nil : try reader.string()
+            return HSNativeMessageReactionsListPayload(
+                page: HSMessageReactionsPage(totalCount: max(0, count), reactions: reactions, nextOffset: nextOffset),
+                chats: chats,
+                users: users
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.MessageReactionsList, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parseSearchCountersResult(_ result: Data) throws -> [HSSharedMediaCounter] {
         var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
         let constructor = try reader.uint32()
@@ -5304,6 +8527,92 @@ final class HSNativeMTProtoClient {
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported messages.getSearchCounters result constructor 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseSearchResultsCalendarResult(_ result: Data) throws -> HSNativeSharedMediaCalendarPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesSearchResultsCalendar:
+            let flags = try reader.uint32()
+            let count = try reader.int32()
+            let minDate = try reader.int32()
+            let minMessageID = try reader.int32()
+            let offsetIDOffset: Int32?
+            if flags & (1 << 1) != 0 {
+                offsetIDOffset = try reader.int32()
+            } else {
+                offsetIDOffset = nil
+            }
+            let periods = try parseVector(reader: &reader, elementName: "SearchResultsCalendarPeriod", parseSearchResultsCalendarPeriod)
+            let messages = try parseVector(reader: &reader, elementName: "Message", parseMessage)
+            let chats = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeSharedMediaCalendarPayload(
+                inexact: flags & (1 << 0) != 0,
+                count: count,
+                minDate: minDate,
+                minMessageID: minMessageID,
+                offsetIDOffset: offsetIDOffset,
+                periods: periods,
+                messages: messages,
+                chats: chats,
+                users: users
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.SearchResultsCalendar, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseSearchResultsCalendarPeriod(reader: inout HSTLReader) throws -> HSNativeSharedMediaCalendarPayload.Period {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.searchResultsCalendarPeriod else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported SearchResultsCalendarPeriod constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSNativeSharedMediaCalendarPayload.Period(
+            date: try reader.int32(),
+            minMessageID: try reader.int32(),
+            maxMessageID: try reader.int32(),
+            count: try reader.int32()
+        )
+    }
+
+    private static func parseSearchResultsPositionsResult(_ result: Data) throws -> HSSharedMediaPositions {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesSearchResultsPositions:
+            let count = max(0, Int(try reader.int32()))
+            let positions = try parseVector(reader: &reader, elementName: "SearchResultPosition", parseSearchResultPosition)
+                .sorted { lhs, rhs in
+                    if lhs.messageID == rhs.messageID {
+                        return lhs.offset < rhs.offset
+                    }
+                    return lhs.messageID > rhs.messageID
+                }
+            return HSSharedMediaPositions(count: count, positions: positions)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.SearchResultsPositions, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseSearchResultPosition(reader: inout HSTLReader) throws -> HSSharedMediaPosition {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.searchResultPosition else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported SearchResultPosition constructor 0x\(String(constructor, radix: 16))")
+        }
+        let messageID = try reader.int32()
+        let date = try reader.int32()
+        let offset = try reader.int32()
+        return HSSharedMediaPosition(
+            messageID: Int64(messageID),
+            date: Date(timeIntervalSince1970: TimeInterval(date)),
+            offset: max(0, Int(offset))
+        )
     }
 
     private static func sharedMediaFilter(fromMessagesFilterConstructor constructor: UInt32) -> HSSharedMediaFilter? {
@@ -5474,7 +8783,12 @@ final class HSNativeMTProtoClient {
             if flags & (1 << 8) != 0 { try skipStickerSet(reader: &reader) }
             if flags & (1 << 9) != 0 { _ = try reader.int32() }
             if flags & (1 << 11) != 0 { _ = try reader.int32() }
-            if flags & (1 << 14) != 0 { _ = try reader.int64() }
+            let linkedDiscussionGroupID: Int64?
+            if flags & (1 << 14) != 0 {
+                linkedDiscussionGroupID = HSNativePeer.channelDialogID(try reader.int64())
+            } else {
+                linkedDiscussionGroupID = nil
+            }
             if flags & (1 << 15) != 0 { try skipChannelLocation(reader: &reader) }
             if flags & (1 << 17) != 0 { _ = try reader.int32() }
             if flags & (1 << 18) != 0 { _ = try reader.int32() }
@@ -5508,7 +8822,9 @@ final class HSNativeMTProtoClient {
                 isBroadcast: false,
                 noForwards: false,
                 disableSocialActions: flags & (1 << 19) != 0 || flags2 & (1 << 3) != 0,
-                participantsCountHidden: flags2 & (1 << 11) != 0
+                participantsCountHidden: flags2 & (1 << 11) != 0,
+                antiSpamEnabled: flags2 & (1 << 1) != 0,
+                linkedDiscussionGroupID: linkedDiscussionGroupID
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported ChatFull constructor 0x\(String(constructor, radix: 16))")
@@ -5677,9 +8993,7 @@ final class HSNativeMTProtoClient {
             _ = try reader.int32()
             _ = try reader.int32()
             let date = try reader.int32()
-            if flags & (1 << 9) != 0 {
-                try skipMessageMedia(reader: &reader)
-            }
+            let media = flags & (1 << 9) != 0 ? try parseMessageMedia(reader: &reader) : nil
             if flags & (1 << 7) != 0 {
                 try skipObjectVector(reader: &reader, name: "MessageEntity")
             }
@@ -5695,7 +9009,8 @@ final class HSNativeMTProtoClient {
                 kind: flags & (1 << 9) == 0 ? nil : "media",
                 sentAt: Date(timeIntervalSince1970: TimeInterval(date)),
                 isOutgoing: true,
-                replyToMessageID: replyToMessageID
+                replyToMessageID: replyToMessageID,
+                media: media
             )
         case HSNativeMTProtoSchema.updateShort:
             let message = try parseUpdateMessage(reader: &reader)
@@ -5782,6 +9097,35 @@ final class HSNativeMTProtoClient {
         default:
             throw HSNativeMTProtoError.malformedPacket("expected Bool, got 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseReportContentResult(_ result: Data) throws -> HSReportContentResult {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.reportResultChooseOption:
+            let title = try reader.string()
+            let options = try parseVector(reader: &reader, elementName: "MessageReportOption", parseMessageReportOption)
+            return .options(title: title, options: options)
+        case HSNativeMTProtoSchema.reportResultAddComment:
+            let flags = try reader.uint32()
+            let option = try reader.bytes()
+            return .addComment(optional: flags & 1 != 0, option: option)
+        case HSNativeMTProtoSchema.reportResultReported:
+            return .reported
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected ReportResult, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseMessageReportOption(reader: inout HSTLReader) throws -> HSReportOption {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.messageReportOption else {
+            throw HSNativeMTProtoError.malformedPacket("expected MessageReportOption, got 0x\(String(constructor, radix: 16))")
+        }
+        return HSReportOption(text: try reader.string(), option: try reader.bytes())
     }
 
     private static func parseWebPagePreviewResult(_ result: Data) throws -> HSMessageMedia? {
@@ -5879,6 +9223,46 @@ final class HSNativeMTProtoClient {
             return HSNativeContactsPayload(contactUserIDs: Set(contactIDs), users: users)
         default:
             throw HSNativeMTProtoError.malformedPacket("expected contacts.Contacts, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseImportedContactsResult(_ result: Data) throws -> HSNativeImportedContactsPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.contactsImportedContacts:
+            let imported = try parseVector(reader: &reader, elementName: "ImportedContact", parseImportedContact)
+            let popularInvites = try parseVector(reader: &reader, elementName: "PopularContact", parsePopularContact)
+            let retryContactIDs = try parseVector(reader: &reader, elementName: "Int64") { reader in
+                try reader.int64()
+            }
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeImportedContactsPayload(
+                imported: imported,
+                popularInvites: popularInvites,
+                retryContactIDs: retryContactIDs,
+                users: users
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected contacts.ImportedContacts, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseExportedContactTokenResult(_ result: Data) throws -> HSExportedContactToken {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.exportedContactToken:
+            return HSExportedContactToken(
+                url: try reader.string(),
+                expires: Int(try reader.int32())
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected ExportedContactToken, got 0x\(String(constructor, radix: 16))")
         }
     }
 
@@ -6018,6 +9402,109 @@ final class HSNativeMTProtoClient {
         switch constructor {
         case HSNativeMTProtoSchema.rpcError:
             throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.chatInvitePublicJoinRequests,
+            HSNativeMTProtoSchema.chatInviteExported:
+            reader.rewindUInt32()
+            return try parseExportedInvite(reader: &reader, requestNeededOverride: requestNeeded, fallbackTitle: fallbackTitle)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected ExportedChatInvite, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseEditedExportedInviteResult(_ result: Data, fallbackTitle: String?) throws -> HSNativeEditedInvitePayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesExportedChatInvite:
+            let invite = try parseExportedInvite(reader: &reader, requestNeededOverride: false, fallbackTitle: fallbackTitle)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeEditedInvitePayload(invite: invite, users: users)
+        case HSNativeMTProtoSchema.messagesExportedChatInviteReplaced:
+            _ = try parseExportedInvite(reader: &reader, requestNeededOverride: false, fallbackTitle: fallbackTitle)
+            let newInvite = try parseExportedInvite(reader: &reader, requestNeededOverride: false, fallbackTitle: fallbackTitle)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeEditedInvitePayload(invite: newInvite, users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.ExportedChatInvite, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseExportedInvitesPageResult(_ result: Data) throws -> HSNativeExportedInvitesPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesExportedChatInvites:
+            let count = Int(try reader.int32())
+            let invites = try parseVector(reader: &reader, elementName: "ExportedChatInvite") { reader in
+                try parseExportedInvite(reader: &reader, requestNeededOverride: false, fallbackTitle: nil)
+            }
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            return HSNativeExportedInvitesPayload(page: HSExportedInvitesPage(totalCount: count, invites: invites), users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.ExportedChatInvites, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseInviteImportersPageResult(_ result: Data) throws -> HSNativeInviteImportersPayload {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesChatInviteImporters:
+            let count = Int(try reader.int32())
+            let importerPayloads = try parseVector(reader: &reader, elementName: "ChatInviteImporter", parseChatInviteImporter)
+            let users = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            var usersByID: [Int64: HSNativeParsedUser] = [:]
+            for user in users {
+                usersByID[user.id] = user
+            }
+            let importers = importerPayloads.map { item -> HSInviteImporter in
+                let user = usersByID[item.userID]
+                return HSInviteImporter(
+                    userID: item.userID,
+                    displayName: user?.title ?? "User \(item.userID)",
+                    username: user?.username,
+                    date: Date(timeIntervalSince1970: TimeInterval(item.date)),
+                    about: item.about,
+                    approvedBy: item.approvedBy,
+                    requested: item.requested,
+                    joinedViaFolderLink: item.joinedViaFolderLink
+                )
+            }
+            return HSNativeInviteImportersPayload(page: HSInviteImportersPage(totalCount: count, importers: importers), users: users)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.ChatInviteImporters, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseChatInviteImporter(reader: inout HSTLReader) throws -> HSNativeInviteImporterPayload {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.chatInviteImporter else {
+            throw HSNativeMTProtoError.malformedPacket("expected ChatInviteImporter, got 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let userID = try reader.int64()
+        let date = Int(try reader.int32())
+        let about = flags & (1 << 2) == 0 ? nil : try reader.string()
+        let approvedBy = flags & (1 << 1) == 0 ? nil : try reader.int64()
+        return HSNativeInviteImporterPayload(
+            userID: userID,
+            date: date,
+            about: about,
+            approvedBy: approvedBy,
+            requested: flags & 1 != 0,
+            joinedViaFolderLink: flags & (1 << 3) != 0
+        )
+    }
+
+    private static func parseExportedInvite(reader: inout HSTLReader, requestNeededOverride: Bool, fallbackTitle: String?) throws -> HSExportedInvite {
+        let constructor = try reader.uint32()
+        switch constructor {
         case HSNativeMTProtoSchema.chatInvitePublicJoinRequests:
             return HSExportedInvite(
                 link: "",
@@ -6044,12 +9531,12 @@ final class HSNativeMTProtoClient {
             let usageLimit = flags & (1 << 2) == 0 ? nil : Int(try reader.int32())
             let usage = flags & (1 << 3) == 0 ? nil : Int(try reader.int32())
             let requested = flags & (1 << 7) == 0 ? nil : Int(try reader.int32())
-            let title = flags & (1 << 8) == 0 ? fallbackTitle : try reader.string()
             if flags & (1 << 10) != 0 {
                 _ = try reader.int32()
             }
+            let title = flags & (1 << 8) == 0 ? fallbackTitle : try reader.string()
             if flags & (1 << 9) != 0 {
-                try skipUnsupportedObject(reader: &reader, name: "StarsSubscriptionPricing")
+                try skipStarsSubscriptionPricing(reader: &reader)
             }
             return HSExportedInvite(
                 link: link,
@@ -6062,7 +9549,7 @@ final class HSNativeMTProtoClient {
                 requested: requested,
                 revoked: flags & 1 != 0,
                 permanent: flags & (1 << 5) != 0,
-                requestNeeded: requestNeeded || flags & (1 << 6) != 0
+                requestNeeded: requestNeededOverride || flags & (1 << 6) != 0
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("expected ExportedChatInvite, got 0x\(String(constructor, radix: 16))")
@@ -6122,28 +9609,111 @@ final class HSNativeMTProtoClient {
         case HSNativeMTProtoSchema.rpcError:
             throw try parseRPCError(reader: &reader)
         case HSNativeMTProtoSchema.peerNotifySettings:
-            let flags = try reader.uint32()
-            let showPreviews = flags & (1 << 0) == 0 ? true : try parseBool(reader: &reader)
-            let silent = flags & (1 << 1) == 0 ? false : try parseBool(reader: &reader)
-            let muteUntil = flags & (1 << 2) == 0 ? nil : Int(try reader.int32())
-            if flags & (1 << 3) != 0 { try skipNotificationSound(reader: &reader) }
-            if flags & (1 << 4) != 0 { try skipNotificationSound(reader: &reader) }
-            if flags & (1 << 5) != 0 { try skipNotificationSound(reader: &reader) }
-            if flags & (1 << 6) != 0 { try skipBool(reader: &reader) }
-            if flags & (1 << 7) != 0 { try skipBool(reader: &reader) }
-            if flags & (1 << 8) != 0 { try skipNotificationSound(reader: &reader) }
-            if flags & (1 << 9) != 0 { try skipNotificationSound(reader: &reader) }
-            if flags & (1 << 10) != 0 { try skipNotificationSound(reader: &reader) }
-            let isEnabled = muteUntil.map { Int64($0) <= Int64(Date().timeIntervalSince1970) } ?? true
-            return HSNotifyScopeSettings(
-                enabled: isEnabled,
-                showPreviews: showPreviews,
-                silent: silent,
-                muteUntil: muteUntil
-            )
+            return try parsePeerNotifySettingsBody(reader: &reader)
         default:
             throw HSNativeMTProtoError.malformedPacket("expected PeerNotifySettings, got 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseNotifyExceptionsResult(_ result: Data) throws -> HSNotificationExceptions {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.updatesTooLong:
+            return notificationExceptions(from: [])
+        case HSNativeMTProtoSchema.updateShort:
+            let update = try parseNotifyExceptionUpdate(reader: &reader)
+            _ = try reader.int32()
+            return notificationExceptions(from: update.map { [$0] } ?? [])
+        case HSNativeMTProtoSchema.updates, HSNativeMTProtoSchema.updatesCombined:
+            let updates = try parseVector(reader: &reader, elementName: "Update", parseNotifyExceptionUpdate)
+            _ = try parseVector(reader: &reader, elementName: "User", parseUserSummary)
+            _ = try parseVector(reader: &reader, elementName: "Chat", parseChat)
+            _ = try reader.int32()
+            if constructor == HSNativeMTProtoSchema.updatesCombined {
+                _ = try reader.int32()
+            }
+            _ = try reader.int32()
+            return notificationExceptions(from: updates.compactMap { $0 })
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected Updates for notify exceptions, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseNotifyExceptionUpdate(reader: inout HSTLReader) throws -> HSNativeNotifyExceptionPayload? {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.updateNotifySettings:
+            let peer = try parseNotifyPeer(reader: &reader)
+            let settings = try parsePeerNotifySettings(reader: &reader)
+            guard let peer else {
+                return nil
+            }
+            return HSNativeNotifyExceptionPayload(peer: peer, settings: settings)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported notify-exception Update constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func notificationExceptions(from payloads: [HSNativeNotifyExceptionPayload]) -> HSNotificationExceptions {
+        let all = payloads.map { payload in
+            HSNotificationException(
+                dialogID: payload.peer.dialogID,
+                peerID: rawPeerID(from: payload.peer),
+                scope: notificationExceptionScope(for: payload.peer),
+                settings: payload.settings
+            )
+        }
+        return HSNotificationExceptions(
+            privateChats: all.filter { $0.scope == .privateChats },
+            groups: all.filter { $0.scope == .groups },
+            channels: all.filter { $0.scope == .channels },
+            all: all
+        )
+    }
+
+    private static func notificationExceptionScope(for peer: HSNativePeer) -> HSNotificationException.Scope {
+        switch peer {
+        case .user:
+            return .privateChats
+        case .chat:
+            return .groups
+        case .channel:
+            return .channels
+        }
+    }
+
+    private static func parsePeerNotifySettings(reader: inout HSTLReader) throws -> HSNotifyScopeSettings {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.peerNotifySettings else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported PeerNotifySettings constructor 0x\(String(constructor, radix: 16))")
+        }
+        return try parsePeerNotifySettingsBody(reader: &reader)
+    }
+
+    private static func parsePeerNotifySettingsBody(reader: inout HSTLReader) throws -> HSNotifyScopeSettings {
+        let flags = try reader.uint32()
+        let showPreviews = flags & (1 << 0) == 0 ? true : try parseBool(reader: &reader)
+        let silent = flags & (1 << 1) == 0 ? false : try parseBool(reader: &reader)
+        let muteUntil = flags & (1 << 2) == 0 ? nil : Int(try reader.int32())
+        let sound = flags & (1 << 3) == 0 ? nil : try parseNotificationSound(reader: &reader)
+        if flags & (1 << 4) != 0 { try skipNotificationSound(reader: &reader) }
+        if flags & (1 << 5) != 0 { try skipNotificationSound(reader: &reader) }
+        if flags & (1 << 6) != 0 { try skipBool(reader: &reader) }
+        if flags & (1 << 7) != 0 { try skipBool(reader: &reader) }
+        if flags & (1 << 8) != 0 { try skipNotificationSound(reader: &reader) }
+        if flags & (1 << 9) != 0 { try skipNotificationSound(reader: &reader) }
+        if flags & (1 << 10) != 0 { try skipNotificationSound(reader: &reader) }
+        let isEnabled = muteUntil.map { Int64($0) <= Int64(Date().timeIntervalSince1970) } ?? true
+        return HSNotifyScopeSettings(
+            enabled: isEnabled,
+            showPreviews: showPreviews,
+            silent: silent,
+            muteUntil: muteUntil,
+            sound: sound
+        )
     }
 
     private static func parseAllStickersResult(_ result: Data) throws -> [HSStickerSet] {
@@ -6188,6 +9758,357 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private static func parseStickerSetInstallResult(_ result: Data) throws -> HSStickerSetInstallResult {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesStickerSetInstallResultSuccess:
+            return HSStickerSetInstallResult(installed: true, archived: false, archiveSetIDs: [])
+        case HSNativeMTProtoSchema.messagesStickerSetInstallResultArchive:
+            let archivedSets = try parseVector(reader: &reader, elementName: "StickerSetCovered") { reader in
+                try parseStickerSetCovered(reader: &reader, premium: false)
+            }
+            return HSStickerSetInstallResult(installed: true, archived: true, archiveSetIDs: archivedSets.map(\.id))
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.StickerSetInstallResult, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseArchivedStickerSetsResult(_ result: Data) throws -> HSArchivedStickerSetsPage {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesArchivedStickers:
+            let count = max(0, Int(try reader.int32()))
+            let sets = try parseVector(reader: &reader, elementName: "StickerSetCovered") { reader in
+                try parseStickerSetCovered(reader: &reader, premium: false)
+            }
+            return HSArchivedStickerSetsPage(count: count, sets: sets)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.ArchivedStickers, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseStickerSetDetailsResult(_ result: Data) throws -> HSStickerSetDetails {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesStickerSetNotModified:
+            return HSStickerSetDetails(set: nil, packs: [], keywords: [], documents: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesStickerSet, HSNativeMTProtoSchema.messagesStickerSetLegacy:
+            let set = try parseStickerSet(reader: &reader, installed: false, featured: false, premium: false)
+            let packs = try parseStickerPackVector(reader: &reader)
+            let keywords: [HSStickerKeyword]
+            if constructor == HSNativeMTProtoSchema.messagesStickerSet {
+                keywords = try parseStickerKeywordVector(reader: &reader)
+            } else {
+                keywords = []
+            }
+            let documents = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSStickerSetDetails(set: set, packs: packs, keywords: keywords, documents: documents, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.StickerSet, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseStickersResult(_ result: Data, previousHash: Int64) throws -> HSStickerDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesStickersNotModified:
+            return HSStickerDocumentList(hash: previousHash, stickers: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesStickers:
+            let hash = try reader.int64()
+            let stickers = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSStickerDocumentList(hash: hash, stickers: stickers, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.Stickers, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseCustomEmojiDocumentsResult(_ result: Data) throws -> HSStickerDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            reader.rewindUInt32()
+            let documents = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSStickerDocumentList(hash: 0, stickers: documents, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected vector<Document>, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseEmojiListResult(_ result: Data, previousHash: Int64) throws -> HSEmojiDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.emojiListNotModified:
+            return HSEmojiDocumentList(hash: previousHash, documentIDs: [], notModified: true)
+        case HSNativeMTProtoSchema.emojiList:
+            let hash = try reader.int64()
+            let ids = try parseInt64Vector(reader: &reader)
+            return HSEmojiDocumentList(hash: hash, documentIDs: ids, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected EmojiList, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseEmojiKeywordsDifferenceResult(_ result: Data) throws -> HSEmojiKeywordsDifference {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.emojiKeywordsDifference:
+            let langCode = try reader.string()
+            let fromVersion = Int(try reader.int32())
+            let version = Int(try reader.int32())
+            let keywords = try parseEmojiKeywordVector(reader: &reader)
+            return HSEmojiKeywordsDifference(
+                langCode: langCode,
+                fromVersion: fromVersion,
+                version: version,
+                keywords: keywords
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected EmojiKeywordsDifference, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseEmojiKeywordLanguagesResult(_ result: Data) throws -> [HSEmojiLanguage] {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            reader.rewindUInt32()
+            return try parseVector(reader: &reader, elementName: "EmojiLanguage") { reader in
+                try parseEmojiLanguage(reader: &reader)
+            }
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected vector<EmojiLanguage>, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseLocalizationLanguagesResult(_ result: Data) throws -> [HSLocalizationLanguage] {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            reader.rewindUInt32()
+            return try parseVector(reader: &reader, elementName: "LangPackLanguage") { reader in
+                try parseLocalizationLanguage(reader: &reader)
+            }
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected vector<LangPackLanguage>, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseLocalizationLanguageResult(_ result: Data) throws -> HSLocalizationLanguage {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        default:
+            reader.rewindUInt32()
+            return try parseLocalizationLanguage(reader: &reader)
+        }
+    }
+
+    private static func parseLocalizationPackResult(_ result: Data) throws -> HSLocalizationPack {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.langPackDifference:
+            let languageCode = try reader.string()
+            let fromVersion = Int(try reader.int32())
+            let version = Int(try reader.int32())
+            let entries = try parseLocalizationEntryVector(reader: &reader)
+            return HSLocalizationPack(languageCode: languageCode, fromVersion: fromVersion, version: version, entries: entries)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected LangPackDifference, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseLocalizationStringsResult(_ result: Data) throws -> [HSLocalizationEntry] {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.vector:
+            reader.rewindUInt32()
+            return try parseLocalizationEntryVector(reader: &reader)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected vector<LangPackString>, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseRecentStickersResult(_ result: Data, previousHash: Int64) throws -> HSStickerDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesRecentStickersNotModified:
+            return HSStickerDocumentList(hash: previousHash, stickers: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesRecentStickers:
+            let hash = try reader.int64()
+            try skipStickerPackVector(reader: &reader)
+            var stickers = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            let dates = try parseInt32Vector(reader: &reader)
+            for index in stickers.indices where dates.indices.contains(index) {
+                stickers[index] = stickers[index].withDate(Date(timeIntervalSince1970: TimeInterval(dates[index])))
+            }
+            return HSStickerDocumentList(hash: hash, stickers: stickers, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.RecentStickers, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseFavedStickersResult(_ result: Data, previousHash: Int64) throws -> HSStickerDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesFavedStickersNotModified:
+            return HSStickerDocumentList(hash: previousHash, stickers: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesFavedStickers:
+            let hash = try reader.int64()
+            try skipStickerPackVector(reader: &reader)
+            let stickers = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSStickerDocumentList(hash: hash, stickers: stickers, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.FavedStickers, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseSavedGifsResult(_ result: Data, previousHash: Int64) throws -> HSStickerDocumentList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesSavedGifsNotModified:
+            return HSStickerDocumentList(hash: previousHash, stickers: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesSavedGifs:
+            let hash = try reader.int64()
+            let gifs = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSStickerDocumentList(hash: hash, stickers: gifs, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.SavedGifs, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseSavedRingtonesResult(_ result: Data, previousHash: Int64) throws -> HSSavedRingtones {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.accountSavedRingtonesNotModified:
+            return HSSavedRingtones(hash: previousHash, ringtones: [], notModified: true)
+        case HSNativeMTProtoSchema.accountSavedRingtones:
+            let hash = try reader.int64()
+            let ringtones = try parseVector(reader: &reader, elementName: "Document") { reader in
+                try parseStickerDocument(reader: &reader, date: nil)
+            }
+            return HSSavedRingtones(hash: hash, ringtones: ringtones, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected account.SavedRingtones, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseSavedRingtoneResult(_ result: Data, saved: Bool) throws -> HSSavedRingtoneAction {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.accountSavedRingtone:
+            return HSSavedRingtoneAction(saved: saved, document: nil)
+        case HSNativeMTProtoSchema.accountSavedRingtoneConverted:
+            return HSSavedRingtoneAction(saved: saved, document: try parseStickerDocument(reader: &reader, date: nil))
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected account.SavedRingtone, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseStickerDocumentResult(_ result: Data) throws -> HSStickerDocument {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        default:
+            reader.rewindUInt32()
+            return try parseStickerDocument(reader: &reader, date: nil)
+        }
+    }
+
+    private static func parseWallpapersResult(_ result: Data, previousHash: Int64) throws -> HSWallpaperList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.accountWallPapersNotModified:
+            return HSWallpaperList(hash: previousHash, wallpapers: [], notModified: true)
+        case HSNativeMTProtoSchema.accountWallPapers:
+            let hash = try reader.int64()
+            let wallpapers = try parseWallpaperVector(reader: &reader)
+            return HSWallpaperList(hash: hash, wallpapers: wallpapers, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected account.WallPapers, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseWallpaperResult(_ result: Data) throws -> HSWallpaper {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.wallPaper, HSNativeMTProtoSchema.wallPaperNoFile:
+            reader.rewindUInt32()
+            return try parseWallpaper(reader: &reader)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected WallPaper, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parseAvailableReactionsResult(_ result: Data) throws -> [HSReaction] {
         var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
         let constructor = try reader.uint32()
@@ -6202,6 +10123,72 @@ final class HSNativeMTProtoClient {
                 .filter { !$0.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         default:
             throw HSNativeMTProtoError.malformedPacket("expected messages.AvailableReactions, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseReactionsResult(_ result: Data, previousHash: Int64) throws -> HSReactionList {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.messagesReactionsNotModified:
+            return HSReactionList(hash: previousHash, reactions: [], notModified: true)
+        case HSNativeMTProtoSchema.messagesReactions:
+            let hash = try reader.int64()
+            let reactions = try parseVector(reader: &reader, elementName: "Reaction") { reader in
+                try parseReactionSummary(reader: &reader)
+            }
+            return HSReactionList(hash: hash, reactions: reactions, notModified: false)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected messages.Reactions, got 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseConfigDefaultReaction(_ result: Data) throws -> String? {
+        var reader = HSTLReader(data: try unpackGzipPackedIfNeeded(result))
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.rpcError:
+            throw try parseRPCError(reader: &reader)
+        case HSNativeMTProtoSchema.config:
+            let flags = try reader.uint32()
+            _ = try reader.int32()
+            _ = try reader.int32()
+            try skipBool(reader: &reader)
+            _ = try reader.int32()
+            try skipObjectVector(reader: &reader, name: "DcOption")
+            _ = try reader.string()
+            for _ in 0..<17 {
+                _ = try reader.int32()
+            }
+            if flags & (1 << 0) != 0 {
+                _ = try reader.int32()
+            }
+            _ = try reader.int32()
+            _ = try reader.int32()
+            _ = try reader.int32()
+            _ = try reader.int32()
+            _ = try reader.string()
+            if flags & (1 << 7) != 0 { _ = try reader.string() }
+            if flags & (1 << 9) != 0 { _ = try reader.string() }
+            if flags & (1 << 10) != 0 { _ = try reader.string() }
+            if flags & (1 << 11) != 0 { _ = try reader.string() }
+            if flags & (1 << 12) != 0 { _ = try reader.string() }
+            _ = try reader.int32()
+            _ = try reader.int32()
+            _ = try reader.int32()
+            if flags & (1 << 2) != 0 {
+                _ = try reader.string()
+                _ = try reader.int32()
+                _ = try reader.int32()
+            }
+            if flags & (1 << 15) != 0 {
+                return try parseReaction(reader: &reader)
+            }
+            return nil
+        default:
+            throw HSNativeMTProtoError.malformedPacket("expected Config, got 0x\(String(constructor, radix: 16))")
         }
     }
 
@@ -6632,7 +10619,7 @@ final class HSNativeMTProtoClient {
         let flags = try reader.uint32()
         if flags & 1 != 0 { _ = try reader.int32() }
         let id = try reader.int64()
-        _ = try reader.int64()
+        let accessHash = try reader.int64()
         let title = try reader.string()
         let shortName = try reader.string()
         if flags & (1 << 4) != 0 {
@@ -6646,6 +10633,7 @@ final class HSNativeMTProtoClient {
         let premiumFlags = flags & (1 << 7) != 0 || flags & (1 << 9) != 0 || flags & (1 << 10) != 0
         return HSStickerSet(
             id: id,
+            accessHash: accessHash,
             title: title,
             shortName: shortName,
             count: count,
@@ -6733,6 +10721,22 @@ final class HSNativeMTProtoClient {
         let userID = try reader.int64()
         try skipBool(reader: &reader)
         return userID
+    }
+
+    private static func parseImportedContact(reader: inout HSTLReader) throws -> HSNativeImportedContactPayload {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.importedContact else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported ImportedContact constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSNativeImportedContactPayload(userID: try reader.int64(), clientID: try reader.int64())
+    }
+
+    private static func parsePopularContact(reader: inout HSTLReader) throws -> HSNativePopularContactPayload {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.popularContact else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported PopularContact constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSNativePopularContactPayload(clientID: try reader.int64(), importers: Int(try reader.int32()))
     }
 
     private static func parsePeerBlocked(reader: inout HSTLReader) throws -> HSNativePeer {
@@ -7150,6 +11154,18 @@ final class HSNativeMTProtoClient {
         return text
     }
 
+    private static func parseChatListSharedInvite(reader: inout HSTLReader) throws -> HSNativeChatListRawInvite {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.exportedChatlistInvite else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported ExportedChatlistInvite constructor 0x\(String(constructor, radix: 16))")
+        }
+        _ = try reader.uint32()
+        let title = try reader.string()
+        let url = try reader.string()
+        let peers = try parseVector(reader: &reader, elementName: "Peer", parsePeer)
+        return HSNativeChatListRawInvite(title: title, url: url, peers: peers)
+    }
+
     private static func parseInputPeerVector(reader: inout HSTLReader, sessionUserID: Int64) throws -> [HSChatListFilterPeer] {
         try parseVector(reader: &reader, elementName: "InputPeer") { reader in
             try parseInputPeer(reader: &reader, sessionUserID: sessionUserID)
@@ -7297,9 +11313,10 @@ final class HSNativeMTProtoClient {
             }
             let replyTo = flags & (1 << 3) == 0 ? nil : try parseMessageReplyHeader(reader: &reader)
             let date = try reader.int32()
-            let text = try reader.string()
+            let rawText = try reader.string()
             let hasMedia = flags & (1 << 9) != 0
             let media = hasMedia ? try parseMessageMedia(reader: &reader) : nil
+            let text = rawText.isEmpty ? media.map { messageListText(for: $0) } ?? rawText : rawText
             if flags & (1 << 6) != 0 {
                 try skipReplyMarkup(reader: &reader)
             }
@@ -7522,7 +11539,9 @@ final class HSNativeMTProtoClient {
                 role: flags & 1 != 0 ? "creator" : "member",
                 isMegagroup: megagroup,
                 isBroadcast: broadcast,
-                noForwards: flags & (1 << 27) != 0
+                noForwards: flags & (1 << 27) != 0,
+                signaturesEnabled: flags & (1 << 11) != 0,
+                signatureProfilesEnabled: flags2 & (1 << 12) != 0
             )
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported Chat constructor 0x\(String(constructor, radix: 16))")
@@ -8144,6 +12163,98 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private func sharedInvite(
+        from invite: HSNativeChatListRawInvite,
+        users: [HSNativeParsedUser],
+        chats: [HSNativeParsedChat]
+    ) -> HSChatListSharedInvite {
+        let slug = Self.chatListInviteSlug(from: invite.url)
+        return HSChatListSharedInvite(
+            title: invite.title,
+            url: invite.url,
+            slug: slug,
+            peers: invite.peers.map { sharedPeer(from: $0, users: users, chats: chats) }
+        )
+    }
+
+    private func sharedPeer(
+        from peer: HSNativePeer,
+        users: [HSNativeParsedUser],
+        chats: [HSNativeParsedChat]
+    ) -> HSChatListSharedPeer {
+        HSChatListSharedPeer(
+            peer: chatListFilterPeer(from: peer, users: users, chats: chats),
+            title: peerTitle(peer, users: users, chats: chats)
+        )
+    }
+
+    private func chatListFilterPeer(
+        from peer: HSNativePeer,
+        users: [HSNativeParsedUser],
+        chats: [HSNativeParsedChat]
+    ) -> HSChatListFilterPeer {
+        let parsed = Self.chatListFilterPeer(from: peer, users: users, chats: chats)
+        guard parsed.accessHash == nil, parsed.kind != .chat else {
+            return parsed
+        }
+        let cachedPayload = peerCacheQueue.sync {
+            cachedPeersByDialogID[peer.dialogID]?.inputPeerPayload
+        }
+        guard let cachedPayload, let accessHash = Self.inputPeerAccessHash(from: cachedPayload) else {
+            return parsed
+        }
+        return HSChatListFilterPeer(
+            kind: parsed.kind,
+            peerID: parsed.peerID,
+            dialogID: parsed.dialogID,
+            accessHash: accessHash
+        )
+    }
+
+    private static func chatListFilterPeer(
+        from peer: HSNativePeer,
+        users: [HSNativeParsedUser],
+        chats: [HSNativeParsedChat]
+    ) -> HSChatListFilterPeer {
+        switch peer {
+        case .user(let id):
+            let accessHash = users.first { $0.id == id }?.accessHash
+            return HSChatListFilterPeer(kind: .user, peerID: id, dialogID: id, accessHash: accessHash)
+        case .chat(let id):
+            return HSChatListFilterPeer(kind: .chat, peerID: id, dialogID: -id, accessHash: nil)
+        case .channel(let id):
+            let accessHash = chats.first {
+                if case .channel(let channelID) = $0.peer {
+                    return channelID == id
+                }
+                return false
+            }?.accessHash
+            return HSChatListFilterPeer(kind: .channel, peerID: id, dialogID: HSNativePeer.channelDialogID(id), accessHash: accessHash)
+        }
+    }
+
+    private static func inputPeerAccessHash(from payload: Data) -> Int64? {
+        var reader = HSTLReader(data: payload)
+        guard let constructor = try? reader.uint32() else {
+            return nil
+        }
+        switch constructor {
+        case HSNativeMTProtoSchema.inputPeerUser, HSNativeMTProtoSchema.inputPeerChannel:
+            _ = try? reader.int64()
+            return try? reader.int64()
+        default:
+            return nil
+        }
+    }
+
+    private static func chatListInviteSlug(from url: String) -> String {
+        let trimmed = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let components = URLComponents(string: trimmed), let last = components.path.split(separator: "/").last {
+            return String(last)
+        }
+        return trimmed.split(separator: "/").last.map(String.init) ?? trimmed
+    }
+
     private static func fallbackPeerTitle(_ peer: HSNativePeer) -> String {
         switch peer {
         case .user(let id):
@@ -8220,6 +12331,10 @@ final class HSNativeMTProtoClient {
                 ?? media.webPage?.displayURL
                 ?? media.webPage?.url
                 ?? "Link Preview"
+        case .unknown where media.poll != nil:
+            return media.poll?.poll.question ?? "Poll"
+        case .unknown where media.todo != nil:
+            return media.todo?.todo.title ?? "Todo"
         case .file:
             return media.fileName ?? "File"
         case .unknown:
@@ -8299,14 +12414,17 @@ final class HSNativeMTProtoClient {
             about: chat.about,
             memberCount: chat.memberCount,
             pendingRequests: 0,
-            role: chat.role,
-            isMegagroup: chat.isMegagroup,
-            isBroadcast: chat.isBroadcast,
-            noForwards: chat.noForwards,
-            disableSocialActions: chat.disableSocialActions,
-            participantsCountHidden: chat.participantsCountHidden
-        )
-    }
+                role: chat.role,
+                isMegagroup: chat.isMegagroup,
+                isBroadcast: chat.isBroadcast,
+                noForwards: chat.noForwards,
+                disableSocialActions: chat.disableSocialActions,
+                participantsCountHidden: chat.participantsCountHidden,
+                signaturesEnabled: chat.signaturesEnabled,
+                signatureProfilesEnabled: chat.signatureProfilesEnabled,
+                antiSpamEnabled: false
+            )
+        }
 
     private static func hsContact(from user: HSNativeParsedUser, forcedStatus: String?) -> HSContact {
         HSContact(
@@ -8349,6 +12467,19 @@ final class HSNativeMTProtoClient {
             return (.phone, value.filter { $0.isNumber })
         }
         return (.username, value.trimmingCharacters(in: CharacterSet(charactersIn: "@")))
+    }
+
+    private static func normalizedImportPhone(_ phone: String) -> String {
+        let trimmed = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+        var result = ""
+        for character in trimmed {
+            if character == "+", result.isEmpty {
+                result.append(character)
+            } else if character.isNumber {
+                result.append(character)
+            }
+        }
+        return result
     }
 
     private static func userID(from peer: HSNativePeer) -> Int64? {
@@ -8865,6 +12996,10 @@ final class HSNativeMTProtoClient {
         case HSNativeMTProtoSchema.messageMediaWebPage:
             _ = try reader.uint32()
             return try parseWebPageMedia(reader: &reader)
+        case HSNativeMTProtoSchema.messageMediaPoll:
+            return try parsePollMedia(reader: &reader)
+        case HSNativeMTProtoSchema.messageMediaToDo:
+            return try parseTodoMedia(reader: &reader)
         case HSNativeMTProtoSchema.messageMediaDice:
             let flags = try reader.uint32()
             _ = try reader.int32()
@@ -9020,6 +13155,204 @@ final class HSNativeMTProtoClient {
         }
     }
 
+    private static func parsePollMedia(reader: inout HSTLReader) throws -> HSMessageMedia {
+        let poll = try parsePoll(reader: &reader)
+        let results = try parsePollResults(reader: &reader)
+        return HSMessageMedia(
+            kind: .unknown,
+            fileName: nil,
+            mimeType: "application/x-hsgram-poll",
+            size: nil,
+            width: nil,
+            height: nil,
+            duration: nil,
+            poll: HSPollState(poll: poll, results: results)
+        )
+    }
+
+    private static func parseTodoMedia(reader: inout HSTLReader) throws -> HSMessageMedia {
+        let flags = try reader.uint32()
+        let todo = try parseTodoList(reader: &reader)
+        let completions = flags & 1 != 0 ? try parseVector(reader: &reader, elementName: "TodoCompletion", parseTodoCompletion) : []
+        return HSMessageMedia(
+            kind: .unknown,
+            fileName: nil,
+            mimeType: "application/x-hsgram-todo",
+            size: nil,
+            width: nil,
+            height: nil,
+            duration: nil,
+            todo: HSTodoState(todo: todo, completions: completions)
+        )
+    }
+
+    private static func parsePoll(reader: inout HSTLReader) throws -> HSPoll {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.poll else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported Poll constructor 0x\(String(constructor, radix: 16))")
+        }
+        let id = try reader.int64()
+        let flags = try reader.uint32()
+        let question = try parseTextWithEntitiesText(reader: &reader)
+        let answers = try parseVector(reader: &reader, elementName: "PollAnswer", parsePollAnswer)
+        let closePeriod = flags & (1 << 4) != 0 ? Int(try reader.int32()) : nil
+        let closeDate = flags & (1 << 5) != 0 ? Date(timeIntervalSince1970: TimeInterval(try reader.int32())) : nil
+        return HSPoll(
+            id: id,
+            question: question,
+            answers: answers,
+            isClosed: flags & 1 != 0,
+            isPublic: flags & (1 << 1) != 0,
+            isMultipleChoice: flags & (1 << 2) != 0,
+            isQuiz: flags & (1 << 3) != 0,
+            closePeriod: closePeriod,
+            closeDate: closeDate
+        )
+    }
+
+    private static func parsePollAnswer(reader: inout HSTLReader) throws -> HSPollAnswer {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.pollAnswer else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported PollAnswer constructor 0x\(String(constructor, radix: 16))")
+        }
+        let text = try parseTextWithEntitiesText(reader: &reader)
+        let option = try reader.bytes()
+        return HSPollAnswer(text: text, option: option)
+    }
+
+    private static func parsePollResults(reader: inout HSTLReader) throws -> HSPollResults {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.pollResults else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported PollResults constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let answers = flags & (1 << 1) != 0 ? try parseVector(reader: &reader, elementName: "PollAnswerVoters", parsePollAnswerVoters) : []
+        let totalVoters = flags & (1 << 2) != 0 ? Int(try reader.int32()) : nil
+        let recentVoters = flags & (1 << 3) != 0 ? try parseVector(reader: &reader, elementName: "Peer", parsePeer).map { rawPeerID(from: $0) } : []
+        let solution: String?
+        if flags & (1 << 4) != 0 {
+            solution = try reader.string()
+            try skipObjectVector(reader: &reader, name: "MessageEntity")
+        } else {
+            solution = nil
+        }
+        return HSPollResults(
+            totalVoters: totalVoters,
+            answers: answers,
+            recentVoterIDs: recentVoters,
+            solution: solution,
+            isMin: flags & 1 != 0
+        )
+    }
+
+    private static func parsePollAnswerVoters(reader: inout HSTLReader) throws -> HSPollAnswerVoters {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.pollAnswerVoters else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported PollAnswerVoters constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        return HSPollAnswerVoters(
+            option: try reader.bytes(),
+            voters: Int(try reader.int32()),
+            isChosen: flags & 1 != 0,
+            isCorrect: flags & (1 << 1) != 0
+        )
+    }
+
+    private static func parseTodoList(reader: inout HSTLReader) throws -> HSTodoList {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.todoList else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported TodoList constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let title = try parseTextWithEntitiesText(reader: &reader)
+        let items = try parseVector(reader: &reader, elementName: "TodoItem", parseTodoItem)
+        return HSTodoList(
+            title: title,
+            items: items,
+            othersCanAppend: flags & 1 != 0,
+            othersCanComplete: flags & (1 << 1) != 0
+        )
+    }
+
+    private static func parseTodoItem(reader: inout HSTLReader) throws -> HSTodoItem {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.todoItem else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported TodoItem constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSTodoItem(id: Int(try reader.int32()), title: try parseTextWithEntitiesText(reader: &reader))
+    }
+
+    private static func parseTodoCompletion(reader: inout HSTLReader) throws -> HSTodoCompletion {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.todoCompletion else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported TodoCompletion constructor 0x\(String(constructor, radix: 16))")
+        }
+        let itemID = Int(try reader.int32())
+        let peer = try parsePeer(reader: &reader)
+        let date = try reader.int32()
+        return HSTodoCompletion(
+            itemID: itemID,
+            completedByPeerID: rawPeerID(from: peer),
+            completedByDialogID: peer.dialogID,
+            completedAt: Date(timeIntervalSince1970: TimeInterval(date))
+        )
+    }
+
+    private static func parseStickerDocument(reader: inout HSTLReader, date: Date?) throws -> HSStickerDocument {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.documentEmpty:
+            let id = try reader.int64()
+            return HSStickerDocument(
+                id: id,
+                accessHash: 0,
+                fileReference: Data(),
+                setID: nil,
+                alt: nil,
+                fileName: nil,
+                mimeType: nil,
+                size: nil,
+                width: nil,
+                height: nil,
+                animated: false,
+                video: false,
+                date: date
+            )
+        case HSNativeMTProtoSchema.document:
+            let flags = try reader.uint32()
+            let id = try reader.int64()
+            let accessHash = try reader.int64()
+            let fileReference = try reader.bytes()
+            _ = try reader.int32()
+            let mimeType = try reader.string()
+            let byteSize = try reader.int64()
+            let thumbnail = flags & 1 != 0 ? try parsePhotoSizeVector(reader: &reader) : nil
+            if flags & (1 << 1) != 0 {
+                try skipObjectVector(reader: &reader, name: "VideoSize")
+            }
+            _ = try reader.int32()
+            let attributes = try parseDocumentAttributeVector(reader: &reader)
+            return HSStickerDocument(
+                id: id,
+                accessHash: accessHash,
+                fileReference: fileReference,
+                setID: attributes.stickerSetID,
+                alt: attributes.stickerAlt,
+                fileName: attributes.fileName,
+                mimeType: mimeType.isEmpty ? nil : mimeType,
+                size: byteSize,
+                width: attributes.width ?? thumbnail?.width,
+                height: attributes.height ?? thumbnail?.height,
+                animated: attributes.isAnimated,
+                video: attributes.isVideo,
+                date: date
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported Document constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parseDocumentAttributeVector(reader: inout HSTLReader) throws -> HSNativeParsedDocumentAttributes {
         let vectorConstructor = try reader.uint32()
         guard vectorConstructor == HSNativeMTProtoSchema.vector else {
@@ -9051,8 +13384,8 @@ final class HSNativeMTProtoClient {
         case 0x6319d612:
             let flags = try reader.uint32()
             attributes.isSticker = true
-            _ = try reader.string()
-            try skipInputStickerSet(reader: &reader)
+            attributes.stickerAlt = try reader.string()
+            attributes.stickerSetID = try parseInputStickerSetID(reader: &reader)
             if flags & 1 != 0 { try skipMaskCoords(reader: &reader) }
         case 0x43c57c48:
             let flags = try reader.uint32()
@@ -9077,7 +13410,7 @@ final class HSNativeMTProtoClient {
             _ = try reader.uint32()
             attributes.isCustomEmoji = true
             _ = try reader.string()
-            try skipInputStickerSet(reader: &reader)
+            attributes.stickerSetID = try parseInputStickerSetID(reader: &reader)
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported DocumentAttribute constructor 0x\(String(constructor, radix: 16))")
         }
@@ -9096,6 +13429,8 @@ final class HSNativeMTProtoClient {
         attributes.waveform = next.waveform ?? attributes.waveform
         attributes.isSticker = attributes.isSticker || next.isSticker
         attributes.isCustomEmoji = attributes.isCustomEmoji || next.isCustomEmoji
+        attributes.stickerAlt = next.stickerAlt ?? attributes.stickerAlt
+        attributes.stickerSetID = next.stickerSetID ?? attributes.stickerSetID
     }
 
     private static func documentMediaKind(mimeType: String, attributes: HSNativeParsedDocumentAttributes) -> HSMessageMedia.MediaKind {
@@ -9217,6 +13552,8 @@ final class HSNativeMTProtoClient {
                 try skipBotInfo(reader: &reader)
             case "BotCommand":
                 try skipBotCommand(reader: &reader)
+            case "DcOption":
+                try skipDcOption(reader: &reader)
             case "BusinessWeeklyOpen":
                 try skipBusinessWeeklyOpen(reader: &reader)
             case "StoryItem":
@@ -9335,6 +13672,79 @@ final class HSNativeMTProtoClient {
         return count
     }
 
+    private static func parseMessageViewCounters(reader: inout HSTLReader) throws -> HSMessageCounters {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.messageViews else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported MessageViews constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let views = flags & (1 << 0) == 0 ? nil : Int(try reader.int32())
+        let forwards = flags & (1 << 1) == 0 ? nil : Int(try reader.int32())
+        let replies = flags & (1 << 2) == 0 ? 0 : try parseMessageRepliesCount(reader: &reader)
+        return HSMessageCounters(viewCount: views, forwardCount: forwards, replyCount: replies)
+    }
+
+    private static func parseReadParticipantDate(reader: inout HSTLReader) throws -> HSMessageReadParticipant {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.readParticipantDate else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported ReadParticipantDate constructor 0x\(String(constructor, radix: 16))")
+        }
+        let userID = try reader.int64()
+        let date = try reader.int32()
+        return HSMessageReadParticipant(
+            userID: userID,
+            readAt: date > 0 ? Date(timeIntervalSince1970: TimeInterval(date)) : nil
+        )
+    }
+
+    private static func parseMessagePeerReaction(reader: inout HSTLReader) throws -> HSMessageReactionPeer {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.messagePeerReaction:
+            let flags = try reader.uint32()
+            let peer = try parsePeer(reader: &reader)
+            let date = try reader.int32()
+            let reaction = try parseReaction(reader: &reader)
+            return HSMessageReactionPeer(
+                peerID: rawPeerID(from: peer),
+                dialogID: peer.dialogID,
+                reaction: reaction,
+                date: Date(timeIntervalSince1970: TimeInterval(date)),
+                big: flags & (1 << 0) != 0,
+                unread: flags & (1 << 1) != 0,
+                isSelectedByCurrentUser: flags & (1 << 2) != 0
+            )
+        case 0xb156fe9c:
+            let flags = try reader.uint32()
+            let peer = try parsePeer(reader: &reader)
+            let reaction = try parseReaction(reader: &reader)
+            return HSMessageReactionPeer(
+                peerID: rawPeerID(from: peer),
+                dialogID: peer.dialogID,
+                reaction: reaction,
+                date: Date(timeIntervalSince1970: 0),
+                big: flags & (1 << 0) != 0,
+                unread: flags & (1 << 1) != 0,
+                isSelectedByCurrentUser: false
+            )
+        case 0x51b67eff:
+            let flags = try reader.uint32()
+            let peer = try parsePeer(reader: &reader)
+            let reaction = try reader.string()
+            return HSMessageReactionPeer(
+                peerID: rawPeerID(from: peer),
+                dialogID: peer.dialogID,
+                reaction: reaction,
+                date: Date(timeIntervalSince1970: 0),
+                big: flags & (1 << 0) != 0,
+                unread: flags & (1 << 1) != 0,
+                isSelectedByCurrentUser: false
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported MessagePeerReaction constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func parseReactionCount(reader: inout HSTLReader) throws -> HSMessageReaction {
         let constructor = try reader.uint32()
         guard constructor == 0xa3d1cb80 else {
@@ -9355,17 +13765,22 @@ final class HSNativeMTProtoClient {
     private static func parseReaction(reader: inout HSTLReader) throws -> String {
         let constructor = try reader.uint32()
         switch constructor {
-        case 0x79f5d419:
+        case HSNativeMTProtoSchema.reactionEmpty:
             return ""
-        case 0x523da4eb:
-            return "⭐️"
-        case 0x1b2286b8:
+        case HSNativeMTProtoSchema.reactionPaid:
+            return "paid"
+        case HSNativeMTProtoSchema.reactionEmoji:
             return try reader.string()
-        case 0x8935fc73:
+        case HSNativeMTProtoSchema.reactionCustomEmoji:
             return "custom:\(try reader.int64())"
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported Reaction constructor 0x\(String(constructor, radix: 16))")
         }
+    }
+
+    private static func parseReactionSummary(reader: inout HSTLReader) throws -> HSReaction {
+        let reaction = try parseReaction(reader: &reader)
+        return HSReaction(id: reaction, title: reaction, premium: reaction == "paid", inactive: false)
     }
 
     private static func skipReactionCount(reader: inout HSTLReader) throws {
@@ -9382,11 +13797,11 @@ final class HSNativeMTProtoClient {
     private static func skipReaction(reader: inout HSTLReader) throws {
         let constructor = try reader.uint32()
         switch constructor {
-        case 0x79f5d419, 0x523da4eb:
+        case HSNativeMTProtoSchema.reactionEmpty, HSNativeMTProtoSchema.reactionPaid:
             return
-        case 0x1b2286b8:
+        case HSNativeMTProtoSchema.reactionEmoji:
             _ = try reader.string()
-        case 0x8935fc73:
+        case HSNativeMTProtoSchema.reactionCustomEmoji:
             _ = try reader.int64()
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported Reaction constructor 0x\(String(constructor, radix: 16))")
@@ -9409,13 +13824,23 @@ final class HSNativeMTProtoClient {
 
     private static func skipMessagePeerReaction(reader: inout HSTLReader) throws {
         let constructor = try reader.uint32()
-        guard constructor == 0x8c79b63c else {
+        switch constructor {
+        case HSNativeMTProtoSchema.messagePeerReaction:
+            _ = try reader.uint32()
+            _ = try parsePeer(reader: &reader)
+            _ = try reader.int32()
+            try skipReaction(reader: &reader)
+        case 0xb156fe9c:
+            _ = try reader.uint32()
+            _ = try parsePeer(reader: &reader)
+            try skipReaction(reader: &reader)
+        case 0x51b67eff:
+            _ = try reader.uint32()
+            _ = try parsePeer(reader: &reader)
+            _ = try reader.string()
+        default:
             throw HSNativeMTProtoError.malformedPacket("unsupported MessagePeerReaction constructor 0x\(String(constructor, radix: 16))")
         }
-        _ = try reader.uint32()
-        _ = try parsePeer(reader: &reader)
-        _ = try reader.int32()
-        try skipReaction(reader: &reader)
     }
 
     private static func skipMessageReactor(reader: inout HSTLReader) throws {
@@ -9624,15 +14049,22 @@ final class HSNativeMTProtoClient {
     }
 
     private static func skipNotificationSound(reader: inout HSTLReader) throws {
+        _ = try parseNotificationSound(reader: &reader)
+    }
+
+    private static func parseNotificationSound(reader: inout HSTLReader) throws -> HSNotificationSound {
         let constructor = try reader.uint32()
         switch constructor {
-        case 0x97e8bebe, 0x6f0c34df:
-            return
-        case 0x830b9ae4:
-            _ = try reader.string()
-            _ = try reader.string()
-        case 0xff6c8049:
-            _ = try reader.int64()
+        case HSNativeMTProtoSchema.notificationSoundDefault:
+            return .default
+        case HSNativeMTProtoSchema.notificationSoundNone:
+            return .none
+        case HSNativeMTProtoSchema.notificationSoundLocal:
+            let title = try reader.string()
+            let data = try reader.string()
+            return .local(title: title, data: data)
+        case HSNativeMTProtoSchema.notificationSoundRingtone:
+            return .ringtone(id: try reader.int64())
         default:
             throw HSNativeMTProtoError.malformedPacket("unsupported NotificationSound constructor 0x\(String(constructor, radix: 16))")
         }
@@ -9774,7 +14206,28 @@ final class HSNativeMTProtoClient {
         return firstID
     }
 
+    private static func parseInputStickerSetID(reader: inout HSTLReader) throws -> Int64? {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case 0xffb62b95, 0x028703c8, 0xcde3739, 0xc88b3b02, 0x4c4d4ce, 0x29d0f5ee, 0x44c1f8e9, 0x49748553, 0x1cf671a0:
+            return nil
+        case 0x9de7a269:
+            let id = try reader.int64()
+            _ = try reader.int64()
+            return id
+        case 0x861cc8a0, 0xe67f520e:
+            _ = try reader.string()
+            return nil
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported InputStickerSet constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
     private static func skipStickerPackVector(reader: inout HSTLReader) throws {
+        _ = try parseStickerPackVector(reader: &reader)
+    }
+
+    private static func parseStickerPackVector(reader: inout HSTLReader) throws -> [HSStickerPack] {
         let vectorConstructor = try reader.uint32()
         guard vectorConstructor == HSNativeMTProtoSchema.vector else {
             throw HSNativeMTProtoError.malformedPacket("expected StickerPack vector, got 0x\(String(vectorConstructor, radix: 16))")
@@ -9783,17 +14236,25 @@ final class HSNativeMTProtoClient {
         guard count >= 0 else {
             throw HSNativeMTProtoError.malformedPacket("negative StickerPack vector count")
         }
+        var packs: [HSStickerPack] = []
+        packs.reserveCapacity(count)
         for _ in 0..<count {
             let constructor = try reader.uint32()
-            guard constructor == 0x12b299d4 else {
+            guard constructor == HSNativeMTProtoSchema.stickerPack else {
                 throw HSNativeMTProtoError.malformedPacket("unsupported StickerPack constructor 0x\(String(constructor, radix: 16))")
             }
-            _ = try reader.string()
-            try skipInt64Vector(reader: &reader)
+            let emoticon = try reader.string()
+            let documents = try parseInt64Vector(reader: &reader)
+            packs.append(HSStickerPack(emoticon: emoticon, documents: documents))
         }
+        return packs
     }
 
     private static func skipStickerKeywordVector(reader: inout HSTLReader) throws {
+        _ = try parseStickerKeywordVector(reader: &reader)
+    }
+
+    private static func parseStickerKeywordVector(reader: inout HSTLReader) throws -> [HSStickerKeyword] {
         let vectorConstructor = try reader.uint32()
         guard vectorConstructor == HSNativeMTProtoSchema.vector else {
             throw HSNativeMTProtoError.malformedPacket("expected StickerKeyword vector, got 0x\(String(vectorConstructor, radix: 16))")
@@ -9802,14 +14263,192 @@ final class HSNativeMTProtoClient {
         guard count >= 0 else {
             throw HSNativeMTProtoError.malformedPacket("negative StickerKeyword vector count")
         }
+        var keywords: [HSStickerKeyword] = []
+        keywords.reserveCapacity(count)
         for _ in 0..<count {
             let constructor = try reader.uint32()
-            guard constructor == 0xfcfeb29c else {
+            guard constructor == HSNativeMTProtoSchema.stickerKeyword else {
                 throw HSNativeMTProtoError.malformedPacket("unsupported StickerKeyword constructor 0x\(String(constructor, radix: 16))")
             }
-            _ = try reader.int64()
-            _ = try parseStringVector(reader: &reader)
+            let documentID = try reader.int64()
+            let values = try parseStringVector(reader: &reader)
+            keywords.append(HSStickerKeyword(documentID: documentID, keywords: values))
         }
+        return keywords
+    }
+
+    private static func parseEmojiKeywordVector(reader: inout HSTLReader) throws -> [HSEmojiKeyword] {
+        try parseVector(reader: &reader, elementName: "EmojiKeyword") { reader in
+            try parseEmojiKeyword(reader: &reader)
+        }
+    }
+
+    private static func parseEmojiKeyword(reader: inout HSTLReader) throws -> HSEmojiKeyword {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.emojiKeyword:
+            let keyword = try reader.string()
+            let emoticons = try parseStringVector(reader: &reader)
+            return HSEmojiKeyword(keyword: keyword, emoticons: emoticons, deleted: false)
+        case HSNativeMTProtoSchema.emojiKeywordDeleted:
+            let keyword = try reader.string()
+            let emoticons = try parseStringVector(reader: &reader)
+            return HSEmojiKeyword(keyword: keyword, emoticons: emoticons, deleted: true)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported EmojiKeyword constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseEmojiLanguage(reader: inout HSTLReader) throws -> HSEmojiLanguage {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.emojiLanguage else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported EmojiLanguage constructor 0x\(String(constructor, radix: 16))")
+        }
+        return HSEmojiLanguage(langCode: try reader.string())
+    }
+
+    private static func parseLocalizationLanguage(reader: inout HSTLReader) throws -> HSLocalizationLanguage {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.langPackLanguage else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported LangPackLanguage constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        let title = try reader.string()
+        let localizedTitle = try reader.string()
+        let languageCode = try reader.string()
+        let baseLanguageCode = flags & (1 << 1) == 0 ? nil : try reader.string()
+        let pluralCode = try reader.string()
+        let totalStringCount = Int(try reader.int32())
+        let translatedStringCount = Int(try reader.int32())
+        let translationsURL = try reader.string()
+        return HSLocalizationLanguage(
+            languageCode: languageCode,
+            baseLanguageCode: baseLanguageCode,
+            pluralCode: pluralCode,
+            title: title,
+            localizedTitle: localizedTitle,
+            totalStringCount: max(0, totalStringCount),
+            translatedStringCount: max(0, translatedStringCount),
+            translationsURL: translationsURL,
+            official: flags & 1 != 0
+        )
+    }
+
+    private static func parseLocalizationEntryVector(reader: inout HSTLReader) throws -> [HSLocalizationEntry] {
+        try parseVector(reader: &reader, elementName: "LangPackString") { reader in
+            try parseLocalizationEntry(reader: &reader)
+        }
+    }
+
+    private static func parseLocalizationEntry(reader: inout HSTLReader) throws -> HSLocalizationEntry {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.langPackString:
+            return .string(key: try reader.string(), value: try reader.string())
+        case HSNativeMTProtoSchema.langPackStringDeleted:
+            return .deleted(key: try reader.string())
+        case HSNativeMTProtoSchema.langPackStringPluralized:
+            let flags = try reader.uint32()
+            let key = try reader.string()
+            let zero = flags & (1 << 0) == 0 ? nil : try reader.string()
+            let one = flags & (1 << 1) == 0 ? nil : try reader.string()
+            let two = flags & (1 << 2) == 0 ? nil : try reader.string()
+            let few = flags & (1 << 3) == 0 ? nil : try reader.string()
+            let many = flags & (1 << 4) == 0 ? nil : try reader.string()
+            let other = try reader.string()
+            return .pluralized(key: key, zero: zero, one: one, two: two, few: few, many: many, other: other)
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported LangPackString constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseWallpaperVector(reader: inout HSTLReader) throws -> [HSWallpaper] {
+        try parseVector(reader: &reader, elementName: "WallPaper") { reader in
+            try parseWallpaper(reader: &reader)
+        }
+    }
+
+    private static func parseWallpaper(reader: inout HSTLReader) throws -> HSWallpaper {
+        let constructor = try reader.uint32()
+        switch constructor {
+        case HSNativeMTProtoSchema.wallPaper:
+            let id = try reader.int64()
+            let flags = try reader.uint32()
+            let accessHash = try reader.int64()
+            let slug = try reader.string()
+            let document = try parseStickerDocument(reader: &reader, date: nil)
+            let settings = flags & (1 << 2) != 0 ? try parseWallPaperSettings(reader: &reader) : HSWallpaperSettings()
+            return HSWallpaper(
+                id: id,
+                kind: .file,
+                accessHash: accessHash,
+                slug: slug,
+                document: document,
+                settings: settings,
+                isCreator: flags & (1 << 0) != 0,
+                isDefault: flags & (1 << 1) != 0,
+                isPattern: flags & (1 << 3) != 0,
+                isDark: flags & (1 << 4) != 0
+            )
+        case HSNativeMTProtoSchema.wallPaperNoFile:
+            let id = try reader.int64()
+            let flags = try reader.uint32()
+            let settings = flags & (1 << 2) != 0 ? try parseWallPaperSettings(reader: &reader) : HSWallpaperSettings()
+            let kind: HSWallpaper.Kind
+            if settings.emoticon != nil {
+                kind = .emoticon
+            } else if settings.colors.count > 1 {
+                kind = .gradient
+            } else {
+                kind = .color
+            }
+            return HSWallpaper(
+                id: id,
+                kind: kind,
+                accessHash: 0,
+                slug: nil,
+                document: nil,
+                settings: settings,
+                isCreator: flags & (1 << 0) != 0,
+                isDefault: flags & (1 << 1) != 0,
+                isPattern: flags & (1 << 3) != 0,
+                isDark: flags & (1 << 4) != 0
+            )
+        default:
+            throw HSNativeMTProtoError.malformedPacket("unsupported WallPaper constructor 0x\(String(constructor, radix: 16))")
+        }
+    }
+
+    private static func parseWallPaperSettings(reader: inout HSTLReader) throws -> HSWallpaperSettings {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.wallPaperSettings || constructor == 0x1dc1bca4 else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported WallPaperSettings constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        var colors: [Int32] = []
+        if flags & (1 << 0) != 0 {
+            colors.append(try reader.int32())
+        }
+        if flags & (1 << 4) != 0 {
+            colors.append(try reader.int32())
+        }
+        if flags & (1 << 5) != 0 {
+            colors.append(try reader.int32())
+        }
+        if flags & (1 << 6) != 0 {
+            colors.append(try reader.int32())
+        }
+        let intensity = flags & (1 << 3) != 0 ? try reader.int32() : nil
+        let rotation = flags & (1 << 4) != 0 ? try reader.int32() : nil
+        let emoticon = flags & (1 << 7) != 0 ? try reader.string() : nil
+        return HSWallpaperSettings(
+            blur: flags & (1 << 1) != 0,
+            motion: flags & (1 << 2) != 0,
+            colors: colors,
+            intensity: intensity,
+            rotation: rotation,
+            emoticon: emoticon
+        )
     }
 
     private static func skipDocument(reader: inout HSTLReader) throws {
@@ -9911,6 +14550,20 @@ final class HSNativeMTProtoClient {
         }
         _ = try reader.string()
         _ = try reader.string()
+    }
+
+    private static func skipDcOption(reader: inout HSTLReader) throws {
+        let constructor = try reader.uint32()
+        guard constructor == HSNativeMTProtoSchema.dcOption else {
+            throw HSNativeMTProtoError.malformedPacket("unsupported DcOption constructor 0x\(String(constructor, radix: 16))")
+        }
+        let flags = try reader.uint32()
+        _ = try reader.int32()
+        _ = try reader.string()
+        _ = try reader.int32()
+        if flags & (1 << 10) != 0 {
+            _ = try reader.bytes()
+        }
     }
 
     private static func skipBotMenuButton(reader: inout HSTLReader) throws {
@@ -10720,6 +15373,10 @@ final class HSNativeMTProtoClient {
     }
 
     private static func skipInt32Vector(reader: inout HSTLReader) throws {
+        _ = try parseInt32Vector(reader: &reader)
+    }
+
+    private static func parseInt32Vector(reader: inout HSTLReader) throws -> [Int32] {
         let vectorConstructor = try reader.uint32()
         guard vectorConstructor == HSNativeMTProtoSchema.vector else {
             throw HSNativeMTProtoError.malformedPacket("expected vector<int>, got 0x\(String(vectorConstructor, radix: 16))")
@@ -10728,9 +15385,29 @@ final class HSNativeMTProtoClient {
         guard count >= 0 else {
             throw HSNativeMTProtoError.malformedPacket("negative vector<int> count")
         }
+        var values: [Int32] = []
+        values.reserveCapacity(count)
         for _ in 0..<count {
-            _ = try reader.int32()
+            values.append(try reader.int32())
         }
+        return values
+    }
+
+    private static func parseBytesVector(reader: inout HSTLReader) throws -> [Data] {
+        let vectorConstructor = try reader.uint32()
+        guard vectorConstructor == HSNativeMTProtoSchema.vector else {
+            throw HSNativeMTProtoError.malformedPacket("expected vector<bytes>, got 0x\(String(vectorConstructor, radix: 16))")
+        }
+        let count = Int(try reader.int32())
+        guard count >= 0 else {
+            throw HSNativeMTProtoError.malformedPacket("negative vector<bytes> count")
+        }
+        var values: [Data] = []
+        values.reserveCapacity(count)
+        for _ in 0..<count {
+            values.append(try reader.bytes())
+        }
+        return values
     }
 
     private static func skipInt64Vector(reader: inout HSTLReader) throws {
@@ -11770,6 +16447,7 @@ private extension HSStickerSet {
         }
         return HSStickerSet(
             id: id,
+            accessHash: accessHash,
             title: title,
             shortName: shortName,
             count: count,
@@ -11780,6 +16458,26 @@ private extension HSStickerSet {
             animated: animated,
             videos: videos,
             thumbDocument: documentID
+        )
+    }
+}
+
+private extension HSStickerDocument {
+    func withDate(_ date: Date?) -> HSStickerDocument {
+        HSStickerDocument(
+            id: id,
+            accessHash: accessHash,
+            fileReference: fileReference,
+            setID: setID,
+            alt: alt,
+            fileName: fileName,
+            mimeType: mimeType,
+            size: size,
+            width: width,
+            height: height,
+            animated: animated,
+            video: video,
+            date: date
         )
     }
 }

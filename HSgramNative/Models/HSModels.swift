@@ -439,6 +439,63 @@ struct HSChatListFiltersState: Codable, Hashable {
     let filters: [HSChatListFilter]
 }
 
+struct HSChatListSharedPeer: Codable, Hashable, Identifiable {
+    var id: String {
+        peer.id
+    }
+
+    let peer: HSChatListFilterPeer
+    let title: String
+}
+
+struct HSChatListSharedInvite: Codable, Hashable, Identifiable {
+    var id: String {
+        slug
+    }
+
+    let title: String
+    let url: String
+    let slug: String
+    let peers: [HSChatListSharedPeer]
+}
+
+struct HSChatListExportedInviteResult: Codable, Hashable {
+    let filter: HSChatListFilter
+    let invite: HSChatListSharedInvite
+}
+
+struct HSChatListExportedInvitesPage: Codable, Hashable {
+    let invites: [HSChatListSharedInvite]
+}
+
+struct HSChatListInvitePreview: Codable, Hashable {
+    let title: String
+    let emoticon: String?
+    let filterID: Int?
+    let isAlreadyJoined: Bool
+    let peers: [HSChatListSharedPeer]
+    let missingPeers: [HSChatListSharedPeer]
+    let alreadyPeers: [HSChatListSharedPeer]
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case emoticon
+        case filterID = "filter_id"
+        case isAlreadyJoined = "is_already_joined"
+        case peers
+        case missingPeers = "missing_peers"
+        case alreadyPeers = "already_peers"
+    }
+}
+
+struct HSChatListUpdates: Codable, Hashable {
+    let missingPeers: [HSChatListSharedPeer]
+
+    enum CodingKeys: String, CodingKey {
+        case missingPeers = "missing_peers"
+    }
+}
+
 struct HSMessageMediaLocation: Codable, Hashable {
     enum LocationKind: String, Codable, Hashable {
         case photo
@@ -451,6 +508,144 @@ struct HSMessageMediaLocation: Codable, Hashable {
     let fileReference: Data
     let dcID: Int?
     let thumbnailSize: String
+}
+
+struct HSPollAnswerInput: Codable, Hashable {
+    let text: String
+    let option: Data?
+
+    init(text: String, option: Data? = nil) {
+        self.text = text
+        self.option = option
+    }
+}
+
+struct HSPollAnswer: Codable, Hashable {
+    let text: String
+    let option: Data
+}
+
+struct HSPoll: Codable, Hashable {
+    let id: Int64
+    let question: String
+    let answers: [HSPollAnswer]
+    let isClosed: Bool
+    let isPublic: Bool
+    let isMultipleChoice: Bool
+    let isQuiz: Bool
+    let closePeriod: Int?
+    let closeDate: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case question
+        case answers
+        case isClosed = "is_closed"
+        case isPublic = "is_public"
+        case isMultipleChoice = "is_multiple_choice"
+        case isQuiz = "is_quiz"
+        case closePeriod = "close_period"
+        case closeDate = "close_date"
+    }
+}
+
+struct HSPollAnswerVoters: Codable, Hashable {
+    let option: Data
+    let voters: Int
+    let isChosen: Bool
+    let isCorrect: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case option
+        case voters
+        case isChosen = "is_chosen"
+        case isCorrect = "is_correct"
+    }
+}
+
+struct HSPollResults: Codable, Hashable {
+    let totalVoters: Int?
+    let answers: [HSPollAnswerVoters]
+    let recentVoterIDs: [Int64]
+    let solution: String?
+    let isMin: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case totalVoters = "total_voters"
+        case answers
+        case recentVoterIDs = "recent_voter_ids"
+        case solution
+        case isMin = "is_min"
+    }
+}
+
+struct HSPollState: Codable, Hashable {
+    let poll: HSPoll
+    let results: HSPollResults
+}
+
+struct HSPollVote: Codable, Hashable {
+    let peerID: Int64
+    let dialogID: Int64
+    let options: [Data]
+    let date: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case peerID = "peer_id"
+        case dialogID = "dialog_id"
+        case options
+        case date
+    }
+}
+
+struct HSPollVotesPage: Codable, Hashable {
+    let count: Int
+    let votes: [HSPollVote]
+    let nextOffset: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case count
+        case votes
+        case nextOffset = "next_offset"
+    }
+}
+
+struct HSTodoItem: Codable, Hashable, Identifiable {
+    let id: Int
+    let title: String
+}
+
+struct HSTodoList: Codable, Hashable {
+    let title: String
+    let items: [HSTodoItem]
+    let othersCanAppend: Bool
+    let othersCanComplete: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case title
+        case items
+        case othersCanAppend = "others_can_append"
+        case othersCanComplete = "others_can_complete"
+    }
+}
+
+struct HSTodoCompletion: Codable, Hashable {
+    let itemID: Int
+    let completedByPeerID: Int64
+    let completedByDialogID: Int64
+    let completedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case itemID = "item_id"
+        case completedByPeerID = "completed_by_peer_id"
+        case completedByDialogID = "completed_by_dialog_id"
+        case completedAt = "completed_at"
+    }
+}
+
+struct HSTodoState: Codable, Hashable {
+    let todo: HSTodoList
+    let completions: [HSTodoCompletion]
 }
 
 struct HSMediaTransferProgress: Equatable {
@@ -488,6 +683,8 @@ struct HSMessageMedia: Codable, Hashable {
     let waveform: Data?
     let webPage: HSWebPagePreview?
     let location: HSMessageMediaLocation?
+    let poll: HSPollState?
+    let todo: HSTodoState?
 
     init(
         kind: MediaKind,
@@ -499,7 +696,9 @@ struct HSMessageMedia: Codable, Hashable {
         duration: Double?,
         waveform: Data? = nil,
         webPage: HSWebPagePreview? = nil,
-        location: HSMessageMediaLocation? = nil
+        location: HSMessageMediaLocation? = nil,
+        poll: HSPollState? = nil,
+        todo: HSTodoState? = nil
     ) {
         self.kind = kind
         self.fileName = fileName
@@ -511,6 +710,8 @@ struct HSMessageMedia: Codable, Hashable {
         self.waveform = waveform
         self.webPage = webPage
         self.location = location
+        self.poll = poll
+        self.todo = todo
     }
 }
 
@@ -638,6 +839,67 @@ struct HSSharedMediaCounter: Codable, Identifiable, Hashable {
     var id: HSSharedMediaFilter {
         filter
     }
+}
+
+struct HSSharedMediaCalendarPeriod: Codable, Identifiable, Hashable {
+    let date: Date
+    let minMessageID: Int64
+    let maxMessageID: Int64
+    let count: Int
+    let message: HSMessage?
+
+    var id: Int64 {
+        Int64(date.timeIntervalSince1970)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case date
+        case minMessageID = "min_message_id"
+        case maxMessageID = "max_message_id"
+        case count
+        case message
+    }
+}
+
+struct HSSharedMediaCalendar: Codable, Hashable {
+    let count: Int
+    let minDate: Date?
+    let minMessageID: Int64?
+    let offsetIDOffset: Int?
+    let periods: [HSSharedMediaCalendarPeriod]
+    let messages: [HSMessage]
+    let inexact: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case count
+        case minDate = "min_date"
+        case minMessageID = "min_message_id"
+        case offsetIDOffset = "offset_id_offset"
+        case periods
+        case messages
+        case inexact
+    }
+}
+
+struct HSSharedMediaPosition: Codable, Identifiable, Hashable {
+    let messageID: Int64
+    let date: Date
+    let offset: Int
+
+    var id: Int64 {
+        messageID
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case messageID = "message_id"
+        case date
+        case offset
+    }
+}
+
+struct HSSharedMediaPositions: Codable, Hashable {
+    let count: Int
+    let positions: [HSSharedMediaPosition]
 }
 
 struct HSMessageReaction: Codable, Identifiable, Hashable {
@@ -921,6 +1183,88 @@ struct HSMessageAction: Codable, Hashable {
     let ptsCount: Int?
 }
 
+struct HSDiscussionMessage: Codable, Hashable {
+    let rootMessage: HSMessage?
+    let messages: [HSMessage]
+    let maxMessageID: Int64?
+    let readInboxMaxID: Int64?
+    let readOutboxMaxID: Int64?
+    let unreadCount: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case rootMessage = "root_message"
+        case messages
+        case maxMessageID = "max_message_id"
+        case readInboxMaxID = "read_inbox_max_id"
+        case readOutboxMaxID = "read_outbox_max_id"
+        case unreadCount = "unread_count"
+    }
+}
+
+struct HSMessageViewState: Codable, Identifiable, Hashable {
+    let messageID: Int64
+    let counters: HSMessageCounters
+
+    var id: Int64 {
+        messageID
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case messageID = "message_id"
+        case counters
+    }
+}
+
+struct HSMessageReadParticipant: Codable, Identifiable, Hashable {
+    let userID: Int64
+    let readAt: Date?
+
+    var id: Int64 {
+        userID
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case readAt = "read_at"
+    }
+}
+
+struct HSMessageReactionPeer: Codable, Identifiable, Hashable {
+    let peerID: Int64
+    let dialogID: Int64
+    let reaction: String
+    let date: Date
+    let big: Bool
+    let unread: Bool
+    let isSelectedByCurrentUser: Bool
+
+    var id: String {
+        "\(dialogID):\(peerID):\(reaction):\(Int(date.timeIntervalSince1970))"
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case peerID = "peer_id"
+        case dialogID = "dialog_id"
+        case reaction
+        case date
+        case big
+        case unread
+        case isSelectedByCurrentUser = "is_selected_by_current_user"
+    }
+}
+
+struct HSMessageReactionsPage: Codable, Hashable {
+    let totalCount: Int
+    let reactions: [HSMessageReactionPeer]
+    let nextOffset: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case totalCount = "total_count"
+        case reactions
+        case nextOffset = "next_offset"
+    }
+}
+
 enum HSInputActivityKind: String, Codable, Hashable {
     case cancel
     case typing
@@ -1126,6 +1470,10 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
     let noForwards: Bool
     let disableSocialActions: Bool
     let participantsCountHidden: Bool
+    let signaturesEnabled: Bool
+    let signatureProfilesEnabled: Bool
+    let antiSpamEnabled: Bool
+    let linkedDiscussionGroupID: Int64?
 
     init(
         id: Int64,
@@ -1139,7 +1487,11 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         isBroadcast: Bool,
         noForwards: Bool = false,
         disableSocialActions: Bool = false,
-        participantsCountHidden: Bool = false
+        participantsCountHidden: Bool = false,
+        signaturesEnabled: Bool = false,
+        signatureProfilesEnabled: Bool = false,
+        antiSpamEnabled: Bool = false,
+        linkedDiscussionGroupID: Int64? = nil
     ) {
         self.id = id
         self.channelID = channelID
@@ -1153,6 +1505,10 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         self.noForwards = noForwards
         self.disableSocialActions = disableSocialActions
         self.participantsCountHidden = participantsCountHidden
+        self.signaturesEnabled = signaturesEnabled
+        self.signatureProfilesEnabled = signatureProfilesEnabled
+        self.antiSpamEnabled = antiSpamEnabled
+        self.linkedDiscussionGroupID = linkedDiscussionGroupID
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -1168,6 +1524,10 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         case noForwards
         case disableSocialActions
         case participantsCountHidden
+        case signaturesEnabled
+        case signatureProfilesEnabled
+        case antiSpamEnabled
+        case linkedDiscussionGroupID
     }
 
     init(from decoder: Decoder) throws {
@@ -1184,6 +1544,10 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
         noForwards = try container.decodeIfPresent(Bool.self, forKey: .noForwards) ?? false
         disableSocialActions = try container.decodeIfPresent(Bool.self, forKey: .disableSocialActions) ?? false
         participantsCountHidden = try container.decodeIfPresent(Bool.self, forKey: .participantsCountHidden) ?? false
+        signaturesEnabled = try container.decodeIfPresent(Bool.self, forKey: .signaturesEnabled) ?? false
+        signatureProfilesEnabled = try container.decodeIfPresent(Bool.self, forKey: .signatureProfilesEnabled) ?? false
+        antiSpamEnabled = try container.decodeIfPresent(Bool.self, forKey: .antiSpamEnabled) ?? false
+        linkedDiscussionGroupID = try container.decodeIfPresent(Int64.self, forKey: .linkedDiscussionGroupID)
     }
 
     func withNoForwards(_ value: Bool) -> HSSupergroup {
@@ -1193,7 +1557,10 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
     func withFeatureOverrides(
         noForwards: Bool? = nil,
         disableSocialActions: Bool? = nil,
-        participantsCountHidden: Bool? = nil
+        participantsCountHidden: Bool? = nil,
+        signaturesEnabled: Bool? = nil,
+        signatureProfilesEnabled: Bool? = nil,
+        antiSpamEnabled: Bool? = nil
     ) -> HSSupergroup {
         HSSupergroup(
             id: id,
@@ -1207,7 +1574,11 @@ struct HSSupergroup: Codable, Identifiable, Hashable {
             isBroadcast: isBroadcast,
             noForwards: noForwards ?? self.noForwards,
             disableSocialActions: disableSocialActions ?? self.disableSocialActions,
-            participantsCountHidden: participantsCountHidden ?? self.participantsCountHidden
+            participantsCountHidden: participantsCountHidden ?? self.participantsCountHidden,
+            signaturesEnabled: signaturesEnabled ?? self.signaturesEnabled,
+            signatureProfilesEnabled: signatureProfilesEnabled ?? self.signatureProfilesEnabled,
+            antiSpamEnabled: antiSpamEnabled ?? self.antiSpamEnabled,
+            linkedDiscussionGroupID: linkedDiscussionGroupID
         )
     }
 }
@@ -1222,6 +1593,16 @@ struct HSSupergroupMember: Codable, Identifiable, Hashable {
     let rank: String?
     let joinedAt: Date?
     let isSelf: Bool
+}
+
+enum HSSupergroupMemberFilter: String, Codable, Hashable {
+    case recent
+    case search
+    case admins
+    case contacts
+    case bots
+    case restricted
+    case banned
 }
 
 struct HSSupergroupAdminRights: Codable, Hashable {
@@ -1278,6 +1659,16 @@ struct HSSupergroupSettings: Codable, Hashable {
     var noForwards: Bool?
     var disableSocialActions: Bool?
     var participantsCountHidden: Bool?
+    var signaturesEnabled: Bool?
+    var signatureProfilesEnabled: Bool?
+    var antiSpamEnabled: Bool?
+}
+
+enum HSAddressNameAvailability: String, Codable, Hashable {
+    case available
+    case taken
+    case invalid
+    case purchaseAvailable = "purchase_available"
 }
 
 struct HSSupergroupAdminLogEvent: Codable, Identifiable, Hashable {
@@ -1294,6 +1685,11 @@ struct HSExportedMessageLink: Codable, Hashable {
     let html: String
 }
 
+struct HSExportedContactToken: Codable, Hashable {
+    let url: String
+    let expires: Int
+}
+
 struct HSExportedInvite: Codable, Hashable {
     let link: String
     let title: String?
@@ -1308,11 +1704,99 @@ struct HSExportedInvite: Codable, Hashable {
     let requestNeeded: Bool
 }
 
+struct HSExportedInvitesPage: Codable, Hashable {
+    let totalCount: Int
+    let invites: [HSExportedInvite]
+
+    enum CodingKeys: String, CodingKey {
+        case totalCount = "total_count"
+        case invites
+    }
+}
+
+struct HSInviteImporter: Codable, Identifiable, Hashable {
+    let userID: Int64
+    let displayName: String
+    let username: String?
+    let date: Date
+    let about: String?
+    let approvedBy: Int64?
+    let requested: Bool
+    let joinedViaFolderLink: Bool
+
+    var id: Int64 {
+        userID
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case displayName = "display_name"
+        case username
+        case date
+        case about
+        case approvedBy = "approved_by"
+        case requested
+        case joinedViaFolderLink = "joined_via_folder_link"
+    }
+}
+
+struct HSInviteImportersPage: Codable, Hashable {
+    let totalCount: Int
+    let importers: [HSInviteImporter]
+
+    enum CodingKeys: String, CodingKey {
+        case totalCount = "total_count"
+        case importers
+    }
+}
+
 struct HSContact: Codable, Identifiable, Hashable {
     let id: Int64
     let displayName: String
     let username: String?
     let status: String
+}
+
+struct HSDeviceContactImport: Codable, Identifiable, Hashable {
+    let clientID: Int64
+    let phone: String
+    let firstName: String
+    let lastName: String
+    let note: String?
+
+    init(clientID: Int64, phone: String, firstName: String, lastName: String, note: String? = nil) {
+        self.clientID = clientID
+        self.phone = phone
+        self.firstName = firstName
+        self.lastName = lastName
+        self.note = note
+    }
+
+    var id: Int64 {
+        clientID
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case clientID = "client_id"
+        case phone
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case note
+    }
+}
+
+struct HSImportedContactsSummary: Codable, Hashable {
+    let importedContacts: [HSContact]
+    let importedCount: Int
+    let popularInviteCount: Int
+    let retryContactIDs: [Int64]
+
+    enum CodingKeys: String, CodingKey {
+        case importedContacts = "imported_contacts"
+        case importedCount = "imported_count"
+        case popularInviteCount = "popular_invite_count"
+        case retryContactIDs = "retry_contact_ids"
+    }
 }
 
 enum HSReportReason: String, Codable, CaseIterable, Identifiable, Hashable {
@@ -1353,6 +1837,70 @@ enum HSReportReason: String, Codable, CaseIterable, Identifiable, Hashable {
             return "Personal Details"
         case .other:
             return "Other"
+        }
+    }
+}
+
+struct HSReportOption: Codable, Identifiable, Hashable {
+    let text: String
+    let option: Data
+
+    var id: String {
+        option.base64EncodedString()
+    }
+}
+
+enum HSReportContentResult: Codable, Hashable {
+    case options(title: String, options: [HSReportOption])
+    case addComment(optional: Bool, option: Data)
+    case reported
+
+    private enum CodingKeys: String, CodingKey {
+        case state
+        case title
+        case options
+        case optional
+        case option
+    }
+
+    private enum State: String, Codable {
+        case options
+        case addComment = "add_comment"
+        case reported
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let state = try container.decode(State.self, forKey: .state)
+        switch state {
+        case .options:
+            self = .options(
+                title: try container.decode(String.self, forKey: .title),
+                options: try container.decode([HSReportOption].self, forKey: .options)
+            )
+        case .addComment:
+            self = .addComment(
+                optional: try container.decode(Bool.self, forKey: .optional),
+                option: try container.decode(Data.self, forKey: .option)
+            )
+        case .reported:
+            self = .reported
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .options(title, options):
+            try container.encode(State.options, forKey: .state)
+            try container.encode(title, forKey: .title)
+            try container.encode(options, forKey: .options)
+        case let .addComment(optional, option):
+            try container.encode(State.addComment, forKey: .state)
+            try container.encode(optional, forKey: .optional)
+            try container.encode(option, forKey: .option)
+        case .reported:
+            try container.encode(State.reported, forKey: .state)
         }
     }
 }
@@ -1424,6 +1972,7 @@ struct HSAdminTool: Codable, Identifiable, Hashable {
 
 struct HSStickerSet: Codable, Identifiable, Hashable {
     let id: Int64
+    let accessHash: Int64
     let title: String
     let shortName: String
     let count: Int
@@ -1436,11 +1985,463 @@ struct HSStickerSet: Codable, Identifiable, Hashable {
     let thumbDocument: Int64?
 }
 
+struct HSStickerSetInstallResult: Codable, Hashable {
+    let installed: Bool
+    let archived: Bool
+    let archiveSetIDs: [Int64]
+
+    private enum CodingKeys: String, CodingKey {
+        case installed
+        case archived
+        case archiveSetIDs = "archive_set_ids"
+    }
+}
+
+enum HSNotificationSound: Codable, Hashable {
+    case `default`
+    case none
+    case local(title: String, data: String)
+    case ringtone(id: Int64)
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case title
+        case data
+        case id
+    }
+
+    private enum Kind: String, Codable {
+        case `default`
+        case none
+        case local
+        case ringtone
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .default:
+            self = .default
+        case .none:
+            self = .none
+        case .local:
+            self = .local(
+                title: try container.decode(String.self, forKey: .title),
+                data: try container.decode(String.self, forKey: .data)
+            )
+        case .ringtone:
+            self = .ringtone(id: try container.decode(Int64.self, forKey: .id))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .default:
+            try container.encode(Kind.default, forKey: .kind)
+        case .none:
+            try container.encode(Kind.none, forKey: .kind)
+        case let .local(title, data):
+            try container.encode(Kind.local, forKey: .kind)
+            try container.encode(title, forKey: .title)
+            try container.encode(data, forKey: .data)
+        case let .ringtone(id):
+            try container.encode(Kind.ringtone, forKey: .kind)
+            try container.encode(id, forKey: .id)
+        }
+    }
+}
+
+struct HSSavedRingtones: Codable, Hashable {
+    let hash: Int64
+    let ringtones: [HSStickerDocument]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case hash
+        case ringtones
+        case notModified = "not_modified"
+    }
+}
+
+struct HSSavedRingtoneAction: Codable, Hashable {
+    let saved: Bool
+    let document: HSStickerDocument?
+}
+
+struct HSNotificationException: Codable, Identifiable, Hashable {
+    enum Scope: String, Codable, Hashable {
+        case privateChats = "private_chats"
+        case groups
+        case channels
+        case unknown
+    }
+
+    let dialogID: Int64
+    let peerID: Int64
+    let scope: Scope
+    let settings: HSNotifyScopeSettings
+
+    var id: Int64 {
+        dialogID
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case dialogID = "dialog_id"
+        case peerID = "peer_id"
+        case scope
+        case settings
+    }
+}
+
+struct HSNotificationExceptions: Codable, Hashable {
+    let privateChats: [HSNotificationException]
+    let groups: [HSNotificationException]
+    let channels: [HSNotificationException]
+    let all: [HSNotificationException]
+
+    private enum CodingKeys: String, CodingKey {
+        case privateChats = "private_chats"
+        case groups
+        case channels
+        case all
+    }
+}
+
+struct HSArchivedStickerSetsPage: Codable, Hashable {
+    let count: Int
+    let sets: [HSStickerSet]
+}
+
+struct HSStickerPack: Codable, Hashable {
+    let emoticon: String
+    let documents: [Int64]
+}
+
+struct HSStickerKeyword: Codable, Hashable {
+    let documentID: Int64
+    let keywords: [String]
+
+    private enum CodingKeys: String, CodingKey {
+        case documentID = "document_id"
+        case keywords
+    }
+}
+
+struct HSStickerSetDetails: Codable, Hashable {
+    let set: HSStickerSet?
+    let packs: [HSStickerPack]
+    let keywords: [HSStickerKeyword]
+    let documents: [HSStickerDocument]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case set
+        case packs
+        case keywords
+        case documents
+        case notModified = "not_modified"
+    }
+}
+
+struct HSStickerDocument: Codable, Identifiable, Hashable {
+    let id: Int64
+    let accessHash: Int64
+    let fileReference: Data
+    let setID: Int64?
+    let alt: String?
+    let fileName: String?
+    let mimeType: String?
+    let size: Int64?
+    let width: Int?
+    let height: Int?
+    let animated: Bool
+    let video: Bool
+    let date: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case accessHash = "access_hash"
+        case fileReference = "file_reference"
+        case setID = "set_id"
+        case alt
+        case fileName = "file_name"
+        case mimeType = "mime_type"
+        case size
+        case width
+        case height
+        case animated
+        case video
+        case date
+    }
+}
+
+struct HSStickerDocumentList: Codable, Hashable {
+    let hash: Int64
+    let stickers: [HSStickerDocument]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case hash
+        case stickers
+        case notModified = "not_modified"
+    }
+}
+
+struct HSEmojiDocumentList: Codable, Hashable {
+    let hash: Int64
+    let documentIDs: [Int64]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case hash
+        case documentIDs = "document_ids"
+        case notModified = "not_modified"
+    }
+}
+
+struct HSEmojiKeyword: Codable, Hashable {
+    let keyword: String
+    let emoticons: [String]
+    let deleted: Bool
+}
+
+struct HSEmojiKeywordsDifference: Codable, Hashable {
+    let langCode: String
+    let fromVersion: Int
+    let version: Int
+    let keywords: [HSEmojiKeyword]
+
+    private enum CodingKeys: String, CodingKey {
+        case langCode = "lang_code"
+        case fromVersion = "from_version"
+        case version
+        case keywords
+    }
+}
+
+struct HSEmojiLanguage: Codable, Identifiable, Hashable {
+    let langCode: String
+
+    var id: String {
+        langCode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case langCode = "lang_code"
+    }
+}
+
+struct HSLocalizationLanguage: Codable, Identifiable, Hashable {
+    let languageCode: String
+    let baseLanguageCode: String?
+    let pluralCode: String
+    let title: String
+    let localizedTitle: String
+    let totalStringCount: Int
+    let translatedStringCount: Int
+    let translationsURL: String
+    let official: Bool
+
+    var id: String {
+        languageCode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case languageCode = "language_code"
+        case baseLanguageCode = "base_language_code"
+        case pluralCode = "plural_code"
+        case title
+        case localizedTitle = "localized_title"
+        case totalStringCount = "total_string_count"
+        case translatedStringCount = "translated_string_count"
+        case translationsURL = "translations_url"
+        case official
+    }
+}
+
+enum HSLocalizationEntry: Codable, Hashable {
+    case string(key: String, value: String)
+    case pluralized(
+        key: String,
+        zero: String?,
+        one: String?,
+        two: String?,
+        few: String?,
+        many: String?,
+        other: String
+    )
+    case deleted(key: String)
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case key
+        case value
+        case zero
+        case one
+        case two
+        case few
+        case many
+        case other
+    }
+
+    private enum Kind: String, Codable {
+        case string
+        case pluralized
+        case deleted
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .string:
+            self = .string(
+                key: try container.decode(String.self, forKey: .key),
+                value: try container.decode(String.self, forKey: .value)
+            )
+        case .pluralized:
+            self = .pluralized(
+                key: try container.decode(String.self, forKey: .key),
+                zero: try container.decodeIfPresent(String.self, forKey: .zero),
+                one: try container.decodeIfPresent(String.self, forKey: .one),
+                two: try container.decodeIfPresent(String.self, forKey: .two),
+                few: try container.decodeIfPresent(String.self, forKey: .few),
+                many: try container.decodeIfPresent(String.self, forKey: .many),
+                other: try container.decode(String.self, forKey: .other)
+            )
+        case .deleted:
+            self = .deleted(key: try container.decode(String.self, forKey: .key))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .string(key, value):
+            try container.encode(Kind.string, forKey: .kind)
+            try container.encode(key, forKey: .key)
+            try container.encode(value, forKey: .value)
+        case let .pluralized(key, zero, one, two, few, many, other):
+            try container.encode(Kind.pluralized, forKey: .kind)
+            try container.encode(key, forKey: .key)
+            try container.encodeIfPresent(zero, forKey: .zero)
+            try container.encodeIfPresent(one, forKey: .one)
+            try container.encodeIfPresent(two, forKey: .two)
+            try container.encodeIfPresent(few, forKey: .few)
+            try container.encodeIfPresent(many, forKey: .many)
+            try container.encode(other, forKey: .other)
+        case let .deleted(key):
+            try container.encode(Kind.deleted, forKey: .kind)
+            try container.encode(key, forKey: .key)
+        }
+    }
+}
+
+struct HSLocalizationPack: Codable, Hashable {
+    let languageCode: String
+    let fromVersion: Int
+    let version: Int
+    let entries: [HSLocalizationEntry]
+
+    private enum CodingKeys: String, CodingKey {
+        case languageCode = "language_code"
+        case fromVersion = "from_version"
+        case version
+        case entries
+    }
+}
+
+struct HSWallpaperSettings: Codable, Hashable {
+    var blur: Bool
+    var motion: Bool
+    var colors: [Int32]
+    var intensity: Int32?
+    var rotation: Int32?
+    var emoticon: String?
+
+    init(
+        blur: Bool = false,
+        motion: Bool = false,
+        colors: [Int32] = [],
+        intensity: Int32? = nil,
+        rotation: Int32? = nil,
+        emoticon: String? = nil
+    ) {
+        self.blur = blur
+        self.motion = motion
+        self.colors = colors
+        self.intensity = intensity
+        self.rotation = rotation
+        self.emoticon = emoticon
+    }
+}
+
+struct HSWallpaper: Codable, Identifiable, Hashable {
+    enum Kind: String, Codable, Hashable {
+        case file
+        case color
+        case gradient
+        case emoticon
+    }
+
+    let id: Int64
+    let kind: Kind
+    let accessHash: Int64
+    let slug: String?
+    let document: HSStickerDocument?
+    let settings: HSWallpaperSettings
+    let isCreator: Bool
+    let isDefault: Bool
+    let isPattern: Bool
+    let isDark: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case kind
+        case accessHash = "access_hash"
+        case slug
+        case document
+        case settings
+        case isCreator = "is_creator"
+        case isDefault = "is_default"
+        case isPattern = "is_pattern"
+        case isDark = "is_dark"
+    }
+}
+
+struct HSWallpaperList: Codable, Hashable {
+    let hash: Int64
+    let wallpapers: [HSWallpaper]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case hash
+        case wallpapers
+        case notModified = "not_modified"
+    }
+}
+
 struct HSReaction: Codable, Identifiable, Hashable {
     let id: String
     let title: String
     let premium: Bool
     let inactive: Bool
+}
+
+struct HSDefaultReaction: Codable, Hashable {
+    let reaction: String?
+}
+
+struct HSReactionList: Codable, Hashable {
+    let hash: Int64
+    let reactions: [HSReaction]
+    let notModified: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case hash
+        case reactions
+        case notModified = "not_modified"
+    }
 }
 
 struct HSAssetCatalog: Codable, Hashable {
@@ -1612,6 +2613,21 @@ struct HSNotifyScopeSettings: Codable, Hashable {
     var showPreviews: Bool
     var silent: Bool
     var muteUntil: Int?
+    var sound: HSNotificationSound?
+
+    init(
+        enabled: Bool,
+        showPreviews: Bool,
+        silent: Bool,
+        muteUntil: Int?,
+        sound: HSNotificationSound? = nil
+    ) {
+        self.enabled = enabled
+        self.showPreviews = showPreviews
+        self.silent = silent
+        self.muteUntil = muteUntil
+        self.sound = sound
+    }
 
     static let enabledDefault = HSNotifyScopeSettings(enabled: true, showPreviews: true, silent: false, muteUntil: nil)
 }

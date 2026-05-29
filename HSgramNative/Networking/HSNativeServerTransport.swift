@@ -228,6 +228,46 @@ final class HSNativeServerTransport: HSServerTransport {
         }
     }
 
+    func sharedMediaCalendar(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        offsetDate: Date?,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaCalendar {
+        do {
+            return try await mtProtoClient.sharedMediaCalendar(
+                dialogID: dialogID,
+                filter: filter,
+                offsetID: offsetID,
+                offsetDate: offsetDate,
+                session: session
+            )
+        } catch let error as HSNativeMTProtoError {
+            throw apiError(from: error)
+        }
+    }
+
+    func sharedMediaPositions(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaPositions {
+        do {
+            return try await mtProtoClient.sharedMediaPositions(
+                dialogID: dialogID,
+                filter: filter,
+                offsetID: offsetID,
+                limit: limit,
+                session: session
+            )
+        } catch let error as HSNativeMTProtoError {
+            throw apiError(from: error)
+        }
+    }
+
     func syncState(session: HSUserSession) async throws -> HSSyncState {
         do {
             return try await mtProtoClient.syncState(session: session)
@@ -302,6 +342,86 @@ final class HSNativeServerTransport: HSServerTransport {
                 let session = try requireSession(session)
                 let request: HSNativeDialogFilterTagsBody = try decodeBody(body)
                 return try typed(try await mtProtoClient.toggleDialogFilterTags(enabled: request.enabled, session: session))
+            case .chatlistsExportChatlistInvite:
+                let session = try requireSession(session)
+                let request: HSNativeChatListSharedInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.exportChatListInvite(
+                    filterID: try route.intPart(at: 2),
+                    title: request.title ?? "",
+                    peers: request.peers ?? [],
+                    session: session
+                ))
+            case .chatlistsDeleteExportedInvite:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.deleteChatListInvite(
+                    filterID: try route.intPart(at: 2),
+                    slug: try route.stringPart(at: 4),
+                    session: session
+                ))
+            case .chatlistsEditExportedInvite:
+                let session = try requireSession(session)
+                let request: HSNativeChatListSharedInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.editChatListInvite(
+                    filterID: try route.intPart(at: 2),
+                    slug: try route.stringPart(at: 4),
+                    title: request.title,
+                    peers: request.peers,
+                    session: session
+                ))
+            case .chatlistsGetExportedInvites:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.chatListSharedInvites(
+                    filterID: try route.intPart(at: 2),
+                    session: session
+                ))
+            case .chatlistsCheckChatlistInvite:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.checkChatListInvite(
+                    slug: try route.stringPart(at: 2),
+                    session: session
+                ))
+            case .chatlistsJoinChatlistInvite:
+                let session = try requireSession(session)
+                let request: HSNativeChatListJoinInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.joinChatListInvite(
+                    slug: try route.stringPart(at: 2),
+                    peers: request.peers,
+                    session: session
+                ))
+            case .chatlistsGetChatlistUpdates:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.chatListUpdates(
+                    filterID: try route.intPart(at: 2),
+                    session: session
+                ))
+            case .chatlistsJoinChatlistUpdates:
+                let session = try requireSession(session)
+                let request: HSNativeChatListJoinInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.joinChatListUpdates(
+                    filterID: try route.intPart(at: 2),
+                    peers: request.peers,
+                    session: session
+                ))
+            case .chatlistsHideChatlistUpdates:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.hideChatListUpdates(
+                    filterID: try route.intPart(at: 2),
+                    session: session
+                ))
+            case .chatlistsGetLeaveChatlistSuggestions:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.leaveChatListSuggestions(
+                    filterID: try route.intPart(at: 2),
+                    session: session
+                ))
+            case .chatlistsLeaveChatlist:
+                let session = try requireSession(session)
+                let request: HSNativeChatListJoinInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.leaveChatList(
+                    filterID: try route.intPart(at: 2),
+                    peers: request.peers,
+                    session: session
+                ))
             case .channelsGetFullChannel:
                 let session = try requireSession(session)
                 let group = try await mtProtoClient.group(dialogID: try route.int64Part(at: 2), session: session)
@@ -342,6 +462,34 @@ final class HSNativeServerTransport: HSServerTransport {
                     session: session
                 )
                 return try typed(message)
+            case .messagesSendPoll:
+                let session = try requireSession(session)
+                let request: HSNativePollMessageBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.sendPollMessage(
+                    dialogID: try route.int64Part(at: 2),
+                    question: request.question,
+                    answers: request.answers,
+                    isMultipleChoice: request.isMultipleChoice,
+                    isQuiz: request.isQuiz,
+                    isAnonymous: request.isAnonymous,
+                    correctAnswerOptions: request.correctAnswerOptions,
+                    solution: request.solution,
+                    closePeriod: request.closePeriod,
+                    replyToMessageID: request.replyToMessageID,
+                    session: session
+                ))
+            case .messagesSendTodo:
+                let session = try requireSession(session)
+                let request: HSNativeTodoMessageBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.sendTodoMessage(
+                    dialogID: try route.int64Part(at: 2),
+                    title: request.title,
+                    items: request.items,
+                    othersCanAppend: request.othersCanAppend,
+                    othersCanComplete: request.othersCanComplete,
+                    replyToMessageID: request.replyToMessageID,
+                    session: session
+                ))
             case .messagesSetTyping:
                 let session = try requireSession(session)
                 let request: HSNativeTypingActivityBody = try decodeBody(body)
@@ -457,6 +605,107 @@ final class HSNativeServerTransport: HSServerTransport {
                     session: session
                 )
                 return try typed(action)
+            case .messagesSendVote:
+                let session = try requireSession(session)
+                let request: HSNativePollVoteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.votePoll(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    options: request.options,
+                    session: session
+                ))
+            case .messagesGetPollResults:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.refreshPoll(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    session: session
+                ))
+            case .messagesGetPollVotes:
+                let session = try requireSession(session)
+                let option = route.stringQuery("option").flatMap { Data(base64Encoded: $0) }
+                return try typed(try await mtProtoClient.pollVotes(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    option: option,
+                    offset: route.stringQuery("offset"),
+                    limit: route.intQuery("limit") ?? 50,
+                    session: session
+                ))
+            case .messagesToggleTodoCompleted:
+                let session = try requireSession(session)
+                let request: HSNativeTodoToggleBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.toggleTodoCompleted(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    completedIDs: request.completedIDs,
+                    incompletedIDs: request.incompletedIDs,
+                    session: session
+                ))
+            case .messagesAppendTodoList:
+                let session = try requireSession(session)
+                let request: HSNativeTodoItemsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.appendTodoItems(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    items: request.items,
+                    session: session
+                ))
+            case .messagesGetDiscussionMessage:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.discussionMessage(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    session: session
+                ))
+            case .messagesReadDiscussion:
+                let session = try requireSession(session)
+                let readMaxID: Int64
+                if let queryReadMaxID = route.int64Query("read_max_id") {
+                    readMaxID = queryReadMaxID
+                } else {
+                    readMaxID = try route.int64Part(at: 4)
+                }
+                return try typed(try await mtProtoClient.readDiscussion(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    readMaxID: readMaxID,
+                    session: session
+                ))
+            case .messagesReadMessageContents:
+                let session = try requireSession(session)
+                let request: HSNativeMessageIDsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.readMessageContents(
+                    dialogID: try route.int64Part(at: 2),
+                    messageIDs: request.messageIDs,
+                    session: session
+                ))
+            case .messagesGetMessagesViews:
+                let session = try requireSession(session)
+                let request: HSNativeMessageIDsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.messageViews(
+                    dialogID: try route.int64Part(at: 2),
+                    messageIDs: request.messageIDs,
+                    increment: route.boolQuery("increment") ?? true,
+                    session: session
+                ))
+            case .messagesGetMessageReadParticipants:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.messageReadParticipants(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    session: session
+                ))
+            case .messagesGetMessageReactionsList:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.messageReactions(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
+                    reaction: route.stringQuery("reaction"),
+                    offset: route.stringQuery("offset"),
+                    limit: route.intQuery("limit") ?? 50,
+                    session: session
+                ))
             case .messagesSearchGlobal:
                 let session = try requireSession(session)
                 let results = try await mtProtoClient.search(
@@ -497,6 +746,28 @@ final class HSNativeServerTransport: HSServerTransport {
                     session: session
                 )
                 return try typed(counters)
+            case .messagesGetSearchResultsCalendar:
+                let session = try requireSession(session)
+                let filter = HSSharedMediaFilter(rawValue: route.stringQuery("filter") ?? "") ?? .media
+                let offsetDate = route.int64Query("offset_date")
+                    .map { Date(timeIntervalSince1970: TimeInterval($0)) }
+                return try typed(try await mtProtoClient.sharedMediaCalendar(
+                    dialogID: try route.int64Part(at: 2),
+                    filter: filter,
+                    offsetID: route.int64Query("offset_id"),
+                    offsetDate: offsetDate,
+                    session: session
+                ))
+            case .messagesGetSearchResultsPositions:
+                let session = try requireSession(session)
+                let filter = HSSharedMediaFilter(rawValue: route.stringQuery("filter") ?? "") ?? .media
+                return try typed(try await mtProtoClient.sharedMediaPositions(
+                    dialogID: try route.int64Part(at: 2),
+                    filter: filter,
+                    offsetID: route.int64Query("offset_id"),
+                    limit: route.intQuery("limit") ?? 1000,
+                    session: session
+                ))
             case .messagesGetAllDrafts:
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.drafts(session: session))
@@ -523,6 +794,21 @@ final class HSNativeServerTransport: HSServerTransport {
                     limit: route.intQuery("limit") ?? 20,
                     session: session
                 ))
+            case .contactsImportContacts:
+                let session = try requireSession(session)
+                let request: HSNativeImportContactsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.importContacts(request.contacts, session: session))
+            case .contactsDeleteByPhones:
+                let session = try requireSession(session)
+                let request: HSNativeContactPhonesBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.deleteImportedContactsByPhones(request.phones, session: session))
+            case .contactsExportContactToken:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.exportContactToken(session: session))
+            case .contactsImportContactToken:
+                let session = try requireSession(session)
+                let request: HSNativeImportContactTokenBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.importContactToken(request.token, session: session))
             case .contactsAddContact:
                 let session = try requireSession(session)
                 let request: HSNativeContactRequestBody = try decodeBody(body)
@@ -531,6 +817,16 @@ final class HSNativeServerTransport: HSServerTransport {
                     firstName: request.firstName,
                     lastName: request.lastName,
                     phone: request.phone,
+                    note: request.note,
+                    addPhonePrivacyException: request.addPhonePrivacyException ?? false,
+                    session: session
+                ))
+            case .contactsUpdateContactNote:
+                let session = try requireSession(session)
+                let request: HSNativeContactNoteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.updateContactNote(
+                    userID: try route.int64Part(at: 2),
+                    note: request.note,
                     session: session
                 ))
             case .contactsRequestContact:
@@ -594,6 +890,8 @@ final class HSNativeServerTransport: HSServerTransport {
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.groupMembers(
                     dialogID: try route.int64Part(at: 2),
+                    filter: route.memberFilterQuery(),
+                    query: route.stringQuery("q"),
                     limit: route.intQuery("limit") ?? 50,
                     offset: route.intQuery("offset") ?? 0,
                     session: session
@@ -647,6 +945,32 @@ final class HSNativeServerTransport: HSServerTransport {
                     settings: settings,
                     session: session
                 ))
+            case .channelsGetGroupsForDiscussion:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.discussionGroups(session: session))
+            case .channelsSetDiscussionGroup:
+                let session = try requireSession(session)
+                let request: HSNativeDiscussionGroupBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.updateChannelDiscussionGroup(
+                    channelDialogID: try route.int64Part(at: 2),
+                    groupDialogID: request.groupDialogID,
+                    session: session
+                ))
+            case .channelsCheckUsername:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.checkChannelUsername(
+                    dialogID: try route.int64Part(at: 2),
+                    username: route.stringQuery("username") ?? "",
+                    session: session
+                ))
+            case .channelsUpdateUsername:
+                let session = try requireSession(session)
+                let request: HSNativeUsernameBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.updateChannelUsername(
+                    dialogID: try route.int64Part(at: 2),
+                    username: request.username,
+                    session: session
+                ))
             case .messagesUpdatePinnedMessage:
                 let session = try requireSession(session)
                 let request: HSNativePinMessageBody = try decodeBody(body)
@@ -675,6 +999,66 @@ final class HSNativeServerTransport: HSServerTransport {
                     requestNeeded: request.requestNeeded,
                     session: session
                 ))
+            case .messagesGetExportedChatInvites:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.exportedInvites(
+                    dialogID: try route.int64Part(at: 2),
+                    revoked: route.boolQuery("revoked") ?? false,
+                    adminID: route.int64Query("admin_id"),
+                    offsetDate: route.intQuery("offset_date"),
+                    offsetLink: route.stringQuery("offset_link"),
+                    limit: route.intQuery("limit") ?? 50,
+                    session: session
+                ))
+            case .messagesEditExportedChatInvite:
+                let session = try requireSession(session)
+                let request: HSNativeEditInviteBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.editInvite(
+                    dialogID: try route.int64Part(at: 2),
+                    link: request.link,
+                    title: request.title,
+                    expireDate: request.expireDate,
+                    usageLimit: request.usageLimit,
+                    requestNeeded: request.requestNeeded,
+                    revoked: request.revoked,
+                    session: session
+                ))
+            case .messagesDeleteExportedChatInvite:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.deleteInvite(
+                    dialogID: try route.int64Part(at: 2),
+                    link: route.stringQuery("link") ?? "",
+                    session: session
+                ))
+            case .messagesGetChatInviteImporters:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.inviteImporters(
+                    dialogID: try route.int64Part(at: 2),
+                    requested: route.boolQuery("requested") ?? false,
+                    link: route.stringQuery("link"),
+                    query: route.stringQuery("q"),
+                    offsetDate: route.intQuery("offset_date") ?? 0,
+                    offsetUserID: route.int64Query("offset_user_id"),
+                    limit: route.intQuery("limit") ?? 50,
+                    session: session
+                ))
+            case .messagesHideChatJoinRequest:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.updateJoinRequest(
+                    dialogID: try route.int64Part(at: 2),
+                    userID: try route.int64Part(at: 4),
+                    approve: route.parts.last == "approve",
+                    session: session
+                ))
+            case .messagesHideAllChatJoinRequests:
+                let session = try requireSession(session)
+                let request: HSNativeJoinRequestsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.updateAllJoinRequests(
+                    dialogID: try route.int64Part(at: 2),
+                    link: request.link,
+                    approve: route.parts.last == "approve-all",
+                    session: session
+                ))
             case .channelsGetAdminLog:
                 let session = try requireSession(session)
                 let adminIDs = route.stringQuery("admins")?
@@ -685,6 +1069,21 @@ final class HSNativeServerTransport: HSServerTransport {
                     query: route.stringQuery("q"),
                     adminIDs: adminIDs,
                     limit: route.intQuery("limit") ?? 50,
+                    session: session
+                ))
+            case .channelsReadMessageContents:
+                let session = try requireSession(session)
+                let request: HSNativeMessageIDsBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.readChannelMessageContents(
+                    dialogID: try route.int64Part(at: 2),
+                    messageIDs: request.messageIDs,
+                    session: session
+                ))
+            case .channelsReportAntiSpamFalsePositive:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.reportAntiSpamFalsePositive(
+                    dialogID: try route.int64Part(at: 2),
+                    messageID: try route.int64Part(at: 4),
                     session: session
                 ))
             case .accountGetProfile:
@@ -734,6 +1133,42 @@ final class HSNativeServerTransport: HSServerTransport {
                     muteInterval: request.muteInterval,
                     showPreviews: request.showPreviews,
                     silent: request.silent,
+                    sound: request.sound,
+                    session: session
+                ))
+            case .accountGetNotifyExceptions:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.notificationExceptions(
+                    scope: route.stringQuery("scope").flatMap(HSNotificationException.Scope.init(rawValue:)),
+                    compareSound: route.boolQuery("compare_sound") ?? true,
+                    session: session
+                ))
+            case .accountResetNotifySettings:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.resetNotificationSettings(session: session))
+            case .accountGetSavedRingtones:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.savedRingtones(
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .accountSaveRingtone:
+                let session = try requireSession(session)
+                let request: HSNativeDocumentActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.saveRingtone(
+                    id: try route.int64Part(at: 3),
+                    accessHash: request.accessHash,
+                    fileReference: request.fileReference,
+                    unsave: method == "DELETE",
+                    session: session
+                ))
+            case .accountUploadRingtone:
+                let session = try requireSession(session)
+                let request: HSNativeRingtoneUploadBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.uploadRingtone(
+                    fileName: request.fileName,
+                    mimeType: request.mimeType,
+                    data: request.data,
                     session: session
                 ))
             case .accountReportPeer:
@@ -742,6 +1177,25 @@ final class HSNativeServerTransport: HSServerTransport {
                 return try typed(try await mtProtoClient.reportPeer(
                     dialogID: try route.int64Part(at: 2),
                     reason: request.reason,
+                    message: request.message,
+                    session: session
+                ))
+            case .accountReportProfilePhoto:
+                let session = try requireSession(session)
+                let request: HSNativeReportPeerBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.reportPeerPhoto(
+                    dialogID: try route.int64Part(at: 2),
+                    reason: request.reason,
+                    message: request.message,
+                    session: session
+                ))
+            case .messagesReport:
+                let session = try requireSession(session)
+                let request: HSNativeReportMessagesBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.reportMessages(
+                    dialogID: try route.int64Part(at: 2),
+                    messageIDs: request.messageIDs,
+                    option: request.option,
                     message: request.message,
                     session: session
                 ))
@@ -776,6 +1230,247 @@ final class HSNativeServerTransport: HSServerTransport {
             case .messagesGetStickerAndReactionState:
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.assetCatalog(session: session))
+            case .messagesInstallStickerSet:
+                let session = try requireSession(session)
+                let request: HSNativeStickerSetActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.installStickerSet(
+                    id: try route.int64Part(at: 3),
+                    accessHash: request.accessHash,
+                    archived: request.archived ?? false,
+                    session: session
+                ))
+            case .messagesUninstallStickerSet:
+                let session = try requireSession(session)
+                let request: HSNativeStickerSetActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.uninstallStickerSet(
+                    id: try route.int64Part(at: 3),
+                    accessHash: request.accessHash,
+                    session: session
+                ))
+            case .messagesReadFeaturedStickers:
+                let session = try requireSession(session)
+                let request: HSNativeFeaturedStickerSetsReadBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.readFeaturedStickerSets(request.ids, session: session))
+            case .messagesGetStickerSet:
+                let session = try requireSession(session)
+                if route.parts.indices.contains(3), route.parts[3] == "by-short-name" {
+                    return try typed(try await mtProtoClient.stickerSetDetails(
+                        shortName: try route.stringPart(at: 4),
+                        hash: route.intQuery("hash") ?? 0,
+                        session: session
+                    ))
+                }
+                return try typed(try await mtProtoClient.stickerSetDetails(
+                    id: try route.int64Part(at: 3),
+                    accessHash: route.int64Query("access_hash") ?? 0,
+                    hash: route.intQuery("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesGetStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.stickersForEmoji(
+                    route.stringQuery("emoji") ?? "",
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesGetCustomEmojiDocuments:
+                let session = try requireSession(session)
+                let ids = route.stringQuery("ids")?
+                    .split(separator: ",")
+                    .compactMap { Int64(String($0).trimmingCharacters(in: .whitespacesAndNewlines)) } ?? []
+                return try typed(try await mtProtoClient.customEmojiDocuments(ids: ids, session: session))
+            case .messagesGetEmojiStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.customEmojiStickerSets(
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesSearchCustomEmoji:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.searchCustomEmoji(
+                    route.stringQuery("emoji") ?? "",
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesGetEmojiKeywords:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.emojiKeywords(
+                    langCode: route.stringQuery("lang_code") ?? "en",
+                    session: session
+                ))
+            case .messagesGetEmojiKeywordsDifference:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.emojiKeywordsDifference(
+                    langCode: route.stringQuery("lang_code") ?? "en",
+                    fromVersion: route.intQuery("from_version") ?? 0,
+                    session: session
+                ))
+            case .messagesGetEmojiKeywordsLanguages:
+                let session = try requireSession(session)
+                let langCodes = route.stringQuery("lang_codes")?
+                    .split(separator: ",")
+                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty } ?? []
+                return try typed(try await mtProtoClient.emojiKeywordLanguages(langCodes, session: session))
+            case .langpackGetLanguages:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.localizationLanguages(
+                    langPack: route.stringQuery("lang_pack") ?? "",
+                    session: session
+                ))
+            case .langpackGetLanguage:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.localizationLanguage(
+                    langPack: route.stringQuery("lang_pack") ?? "",
+                    langCode: try route.stringPart(at: 3),
+                    session: session
+                ))
+            case .langpackGetLangPack:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.localizationPack(
+                    langPack: route.stringQuery("lang_pack") ?? "",
+                    langCode: try route.stringPart(at: 3),
+                    session: session
+                ))
+            case .langpackGetStrings:
+                let session = try requireSession(session)
+                let keys = route.stringQuery("keys")?
+                    .split(separator: ",")
+                    .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty } ?? []
+                return try typed(try await mtProtoClient.localizationStrings(
+                    langPack: route.stringQuery("lang_pack") ?? "",
+                    langCode: route.stringQuery("lang_code") ?? "en",
+                    keys: keys,
+                    session: session
+                ))
+            case .langpackGetDifference:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.localizationPackDifference(
+                    langPack: route.stringQuery("lang_pack") ?? "",
+                    langCode: try route.stringPart(at: 3),
+                    fromVersion: route.intQuery("from_version") ?? 0,
+                    session: session
+                ))
+            case .messagesGetArchivedStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.archivedStickerSets(
+                    kind: route.stringQuery("kind") ?? "stickers",
+                    offsetID: route.int64Query("offset_id") ?? 0,
+                    limit: route.intQuery("limit") ?? 200,
+                    session: session
+                ))
+            case .messagesGetRecentStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.recentStickers(
+                    attached: route.boolQuery("attached") ?? false,
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesSaveRecentSticker:
+                let session = try requireSession(session)
+                let request: HSNativeStickerDocumentActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.saveRecentSticker(
+                    id: try route.int64Part(at: 3),
+                    accessHash: request.accessHash,
+                    fileReference: request.fileReference,
+                    attached: request.attached,
+                    unsave: method == "DELETE",
+                    session: session
+                ))
+            case .messagesClearRecentStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.clearRecentStickers(
+                    attached: route.boolQuery("attached") ?? false,
+                    session: session
+                ))
+            case .messagesGetFavedStickers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.favedStickers(
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesGetSavedGifs:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.savedGifs(
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesSaveGif:
+                let session = try requireSession(session)
+                let request: HSNativeDocumentActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.saveGif(
+                    id: try route.int64Part(at: 3),
+                    accessHash: request.accessHash,
+                    fileReference: request.fileReference,
+                    unsave: method == "DELETE",
+                    session: session
+                ))
+            case .accountGetWallPapers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.wallpapers(
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .accountGetWallPaper:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.wallpaper(
+                    slug: try route.stringPart(at: 2),
+                    session: session
+                ))
+            case .accountSaveWallPaper:
+                let session = try requireSession(session)
+                let request: HSNativeWallpaperActionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.saveWallpaper(
+                    slug: try route.stringPart(at: 2),
+                    settings: request.settings,
+                    unsave: method == "DELETE",
+                    session: session
+                ))
+            case .accountInstallWallPaper:
+                let session = try requireSession(session)
+                let request: HSNativeWallpaperActionBody = try decodeBody(body)
+                if route.parts.indices.contains(2), route.parts[2] == "no-file" {
+                    return try typed(try await mtProtoClient.installWallpaperNoFile(
+                        id: try route.int64Part(at: 3),
+                        settings: request.settings,
+                        session: session
+                    ))
+                }
+                return try typed(try await mtProtoClient.installWallpaper(
+                    slug: try route.stringPart(at: 2),
+                    id: request.id ?? 0,
+                    accessHash: request.accessHash ?? 0,
+                    settings: request.settings,
+                    session: session
+                ))
+            case .accountResetWallPapers:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.resetWallpapers(session: session))
+            case .messagesGetRecentReactions:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.recentReactions(
+                    limit: route.intQuery("limit") ?? 100,
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .messagesGetTopReactions:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.topReactions(
+                    limit: route.intQuery("limit") ?? 32,
+                    hash: route.int64Query("hash") ?? 0,
+                    session: session
+                ))
+            case .helpGetConfigDefaultReaction:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.defaultReaction(session: session))
+            case .messagesSetDefaultReaction:
+                let session = try requireSession(session)
+                let request: HSNativeDefaultReactionBody = try decodeBody(body)
+                return try typed(try await mtProtoClient.setDefaultReaction(request.reaction, session: session))
+            case .messagesClearRecentReactions:
+                let session = try requireSession(session)
+                return try typed(try await mtProtoClient.clearRecentReactions(session: session))
             case .trustReadState:
                 let session = try requireSession(session)
                 return try typed(try await mtProtoClient.trustItems(session: session))
@@ -850,6 +1545,64 @@ private struct HSNativeMediaMessageBody: Decodable {
     let waveform: Data?
 }
 
+private struct HSNativePollMessageBody: Decodable {
+    let question: String
+    let answers: [HSPollAnswerInput]
+    let isMultipleChoice: Bool
+    let isQuiz: Bool
+    let isAnonymous: Bool
+    let correctAnswerOptions: [Data]?
+    let solution: String?
+    let closePeriod: Int?
+    let replyToMessageID: Int64?
+
+    private enum CodingKeys: String, CodingKey {
+        case question
+        case answers
+        case isMultipleChoice = "is_multiple_choice"
+        case isQuiz = "is_quiz"
+        case isAnonymous = "is_anonymous"
+        case correctAnswerOptions = "correct_answer_options"
+        case solution
+        case closePeriod = "close_period"
+        case replyToMessageID
+    }
+}
+
+private struct HSNativePollVoteBody: Decodable {
+    let options: [Data]
+}
+
+private struct HSNativeTodoMessageBody: Decodable {
+    let title: String
+    let items: [HSTodoItem]
+    let othersCanAppend: Bool
+    let othersCanComplete: Bool
+    let replyToMessageID: Int64?
+
+    private enum CodingKeys: String, CodingKey {
+        case title
+        case items
+        case othersCanAppend = "others_can_append"
+        case othersCanComplete = "others_can_complete"
+        case replyToMessageID
+    }
+}
+
+private struct HSNativeTodoToggleBody: Decodable {
+    let completedIDs: [Int]
+    let incompletedIDs: [Int]
+
+    private enum CodingKeys: String, CodingKey {
+        case completedIDs = "completed_ids"
+        case incompletedIDs = "incompleted_ids"
+    }
+}
+
+private struct HSNativeTodoItemsBody: Decodable {
+    let items: [HSTodoItem]
+}
+
 private struct HSNativeTypingActivityBody: Decodable {
     let activity: HSInputActivityKind
     let progress: Int?
@@ -883,6 +1636,15 @@ private struct HSNativeDialogFilterOrderBody: Decodable {
 
 private struct HSNativeDialogFilterTagsBody: Decodable {
     let enabled: Bool
+}
+
+private struct HSNativeChatListSharedInviteBody: Decodable {
+    let title: String?
+    let peers: [HSChatListFilterPeer]?
+}
+
+private struct HSNativeChatListJoinInviteBody: Decodable {
+    let peers: [HSChatListFilterPeer]
 }
 
 private struct HSNativeDialogFolderBody: Decodable {
@@ -920,11 +1682,81 @@ private struct HSNativeReactionBody: Decodable {
     let big: Bool
 }
 
+private struct HSNativeDefaultReactionBody: Decodable {
+    let reaction: String
+}
+
+private struct HSNativeStickerSetActionBody: Decodable {
+    let accessHash: Int64
+    let archived: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case archived
+    }
+}
+
+private struct HSNativeFeaturedStickerSetsReadBody: Decodable {
+    let ids: [Int64]
+}
+
+private struct HSNativeStickerDocumentActionBody: Decodable {
+    let accessHash: Int64
+    let fileReference: Data
+    let attached: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case fileReference = "file_reference"
+        case attached
+    }
+}
+
+private struct HSNativeDocumentActionBody: Decodable {
+    let accessHash: Int64
+    let fileReference: Data
+
+    private enum CodingKeys: String, CodingKey {
+        case accessHash = "access_hash"
+        case fileReference = "file_reference"
+    }
+}
+
+private struct HSNativeWallpaperActionBody: Decodable {
+    let id: Int64?
+    let accessHash: Int64?
+    let settings: HSWallpaperSettings
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case accessHash = "access_hash"
+        case settings
+    }
+}
+
 private struct HSNativeContactRequestBody: Decodable {
     let userID: Int64
     let firstName: String
     let lastName: String
     let phone: String
+    let note: String?
+    let addPhonePrivacyException: Bool?
+}
+
+private struct HSNativeContactNoteBody: Decodable {
+    let note: String
+}
+
+private struct HSNativeImportContactTokenBody: Decodable {
+    let token: String
+}
+
+private struct HSNativeImportContactsBody: Decodable {
+    let contacts: [HSDeviceContactImport]
+}
+
+private struct HSNativeContactPhonesBody: Decodable {
+    let phones: [String]
 }
 
 private struct HSNativeSupergroupCreateBody: Decodable {
@@ -964,6 +1796,31 @@ private struct HSNativeExportInviteBody: Decodable {
     let legacyRevokePermanent: Bool
 }
 
+private struct HSNativeEditInviteBody: Decodable {
+    let link: String
+    let title: String?
+    let expireDate: Int?
+    let usageLimit: Int?
+    let requestNeeded: Bool?
+    let revoked: Bool
+}
+
+private struct HSNativeJoinRequestsBody: Decodable {
+    let link: String?
+}
+
+private struct HSNativeUsernameBody: Decodable {
+    let username: String?
+}
+
+private struct HSNativeDiscussionGroupBody: Decodable {
+    let groupDialogID: Int64?
+
+    enum CodingKeys: String, CodingKey {
+        case groupDialogID = "group_dialog_id"
+    }
+}
+
 private struct HSNativeAccountProfileBody: Decodable {
     let displayName: String?
     let username: String?
@@ -985,17 +1842,51 @@ private struct HSNativePeerNotificationSettingsBody: Decodable {
     let muteInterval: Int?
     let showPreviews: Bool
     let silent: Bool
+    let sound: HSNotificationSound?
 
     enum CodingKeys: String, CodingKey {
         case muteInterval = "mute_interval"
         case showPreviews = "show_previews"
         case silent
+        case sound
+    }
+}
+
+private struct HSNativeRingtoneUploadBody: Decodable {
+    let fileName: String
+    let mimeType: String
+    let data: Data
+
+    enum CodingKeys: String, CodingKey {
+        case fileName = "file_name"
+        case mimeType = "mime_type"
+        case data
     }
 }
 
 private struct HSNativeReportPeerBody: Decodable {
     let reason: HSReportReason
     let message: String
+}
+
+private struct HSNativeReportMessagesBody: Decodable {
+    let messageIDs: [Int64]
+    let option: Data?
+    let message: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case messageIDs = "message_ids"
+        case option
+        case message
+    }
+}
+
+private struct HSNativeMessageIDsBody: Decodable {
+    let messageIDs: [Int64]
+
+    private enum CodingKeys: String, CodingKey {
+        case messageIDs = "message_ids"
+    }
 }
 
 private struct HSNativePushTokenBody: Decodable {
@@ -1042,6 +1933,17 @@ private struct HSNativeRoute {
         queryItems[name].flatMap(Bool.init)
     }
 
+    func rawStringPart(at index: Int) throws -> String {
+        guard parts.indices.contains(index) else {
+            throw HSAPIError.server(code: "BAD_ROUTE", message: "鍘熺敓鍗忚閫傞厤鏃犳硶瑙ｆ瀽璺緞鍙傛暟锛歕(parts.joined(separator: "/"))")
+        }
+        return parts[index]
+    }
+
+    func memberFilterQuery() -> HSSupergroupMemberFilter {
+        queryItems["filter"].flatMap(HSSupergroupMemberFilter.init(rawValue:)) ?? .recent
+    }
+
     func int64Part(at index: Int) throws -> Int64 {
         guard parts.indices.contains(index), let value = Int64(parts[index]) else {
             throw HSAPIError.server(code: "BAD_ROUTE", message: "原生协议适配无法解析路径参数：\(parts.joined(separator: "/"))")
@@ -1054,5 +1956,12 @@ private struct HSNativeRoute {
             throw HSAPIError.server(code: "BAD_ROUTE", message: "原生协议适配无法解析路径参数：\(parts.joined(separator: "/"))")
         }
         return value
+    }
+
+    func stringPart(at index: Int) throws -> String {
+        guard parts.indices.contains(index) else {
+            throw HSAPIError.server(code: "BAD_ROUTE", message: "Native route is missing a path parameter.")
+        }
+        return parts[index].removingPercentEncoding ?? parts[index]
     }
 }

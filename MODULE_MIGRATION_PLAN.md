@@ -76,6 +76,8 @@ Old source references:
 - `submodules/SettingsUI/Sources/Notifications/NotificationsAndSoundsController.swift`
 - `submodules/SettingsUI/Sources/Data and Storage/DataAndStorageSettingsController.swift`
 - `submodules/SettingsUI/Sources/Themes/ThemeSettingsController.swift`
+- `submodules/TelegramCore/Sources/Wallpapers.swift`
+- `submodules/TelegramCore/Sources/ApiUtils/Wallpaper.swift`
 - `submodules/SettingsUI/Sources/Language Selection/LocalizationListController.swift`
 - `submodules/SettingsUI/Sources/DeleteAccountOptionsController.swift`
 - `submodules/SettingsUI/Sources/LogoutOptionsController.swift`
@@ -87,7 +89,10 @@ Native status:
 - Profile avatar update/removal now matches the old `PeerPhotoUpdater` route: local image compression plus existing `photos.uploadProfilePhoto` for new photos, and `photos.updateProfilePhoto` with `inputPhotoEmpty` for removing the current photo.
 - Local passcode/app lock now supports enable, change, disable, 4/6-digit numeric passcodes, manual lock, scene-phase auto-lock, the old auto-lock timeout choices, Face ID/Touch ID unlock, biometric domain-state validation, 6-failure/1-minute retry throttling, an app-switcher privacy cover, and Keychain-backed passcode storage with legacy UserDefaults migration.
 - Account deletion now exists through `account.deleteAccount`, with confirmation, optional SRP password proof, and local session/auth-key cleanup after server confirmation.
-- Remaining parity: old premium account-count limit UI, change email/phone migration flow, dedicated Tips/HSgram features content, separate Power Saving surface instead of the current data/storage-backed entry, share-extension lock state if extensions are restored, notification exceptions/sounds, actual Stories message/server surfaces, theme carousel, wallpapers, app icon choices, full localization packs.
+- Wallpaper catalog/detail/save/install/reset is protocol/facade-ready through existing server MTProto `account.getWallPapers`, `account.getWallPaper`, `account.saveWallPaper`, `account.installWallPaper`, and `account.resetWallPapers`, including file, solid/gradient, and emoticon/no-file wallpaper inputs; UI remains mock-driven until the appearance branch is ready.
+- Notification exceptions/sounds/reset and saved/uploaded ringtones are protocol/facade-ready through existing server MTProto `account.getNotifyExceptions`, `account.resetNotifySettings`, `account.getSavedRingtones`, `account.saveRingtone`, and `account.uploadRingtone`; UI remains mock-driven until the notifications screen branch is ready.
+- Language pack list/preview/full-pack/string/difference sync is protocol/facade-ready through existing server MTProto `langpack.getLanguages`, `langpack.getLanguage`, `langpack.getLangPack`, `langpack.getStrings`, and `langpack.getDifference`; UI remains mock-driven and broader copy migration can wait for the localization pass.
+- Remaining parity: old premium account-count limit UI, change email/phone migration flow, dedicated Tips/HSgram features content, separate Power Saving surface instead of the current data/storage-backed entry, share-extension lock state if extensions are restored, actual Stories message/server surfaces, theme carousel UI, wallpaper UI wiring, app icon choices, full hard-coded copy localization coverage.
 
 ## 3. Private Chat Module
 
@@ -122,10 +127,12 @@ Native status:
 - Private-chat clear history, delete chat, and delete for both now use the existing server/old-iOS `messages.deleteHistory` semantics (`just_clear`, `revoke`, and top-message `max_id`) through the native MTProto transport.
 - Private-chat in-thread search now follows old iOS peer-scoped search: the UI calls the native facade route for the current dialog, which maps to existing server `messages.search` with `inputMessagesFilterEmpty`, remote result navigation, and jump-to-message behavior instead of global-search filtering.
 - Private-chat input activity now follows old iOS `messages.setTyping`: typing, voice recording, media/file/voice upload progress, cancel, and choosing-sticker actions are represented in the native model, sent through the current MTProto peer, parsed from `updateUserTyping` / chat / channel typing updates, and shown transiently in the chat header without triggering list-wide refreshes.
-- Dialogs, old-style All/Unread/Contacts/Groups/Archived filtering, chat-list row layout with 60pt avatars, right-aligned time, top-line outgoing sending/failed/sent/read status icons from local send state plus top-message/read-outbox state, title mute icon, bottom-right unread/marked-unread/pinned accessories, pinned row background, mark-read/mark-unread swipe actions, pinned/archived state, pinned drag reorder, text history, pagination, unread separator with first-unread initial scroll, per-day chat date separators, adjacent same-author bubble grouping with merged tails/corners, outgoing sending/failed/single/double-check receipts backed by local text/media-send pending/failed retry states plus existing MTProto `readOutboxMaxId` / `messages.getPeerDialogs` and `updateReadHistoryOutbox` / `updateReadChannelOutbox` sync updates, text sending, edit/delete/forward/reactions/pins, parsed/rendered message reaction counts with optimistic reaction feedback, edited-message labels, channel author signatures, channel post view/reply counters in the bubble status row, replies, left-swipe reply, reply preview/jump, message links, URL taps, mention/hashtag taps into chat search, server drafts, saved messages, in-chat search, multi-select copy/forward/delete, APNS refresh, and foreground MTProto `updates.getState` / `updates.getDifference` refresh signaling exist, including affected-dialog refresh for common reaction/profile/member/notify/privacy/read/delete/draft/pin/folder/filter/channel/chat updates.
-- Server-backed chat folders now use native MTProto `messages.getDialogFilters`, `messages.updateDialogFilter`, `messages.updateDialogFiltersOrder`, and `messages.toggleDialogFilterTags` through the existing transport facade. The Chats tab appends custom folder tabs from the server, applies old iOS-style include/exclude/pinned/category matching using parsed dialog peer metadata, and includes native folder management for create, edit, delete, drag reorder, and tag-display toggling.
+- Dialogs, old-style All/Unread/Contacts/Groups/Archived filtering, chat-list row layout with 60pt avatars, right-aligned time, top-line outgoing sending/failed/sent/read status icons from local send state plus top-message/read-outbox state, title mute icon, bottom-right unread/marked-unread/pinned accessories, pinned row background, mark-read/mark-unread swipe actions, pinned/archived state, pinned drag reorder, text history, pagination, unread separator with first-unread initial scroll, per-day chat date separators, adjacent same-author bubble grouping with merged tails/corners, outgoing sending/failed/single/double-check receipts backed by local text/media-send pending/failed retry states plus existing MTProto `readOutboxMaxId` / `messages.getPeerDialogs` and `updateReadHistoryOutbox` / `updateReadChannelOutbox` sync updates, message-content read service actions through existing `messages.readMessageContents` for private/basic group media/mention/reaction consume state, text sending, edit/delete/forward/reactions/pins, parsed/rendered message reaction counts with optimistic reaction feedback, reaction detail list service through old-iOS/server `messages.getMessageReactionsList#461b3f48`, edited-message labels, channel author signatures, channel post view/reply counters in the bubble status row plus refresh service through `messages.getMessagesViews`, group/channel read participant snapshots through old-iOS `messages.getMessageReadParticipants#31c1c44f`, replies, left-swipe reply, reply preview/jump, message links, URL taps, mention/hashtag taps into chat search, server drafts, saved messages, in-chat search, multi-select copy/forward/delete, APNS refresh, and foreground MTProto `updates.getState` / `updates.getDifference` refresh signaling exist, including affected-dialog refresh for common reaction/profile/member/notify/privacy/read/delete/draft/pin/folder/filter/channel/chat updates. Mark-read, clear-history, and delete now follow old iOS peer splitting: private/basic groups use `messages.readHistory` / `messages.deleteHistory` / `messages.deleteMessages`, while channels/supergroups use `channels.readHistory` / `channels.deleteHistory` / `channels.deleteMessages`. The current UI branch is mock-driven, so new service calls are protocol/facade-ready but not UI-wired in this pass.
+- Reaction picker cloud state now follows the old managed recent/top/default flows at protocol/facade level through existing `messages.getRecentReactions`, `messages.getTopReactions`, `messages.setDefaultReaction`, `messages.clearRecentReactions`, and default reaction read from `help.getConfig` `Config.reactionsDefault`; UI remains mock-driven.
+- Server-backed chat folders now use native MTProto `messages.getDialogFilters`, `messages.updateDialogFilter`, `messages.updateDialogFiltersOrder`, and `messages.toggleDialogFilterTags` through the existing transport facade. The Chats tab appends custom folder tabs from the server, applies old iOS-style include/exclude/pinned/category matching using parsed dialog peer metadata, and includes native folder management for create, edit, delete, drag reorder, and tag-display toggling. Shared folder invite links and joined-folder maintenance are protocol/facade-ready through existing server `chatlists.exportChatlistInvite`, `chatlists.getExportedInvites`, `chatlists.editExportedInvite`, `chatlists.deleteExportedInvite`, `chatlists.checkChatlistInvite`, `chatlists.joinChatlistInvite`, `chatlists.getChatlistUpdates`, `chatlists.joinChatlistUpdates`, `chatlists.hideChatlistUpdates`, `chatlists.getLeaveChatlistSuggestions`, and `chatlists.leaveChatlist`; UI remains mock-driven.
 - Attachment menu options now mirror the old `AttachmentButtonType` surface for gallery, file, location, contact, poll, todo, and quick reply.
-- Remaining parity: durable local update application, socket/background update streaming, albums/pasteboard/editor tools, thumbnail-backed shared-media cells, old calendar parity, share/action-sheet polish, shared folder invite links, tag-color visual polish, and final folder UI parity styling. Historical server-returned `messageMediaWebPage` previews now parse/render in chat bubbles/shared-link rows, composer-side live previews use existing `messages.getWebPagePreview` with `no_webpage` dismissal on send/draft, and shared media browsing now exposes media/files/links/GIF/voice/music filters through existing `messages.search` with tab counters from old-iOS `messages.getSearchCounters`.
+- Poll and todo message protocols are native facade-ready against the existing server MTProto methods: `messages.sendMedia(inputMediaPoll)`, `messages.sendMedia(inputMediaTodo)`, `messages.sendVote`, `messages.getPollResults`, `messages.getPollVotes`, `messages.toggleTodoCompleted`, and `messages.appendTodoList`. UI remains mock-driven while the UI branch owns this surface.
+- Remaining parity: durable local update application, socket/background update streaming, albums/pasteboard/editor tools, thumbnail-backed shared-media cells, share/action-sheet polish, tag-color visual polish, and final folder UI parity styling. Historical server-returned `messageMediaWebPage` previews now parse/render in chat bubbles/shared-link rows, composer-side live previews use existing `messages.getWebPagePreview` with `no_webpage` dismissal on send/draft, and shared media browsing now exposes media/files/links/GIF/voice/music filters through existing `messages.search`, tab counters from old-iOS `messages.getSearchCounters`, and old calendar/position protocol facades through `messages.getSearchResultsCalendar` / `messages.getSearchResultsPositions`.
 - Production message transport now maps `HSAPIClient.sendMessage` through `HSDeployedServerTransport` / `HSNativeServerTransport` into native MTProto `messages.sendMessage`, so text messages no longer depend on the undeployed `/v1` REST facade. Media sends already route through the existing native MTProto upload + `messages.sendMedia` path. Do not edit server source unless explicitly approved.
 
 ## 4. Groups Module
@@ -161,8 +168,8 @@ Old source references:
 Native status:
 
 - Groups module boundary is in place for supergroup creation, supergroup management, and shared member-search matching.
-- Supergroup creation, detail edit, member list, local member search by name/username/role, shared contact invite picker, remove member, delete member history, configurable admin rights editor, configurable member restrictions with media sub-permissions/duration, group settings editor for slow mode/join-to-send/join requests/pre-history/member list visibility, configurable invite link generation, admin log, and message pins exist.
-- Remaining parity: join-request queue, rules acknowledgement, remote/transliterated member search, banned/restricted user lists, default group-permission editor polish.
+- Supergroup creation, detail edit, member list, server-backed member filters/search for recent/admins/contacts/bots/restricted/banned, local member search by name/username/role, shared contact invite picker, remove member, delete member history, configurable admin rights editor, configurable member restrictions with media sub-permissions/duration, group settings editor for slow mode/join-to-send/join requests/pre-history/member list visibility/anti-spam protection, anti-spam false-positive reporting through existing `channels.reportAntiSpamFalsePositive`, public username check/update service actions, configurable invite link create/list/edit/delete, invite importer/join-request listing, join-request approve/decline and approve-all/decline-all service actions, admin log, message pins, message-content read service actions through existing `channels.readMessageContents`, mark-read through existing `channels.readHistory`, clear-history through existing `channels.deleteHistory`, and message deletion through existing `channels.deleteMessages` exist.
+- Remaining parity: rules acknowledgement, transliterated member search, default group-permission editor polish, and UI polish for dedicated banned/restricted list surfaces.
 
 ## 5. Channels Module
 
@@ -170,7 +177,7 @@ Native boundary:
 
 - `HSgramNative/Channels/ChannelsView.swift`
 - `HSgramNative/Channels/ChannelManageView.swift`
-- Future split: channel visibility/public link controls, discussion group linkage, posting controls, subscriber/admin edge cases, and stats.
+- Future split: channel visibility/public link controls, discussion group UI polish, post discussion/comment UI wiring, posting controls, subscriber/admin edge cases, and stats.
 
 Old source references:
 
@@ -186,8 +193,8 @@ Old source references:
 Native status:
 
 - Channel module boundary is in place for channel list/create/open chat plus channel detail/subscribers/admins/invite links/admin log.
-- Channel list/create/open chat, create-time contact subscriber selection, detail edit, subscriber list, local subscriber search by name/username/role, contact invites, subscriber removal, configurable admin rights editor, configurable invite link generation, and admin log exist.
-- Remaining parity: discussion group linkage, public/private visibility controls, remote/transliterated subscriber/admin search, subscriber/admin edge cases, channel stats if product keeps them.
+- Channel list/create/open chat, create-time contact subscriber selection, detail edit including current linked discussion group parsing from `channels.getFullChannel`, subscriber list, server-backed subscriber/admin/bot/restricted/banned filters, local subscriber search by name/username/role, contact invites, subscriber removal, configurable admin rights editor, public username check/update service actions, discussion-group candidate listing plus set/unlink service actions, channel post discussion snapshot/read service actions through existing `messages.getDiscussionMessage` / `messages.readDiscussion`, channel post view/forward/reply counter refresh through old-iOS `messages.getMessagesViews`, channel/group message read participant snapshots through old-iOS `messages.getMessageReadParticipants#31c1c44f`, channel/group reaction detail lists through old-iOS/server `messages.getMessageReactionsList#461b3f48`, channel message content-read service actions through existing `channels.readMessageContents`, channel mark-read through existing `channels.readHistory`, channel clear-history through existing `channels.deleteHistory`, channel message deletion through existing `channels.deleteMessages`, channel message signature read/write through current server-compatible `channels.toggleSignatures`, signature profile state parsing from channel flags, anti-spam protection read/write plus false-positive reporting through existing `channels.toggleAntiSpam` / `channels.reportAntiSpamFalsePositive`, configurable invite link create/list/edit/delete, invite importer/join-request listing, join-request approve/decline and approve-all/decline-all service actions, and admin log exist.
+- Remaining parity: UI wiring for public/private visibility controls, UI polish for discussion group linkage, post discussion/comment UI wiring after the mock UI lands, signature profile write support after server compatibility approval, transliterated subscriber/admin search, subscriber/admin edge cases, channel stats if product keeps them.
 
 ## 6. Contacts Module
 
@@ -198,7 +205,7 @@ Native boundary:
 - `HSgramNative/Contacts/ContactProfileView.swift`
 - `HSgramNative/Contacts/ContactRow.swift`
 - `HSgramNative/Contacts/ContactInvitePickerSheet.swift`
-- Future split: address-book import, invite contacts, avatar gallery, report actions, and richer device-contact sections.
+- Future split: invite contacts, avatar gallery, report actions, and richer device-contact sections.
 
 Old source references:
 
@@ -211,5 +218,40 @@ Old source references:
 Native status:
 
 - Contacts module boundary is in place for the contacts list, add/search/request sheet, profile actions, reusable contact row, and shared contact invite picker.
-- Contacts list, user search, profile view, message entry, request, accept, decline, delete, block, and unblock exist.
-- Remaining parity: avatar viewing/update, address-book import/invite, report flow, richer profile sections.
+- Contacts list, user search, profile view, message entry, request, accept, decline, delete, block, unblock, device address-book import via existing `contacts.importContacts`, imported-phone cleanup via existing `contacts.deleteByPhones`, contact notes via existing `contacts.addContact` / `contacts.updateContactNote`, add-phone privacy exceptions via existing `contacts.addContact` flags, contact share-link export/import via existing `contacts.exportContactToken` / `contacts.importContactToken`, and native report adapters via existing `account.reportPeer`, `account.reportProfilePhoto`, and `messages.report` exist.
+- Remaining parity: avatar viewing/update, report UI wiring, richer profile sections.
+
+## 7. Media and Stickers Module
+
+Native boundary:
+
+- `HSgramNative/Chats/ChatAttachmentSheet.swift`
+- `HSgramNative/Chats/MessageBubbleView.swift`
+- `HSgramNative/Networking/HSAPIClient.swift`
+- `HSgramNative/Networking/HSNativeMTProto.swift`
+- Future split: sticker pack browser, custom emoji renderer, reaction picker UI, media editor, and pasteboard/album tools.
+
+Old source references:
+
+- `submodules/FeaturedStickersScreen`
+- `submodules/StickerPackPreviewUI`
+- `submodules/TelegramUI/Components/Chat/ChatControllerNode.swift`
+- `submodules/TelegramUI/Components/Chat/ReactionSelectionNode`
+- `submodules/TelegramCore/Sources/State/ManagedRecentStickers.swift`
+- `submodules/TelegramCore/Sources/State/ManagedSynchronizeSavedGifsOperations.swift`
+- `submodules/TelegramCore/Sources/State/MessageReactions.swift`
+
+Native status:
+
+- Media send, receive, download, preview, local cache, auto-download controls, shared-media search, counters, and old calendar/position service facades are covered through the private-chat service layer and existing MTProto media/search methods.
+- Sticker pack catalog identities now retain old-iOS `StickerSet.accessHash`, and the service layer can install/uninstall packs plus mark featured sticker sets as read through existing server MTProto (`messages.installStickerSet`, `messages.uninstallStickerSet`, `messages.readFeaturedStickers`); UI remains mock-driven until the UI branch is ready.
+- Sticker pack detail is protocol/facade-ready through existing server MTProto `messages.getStickerSet`, including id/access-hash and short-name inputs, packs, keywords, and sticker documents for old-iOS `StickerPackPreview` parity.
+- Emoji sticker suggestions are protocol/facade-ready through existing server MTProto `messages.getStickers`, preserving hash/not-modified handling and sticker document metadata for old-iOS composer search parity.
+- Custom emoji document resolution is protocol/facade-ready through existing server MTProto `messages.getCustomEmojiDocuments`, reusing the native sticker document parser for old-iOS `FetchedMediaResource` and animated emoji lookup parity.
+- Custom emoji set listing and search are protocol/facade-ready through existing server MTProto `messages.getEmojiStickers` and `messages.searchCustomEmoji`, preserving hash/not-modified handling and document ids for later custom emoji renderer wiring.
+- Emoji keyword full sync, difference sync, and supported-language lookup are protocol/facade-ready through existing server MTProto `messages.getEmojiKeywords`, `messages.getEmojiKeywordsDifference`, and `messages.getEmojiKeywordsLanguages`, matching the old managed emoji-keyword refresh path while the UI remains mock-driven.
+- Saved GIF cloud state is protocol/facade-ready through existing server MTProto `messages.getSavedGifs` and `messages.saveGif`, matching the old `ManagedSynchronizeSavedGifsOperations` add/remove/sync path and preserving document id/access hash/file reference for later GIF keyboard wiring.
+- Archived sticker pack listing is protocol/facade-ready through existing server MTProto `messages.getArchivedStickers`, including the old iOS namespace flags for stickers, masks, and emoji packs plus offset/limit paging.
+- Recent sticker service state is protocol/facade-ready through existing server MTProto (`messages.getRecentStickers`, `messages.saveRecentSticker`, `messages.clearRecentStickers`) with sticker document ids, access hashes, file references, alt text, dimensions, and server dates preserved; `messages.getFavedStickers` is read and parsed, but current server core returns an empty faved list and does not expose a `messages.faveSticker` app handler yet.
+- Reaction picker service state is protocol/facade-ready through existing server MTProto: available reactions from `messages.getAvailableReactions`, recent reactions from `messages.getRecentReactions`, top reactions from `messages.getTopReactions`, default reaction read from `help.getConfig` `Config.reactionsDefault`, default reaction write through `messages.setDefaultReaction`, and recent clearing through `messages.clearRecentReactions`.
+- Remaining parity: faved sticker write once the server exposes it, custom emoji renderer/UI wiring after the mock UI branch lands, saved GIF keyboard UI wiring, reaction picker UI wiring, albums, pasteboard, and drawing/editor tools.

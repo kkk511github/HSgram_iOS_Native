@@ -52,6 +52,20 @@ protocol HSServerTransport {
         filters: [HSSharedMediaFilter],
         session: HSUserSession
     ) async throws -> [HSSharedMediaCounter]
+    func sharedMediaCalendar(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        offsetDate: Date?,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaCalendar
+    func sharedMediaPositions(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaPositions
     func syncState(session: HSUserSession) async throws -> HSSyncState
     func syncDifference(since state: HSSyncState, session: HSUserSession) async throws -> HSSyncDifference
     func dialogReadState(dialogID: Int64, session: HSUserSession) async throws -> HSDialogReadState
@@ -217,6 +231,38 @@ final class HSDeployedServerTransport: HSServerTransport {
         )
     }
 
+    func sharedMediaCalendar(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        offsetDate: Date?,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaCalendar {
+        try await nativeTransport.sharedMediaCalendar(
+            dialogID: dialogID,
+            filter: filter,
+            offsetID: offsetID,
+            offsetDate: offsetDate,
+            session: session
+        )
+    }
+
+    func sharedMediaPositions(
+        dialogID: Int64,
+        filter: HSSharedMediaFilter,
+        offsetID: Int64?,
+        limit: Int,
+        session: HSUserSession
+    ) async throws -> HSSharedMediaPositions {
+        try await nativeTransport.sharedMediaPositions(
+            dialogID: dialogID,
+            filter: filter,
+            offsetID: offsetID,
+            limit: limit,
+            session: session
+        )
+    }
+
     func syncState(session: HSUserSession) async throws -> HSSyncState {
         try await nativeTransport.syncState(session: session)
     }
@@ -362,6 +408,20 @@ private struct HSNativeContactRequestBody: Decodable {
     let firstName: String
     let lastName: String
     let phone: String
+    let note: String?
+    let addPhonePrivacyException: Bool?
+}
+
+private struct HSNativeContactNoteBody: Decodable {
+    let note: String
+}
+
+private struct HSNativeImportContactTokenBody: Decodable {
+    let token: String
+}
+
+private struct HSNativeImportContactsBody: Decodable {
+    let contacts: [HSDeviceContactImport]
 }
 
 private struct HSNativeSupergroupCreateBody: Decodable {
@@ -429,6 +489,39 @@ struct HSNativeServerContract {
         if parts.count == 2, parts[1] == "dialogs" {
             return .messagesGetDialogs
         }
+        if parts.count == 3, parts[1] == "workspace", parts[2] == "summary" {
+            return .workspaceSummary
+        }
+        if parts.count == 4, parts[1] == "dialog-filters", parts[3] == "shared-links" {
+            return method == "GET" ? .chatlistsGetExportedInvites : .chatlistsExportChatlistInvite
+        }
+        if parts.count == 5, parts[1] == "dialog-filters", parts[3] == "shared-links" {
+            if method == "DELETE" {
+                return .chatlistsDeleteExportedInvite
+            }
+            return .chatlistsEditExportedInvite
+        }
+        if parts.count == 3, parts[1] == "chatlist-invites", method == "GET" {
+            return .chatlistsCheckChatlistInvite
+        }
+        if parts.count == 4, parts[1] == "chatlist-invites", parts[3] == "join", method == "POST" {
+            return .chatlistsJoinChatlistInvite
+        }
+        if parts.count == 4, parts[1] == "dialog-filters", parts[3] == "chatlist-updates" {
+            if method == "GET" {
+                return .chatlistsGetChatlistUpdates
+            }
+            if method == "DELETE" {
+                return .chatlistsHideChatlistUpdates
+            }
+            return .chatlistsJoinChatlistUpdates
+        }
+        if parts.count == 4, parts[1] == "dialog-filters", parts[3] == "leave-suggestions", method == "GET" {
+            return .chatlistsGetLeaveChatlistSuggestions
+        }
+        if parts.count == 4, parts[1] == "dialog-filters", parts[3] == "leave", method == "POST" {
+            return .chatlistsLeaveChatlist
+        }
         if parts.count == 2, parts[1] == "dialog-filters" {
             if method == "GET" {
                 return .messagesGetDialogFilters
@@ -462,12 +555,45 @@ struct HSNativeServerContract {
             if parts.count == 5, method == "DELETE" {
                 return .messagesDeleteMessages
             }
+            if parts.count == 5, parts[4] == "views", method == "POST" {
+                return .messagesGetMessagesViews
+            }
             if parts.count == 6, parts[5] == "forward" {
                 return .messagesForwardMessages
             }
             if parts.count == 6, parts[5] == "reactions" {
                 return .messagesSendReaction
             }
+            if parts.count == 7, parts[5] == "reactions", parts[6] == "list", method == "GET" {
+                return .messagesGetMessageReactionsList
+            }
+            if parts.count == 7, parts[5] == "poll", parts[6] == "vote", method == "POST" {
+                return .messagesSendVote
+            }
+            if parts.count == 7, parts[5] == "poll", parts[6] == "refresh", method == "POST" {
+                return .messagesGetPollResults
+            }
+            if parts.count == 7, parts[5] == "poll", parts[6] == "votes", method == "GET" {
+                return .messagesGetPollVotes
+            }
+            if parts.count == 7, parts[5] == "todo", parts[6] == "toggle", method == "POST" {
+                return .messagesToggleTodoCompleted
+            }
+            if parts.count == 7, parts[5] == "todo", parts[6] == "items", method == "POST" {
+                return .messagesAppendTodoList
+            }
+            if parts.count == 6, parts[5] == "read-participants", method == "GET" {
+                return .messagesGetMessageReadParticipants
+            }
+            if parts.count == 6, parts[5] == "discussion" {
+                return .messagesGetDiscussionMessage
+            }
+            if parts.count == 7, parts[5] == "discussion", parts[6] == "read" {
+                return .messagesReadDiscussion
+            }
+        }
+        if parts.count == 5, parts[1] == "dialogs", parts[3] == "messages", parts[4] == "read-contents", method == "POST" {
+            return .messagesReadMessageContents
         }
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "history", method == "DELETE" {
             return .messagesDeleteHistory
@@ -475,8 +601,20 @@ struct HSNativeServerContract {
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "media", method == "POST" {
             return .messagesSendMedia
         }
+        if parts.count == 4, parts[1] == "dialogs", parts[3] == "polls", method == "POST" {
+            return .messagesSendPoll
+        }
+        if parts.count == 4, parts[1] == "dialogs", parts[3] == "todos", method == "POST" {
+            return .messagesSendTodo
+        }
         if parts.count == 4, parts[1] == "dialogs", parts[3] == "typing", method == "POST" {
             return .messagesSetTyping
+        }
+        if parts.count == 5, parts[1] == "dialogs", parts[3] == "shared-media", parts[4] == "calendar", method == "GET" {
+            return .messagesGetSearchResultsCalendar
+        }
+        if parts.count == 5, parts[1] == "dialogs", parts[3] == "shared-media", parts[4] == "positions", method == "GET" {
+            return .messagesGetSearchResultsPositions
         }
         if parts.count == 5, parts[1] == "dialogs", parts[3] == "shared-media", parts[4] == "counters", method == "GET" {
             return .messagesGetSearchCounters
@@ -508,11 +646,31 @@ struct HSNativeServerContract {
         if parts.count >= 4, parts[1] == "dialogs", parts[3] == "report" {
             return .accountReportPeer
         }
+        if parts.count >= 5, parts[1] == "dialogs", parts[3] == "photo", parts[4] == "report" {
+            return .accountReportProfilePhoto
+        }
+        if parts.count >= 5, parts[1] == "dialogs", parts[3] == "messages", parts[4] == "report" {
+            return .messagesReport
+        }
         if parts.count == 2, parts[1] == "search" {
             return .messagesSearchGlobal
         }
         if parts.count == 2, parts[1] == "contacts" {
             return method == "POST" ? .contactsAddContact : .contactsGetContacts
+        }
+        if parts.count >= 3, parts[1] == "contacts", parts[2] == "import" {
+            if method == "DELETE" {
+                return .contactsDeleteByPhones
+            }
+            if method == "POST" {
+                return .contactsImportContacts
+            }
+        }
+        if parts.count == 3, parts[1] == "contacts", parts[2] == "token", method == "POST" {
+            return .contactsExportContactToken
+        }
+        if parts.count == 4, parts[1] == "contacts", parts[2] == "token", parts[3] == "import", method == "POST" {
+            return .contactsImportContactToken
         }
         if parts.count >= 3, parts[1] == "contacts", parts[2] == "blocked" {
             return .contactsGetBlocked
@@ -531,6 +689,9 @@ struct HSNativeServerContract {
         }
         if parts.count >= 4, parts[1] == "contacts", parts[3] == "decline" {
             return .contactsDeclineContact
+        }
+        if parts.count >= 4, parts[1] == "contacts", parts[3] == "note", method == "PATCH" {
+            return .contactsUpdateContactNote
         }
         if parts.count >= 4, parts[1] == "contacts", parts[3] == "block" {
             return method == "DELETE" ? .contactsUnblock : .contactsBlock
@@ -553,7 +714,13 @@ struct HSNativeServerContract {
         if parts.count >= 3, parts[1] == "settings", parts[2] == "privacy" {
             return method == "PATCH" ? .accountSetPrivacy : .accountGetPrivacy
         }
-        if parts.count >= 3, parts[1] == "settings", parts[2] == "notifications" {
+        if parts.count == 4, parts[1] == "settings", parts[2] == "notifications", parts[3] == "exceptions", method == "GET" {
+            return .accountGetNotifyExceptions
+        }
+        if parts.count == 4, parts[1] == "settings", parts[2] == "notifications", parts[3] == "reset", method == "POST" {
+            return .accountResetNotifySettings
+        }
+        if parts.count == 3, parts[1] == "settings", parts[2] == "notifications" {
             return method == "PATCH" ? .accountUpdateNotifySettings : .accountGetNotifySettings
         }
         if parts.count >= 3, parts[1] == "settings", parts[2] == "storage" {
@@ -565,8 +732,151 @@ struct HSNativeServerContract {
         if parts.count >= 2, parts[1] == "assets" {
             return .messagesGetStickerAndReactionState
         }
+        if parts.count >= 2, parts[1] == "custom-emoji" {
+            if parts.count == 3, parts[2] == "documents" {
+                return method == "GET" ? .messagesGetCustomEmojiDocuments : .unknown
+            }
+            if parts.count == 3, parts[2] == "sticker-sets" {
+                return method == "GET" ? .messagesGetEmojiStickers : .unknown
+            }
+            if parts.count == 3, parts[2] == "search" {
+                return method == "GET" ? .messagesSearchCustomEmoji : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
+        if parts.count >= 2, parts[1] == "emoji" {
+            if parts.count == 3, parts[2] == "keywords" {
+                return method == "GET" ? .messagesGetEmojiKeywords : .unknown
+            }
+            if parts.count == 4, parts[2] == "keywords", parts[3] == "difference" {
+                return method == "GET" ? .messagesGetEmojiKeywordsDifference : .unknown
+            }
+            if parts.count == 4, parts[2] == "keywords", parts[3] == "languages" {
+                return method == "GET" ? .messagesGetEmojiKeywordsLanguages : .unknown
+            }
+            if parts.count == 3, parts[2] == "keyword-languages" {
+                return method == "GET" ? .messagesGetEmojiKeywordsLanguages : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
+        if parts.count >= 2, parts[1] == "localization" {
+            if parts.count == 3, parts[2] == "languages" {
+                return method == "GET" ? .langpackGetLanguages : .unknown
+            }
+            if parts.count == 4, parts[2] == "languages" {
+                return method == "GET" ? .langpackGetLanguage : .unknown
+            }
+            if parts.count == 3, parts[2] == "strings" {
+                return method == "GET" ? .langpackGetStrings : .unknown
+            }
+            if parts.count == 4, parts[2] == "packs" {
+                return method == "GET" ? .langpackGetLangPack : .unknown
+            }
+            if parts.count == 5, parts[2] == "packs", parts[4] == "difference" {
+                return method == "GET" ? .langpackGetDifference : .unknown
+            }
+            return .unknown
+        }
+        if parts.count >= 2, parts[1] == "stickers" {
+            if parts.count == 3, parts[2] == "search" {
+                return method == "GET" ? .messagesGetStickers : .unknown
+            }
+            if parts.count == 5, parts[2] == "sets", parts[3] == "by-short-name" {
+                return method == "GET" ? .messagesGetStickerSet : .unknown
+            }
+            if parts.count == 5, parts[2] == "sets", parts[4] == "install" {
+                if method == "POST" {
+                    return .messagesInstallStickerSet
+                }
+                return method == "DELETE" ? .messagesUninstallStickerSet : .unknown
+            }
+            if parts.count == 4, parts[2] == "sets" {
+                return method == "GET" ? .messagesGetStickerSet : .unknown
+            }
+            if parts.count == 4, parts[2] == "featured", parts[3] == "read", method == "POST" {
+                return .messagesReadFeaturedStickers
+            }
+            if parts.count == 3, parts[2] == "archived" {
+                return method == "GET" ? .messagesGetArchivedStickers : .unknown
+            }
+            if parts.count == 3, parts[2] == "recent" {
+                if method == "GET" {
+                    return .messagesGetRecentStickers
+                }
+                return method == "DELETE" ? .messagesClearRecentStickers : .unknown
+            }
+            if parts.count == 4, parts[2] == "recent" {
+                if method == "POST" || method == "DELETE" {
+                    return .messagesSaveRecentSticker
+                }
+                return .unknown
+            }
+            if parts.count == 3, parts[2] == "faved" {
+                return method == "GET" ? .messagesGetFavedStickers : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
+        if parts.count >= 2, parts[1] == "gifs" {
+            if parts.count == 3, parts[2] == "saved" {
+                return method == "GET" ? .messagesGetSavedGifs : .unknown
+            }
+            if parts.count == 4, parts[2] == "saved" {
+                return method == "POST" || method == "DELETE" ? .messagesSaveGif : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
+        if parts.count >= 2, parts[1] == "wallpapers" {
+            if parts.count == 2 {
+                return method == "GET" ? .accountGetWallPapers : .unknown
+            }
+            if parts.count == 3, parts[2] == "reset" {
+                return method == "POST" ? .accountResetWallPapers : .unknown
+            }
+            if parts.count == 5, parts[2] == "no-file", parts[4] == "install" {
+                return method == "POST" ? .accountInstallWallPaper : .unknown
+            }
+            if parts.count == 3 {
+                return method == "GET" ? .accountGetWallPaper : .unknown
+            }
+            if parts.count == 4, parts[3] == "saved" {
+                return method == "POST" || method == "DELETE" ? .accountSaveWallPaper : .unknown
+            }
+            if parts.count == 4, parts[3] == "install" {
+                return method == "POST" ? .accountInstallWallPaper : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
+        if parts.count >= 2, parts[1] == "reactions" {
+            if parts.count >= 3, parts[2] == "recent" {
+                if method == "DELETE" {
+                    return .messagesClearRecentReactions
+                }
+                return method == "GET" ? .messagesGetRecentReactions : .unknown
+            }
+            if parts.count >= 3, parts[2] == "top" {
+                return method == "GET" ? .messagesGetTopReactions : .unknown
+            }
+            if parts.count >= 3, parts[2] == "default" {
+                if method == "GET" {
+                    return .helpGetConfigDefaultReaction
+                }
+                return method == "PUT" ? .messagesSetDefaultReaction : .unknown
+            }
+            return .messagesGetStickerAndReactionState
+        }
         if parts.count >= 3, parts[1] == "notifications", parts[2] == "push-token" {
             return method == "DELETE" ? .accountUnregisterDevice : .accountRegisterDevice
+        }
+        if parts.count >= 3, parts[1] == "notifications", parts[2] == "ringtones" {
+            if parts.count == 3, method == "GET" {
+                return .accountGetSavedRingtones
+            }
+            if parts.count == 4, parts[3] == "upload", method == "POST" {
+                return .accountUploadRingtone
+            }
+            if parts.count == 4 {
+                return .accountSaveRingtone
+            }
         }
         if parts.count >= 2, parts[1] == "trust" {
             return .trustReadState
@@ -622,22 +932,61 @@ struct HSNativeServerContract {
         if parts.count >= 4, parts[3] == "settings" {
             return .channelsUpdateSettings
         }
+        if parts.count >= 4, parts[3] == "username" {
+            return parts.count >= 5 && parts[4] == "check" ? .channelsCheckUsername : .channelsUpdateUsername
+        }
+        if parts.count == 5, parts[3] == "messages", parts[4] == "read-contents", method == "POST" {
+            return .channelsReadMessageContents
+        }
+        if parts.count == 5, parts[3] == "messages", parts[4] == "views", method == "POST" {
+            return .messagesGetMessagesViews
+        }
+        if parts.count >= 6, parts[3] == "messages", parts[5] == "read-participants", method == "GET" {
+            return .messagesGetMessageReadParticipants
+        }
+        if parts.count >= 7, parts[3] == "messages", parts[5] == "reactions", parts[6] == "list", method == "GET" {
+            return .messagesGetMessageReactionsList
+        }
         if parts.count >= 6, parts[3] == "messages", parts[5] == "pin" {
             return .messagesUpdatePinnedMessage
         }
         if parts.count >= 6, parts[3] == "messages", parts[5] == "link" {
             return .messagesExportMessageLink
         }
+        if parts.count >= 7, parts[3] == "messages", parts[5] == "anti-spam", parts[6] == "false-positive" {
+            return .channelsReportAntiSpamFalsePositive
+        }
         if parts.count >= 4, parts[3] == "admin-log" {
             return .channelsGetAdminLog
         }
+        if parts.count >= 5, parts[3] == "join-requests" {
+            if parts[4] == "approve-all" || parts[4] == "decline-all" {
+                return .messagesHideAllChatJoinRequests
+            }
+            return .messagesHideChatJoinRequest
+        }
+        if parts.count >= 4, parts[3] == "invite-importers" {
+            return .messagesGetChatInviteImporters
+        }
         if parts.count >= 4, parts[3] == "invites" {
+            if method == "GET" {
+                return .messagesGetExportedChatInvites
+            }
+            if method == "PATCH" {
+                return .messagesEditExportedChatInvite
+            }
+            if method == "DELETE" {
+                return .messagesDeleteExportedChatInvite
+            }
             return .messagesExportChatInvite
         }
         return .channelsGetFullChannel
     }
 
     private func channelOperation(parts: [String], method: String) -> HSNativeServerOperation {
+        if parts.count == 3, parts[2] == "discussion-groups" {
+            return .channelsGetGroupsForDiscussion
+        }
         if parts.count == 2 {
             return method == "POST" ? .channelsCreateBroadcast : .messagesGetDialogs
         }
@@ -659,10 +1008,49 @@ struct HSNativeServerContract {
         if parts.count >= 4, parts[3] == "settings" {
             return .channelsUpdateSettings
         }
+        if parts.count >= 4, parts[3] == "discussion-group" {
+            return .channelsSetDiscussionGroup
+        }
+        if parts.count >= 4, parts[3] == "username" {
+            return parts.count >= 5 && parts[4] == "check" ? .channelsCheckUsername : .channelsUpdateUsername
+        }
+        if parts.count == 5, parts[3] == "messages", parts[4] == "read-contents", method == "POST" {
+            return .channelsReadMessageContents
+        }
+        if parts.count == 5, parts[3] == "messages", parts[4] == "views", method == "POST" {
+            return .messagesGetMessagesViews
+        }
+        if parts.count >= 6, parts[3] == "messages", parts[5] == "read-participants", method == "GET" {
+            return .messagesGetMessageReadParticipants
+        }
+        if parts.count >= 7, parts[3] == "messages", parts[5] == "reactions", parts[6] == "list", method == "GET" {
+            return .messagesGetMessageReactionsList
+        }
         if parts.count >= 4, parts[3] == "admin-log" {
             return .channelsGetAdminLog
         }
+        if parts.count >= 7, parts[3] == "messages", parts[5] == "anti-spam", parts[6] == "false-positive" {
+            return .channelsReportAntiSpamFalsePositive
+        }
+        if parts.count >= 5, parts[3] == "join-requests" {
+            if parts[4] == "approve-all" || parts[4] == "decline-all" {
+                return .messagesHideAllChatJoinRequests
+            }
+            return .messagesHideChatJoinRequest
+        }
+        if parts.count >= 4, parts[3] == "invite-importers" {
+            return .messagesGetChatInviteImporters
+        }
         if parts.count >= 4, parts[3] == "invites" {
+            if method == "GET" {
+                return .messagesGetExportedChatInvites
+            }
+            if method == "PATCH" {
+                return .messagesEditExportedChatInvite
+            }
+            if method == "DELETE" {
+                return .messagesDeleteExportedChatInvite
+            }
             return .messagesExportChatInvite
         }
         return .channelsGetFullChannel
@@ -679,10 +1067,28 @@ enum HSNativeServerOperation: String, Equatable {
     case messagesDeleteDialogFilter = "messages.updateDialogFilter(delete)"
     case messagesUpdateDialogFiltersOrder = "messages.updateDialogFiltersOrder"
     case messagesToggleDialogFilterTags = "messages.toggleDialogFilterTags"
+    case chatlistsExportChatlistInvite = "chatlists.exportChatlistInvite"
+    case chatlistsDeleteExportedInvite = "chatlists.deleteExportedInvite"
+    case chatlistsEditExportedInvite = "chatlists.editExportedInvite"
+    case chatlistsGetExportedInvites = "chatlists.getExportedInvites"
+    case chatlistsCheckChatlistInvite = "chatlists.checkChatlistInvite"
+    case chatlistsJoinChatlistInvite = "chatlists.joinChatlistInvite"
+    case chatlistsGetChatlistUpdates = "chatlists.getChatlistUpdates"
+    case chatlistsJoinChatlistUpdates = "chatlists.joinChatlistUpdates"
+    case chatlistsHideChatlistUpdates = "chatlists.hideChatlistUpdates"
+    case chatlistsGetLeaveChatlistSuggestions = "chatlists.getLeaveChatlistSuggestions"
+    case chatlistsLeaveChatlist = "chatlists.leaveChatlist"
     case messagesGetAllDrafts = "messages.getAllDrafts"
     case messagesGetHistory = "messages.getHistory"
     case messagesSendMessage = "messages.sendMessage"
     case messagesSendMedia = "messages.sendMedia"
+    case messagesSendPoll = "messages.sendMedia(inputMediaPoll)"
+    case messagesSendTodo = "messages.sendMedia(inputMediaTodo)"
+    case messagesSendVote = "messages.sendVote"
+    case messagesGetPollResults = "messages.getPollResults"
+    case messagesGetPollVotes = "messages.getPollVotes"
+    case messagesToggleTodoCompleted = "messages.toggleTodoCompleted"
+    case messagesAppendTodoList = "messages.appendTodoList"
     case messagesSetTyping = "messages.setTyping"
     case messagesSaveDraft = "messages.saveDraft"
     case messagesReadHistory = "messages.readHistory"
@@ -695,18 +1101,70 @@ enum HSNativeServerOperation: String, Equatable {
     case messagesDeleteHistory = "messages.deleteHistory"
     case messagesForwardMessages = "messages.forwardMessages"
     case messagesSendReaction = "messages.sendReaction"
+    case messagesGetDiscussionMessage = "messages.getDiscussionMessage"
+    case messagesReadDiscussion = "messages.readDiscussion"
+    case messagesReadMessageContents = "messages.readMessageContents"
+    case messagesGetMessagesViews = "messages.getMessagesViews"
+    case messagesGetMessageReadParticipants = "messages.getMessageReadParticipants"
+    case messagesGetMessageReactionsList = "messages.getMessageReactionsList"
     case messagesSearch = "messages.search"
     case messagesGetSearchCounters = "messages.getSearchCounters"
+    case messagesGetSearchResultsCalendar = "messages.getSearchResultsCalendar"
+    case messagesGetSearchResultsPositions = "messages.getSearchResultsPositions"
     case messagesSearchGlobal = "messages.searchGlobal"
     case messagesUpdatePinnedMessage = "messages.updatePinnedMessage"
     case messagesExportMessageLink = "messages.exportMessageLink"
     case messagesExportChatInvite = "messages.exportChatInvite"
+    case messagesGetExportedChatInvites = "messages.getExportedChatInvites"
+    case messagesEditExportedChatInvite = "messages.editExportedChatInvite"
+    case messagesDeleteExportedChatInvite = "messages.deleteExportedChatInvite"
+    case messagesGetChatInviteImporters = "messages.getChatInviteImporters"
+    case messagesHideChatJoinRequest = "messages.hideChatJoinRequest"
+    case messagesHideAllChatJoinRequests = "messages.hideAllChatJoinRequests"
     case messagesGetStickerAndReactionState = "messages/stickers/reactions state"
+    case messagesInstallStickerSet = "messages.installStickerSet"
+    case messagesUninstallStickerSet = "messages.uninstallStickerSet"
+    case messagesReadFeaturedStickers = "messages.readFeaturedStickers"
+    case messagesGetStickerSet = "messages.getStickerSet"
+    case messagesGetStickers = "messages.getStickers"
+    case messagesGetCustomEmojiDocuments = "messages.getCustomEmojiDocuments"
+    case messagesGetEmojiStickers = "messages.getEmojiStickers"
+    case messagesSearchCustomEmoji = "messages.searchCustomEmoji"
+    case messagesGetEmojiKeywords = "messages.getEmojiKeywords"
+    case messagesGetEmojiKeywordsDifference = "messages.getEmojiKeywordsDifference"
+    case messagesGetEmojiKeywordsLanguages = "messages.getEmojiKeywordsLanguages"
+    case langpackGetLanguages = "langpack.getLanguages"
+    case langpackGetLanguage = "langpack.getLanguage"
+    case langpackGetLangPack = "langpack.getLangPack"
+    case langpackGetStrings = "langpack.getStrings"
+    case langpackGetDifference = "langpack.getDifference"
+    case messagesGetArchivedStickers = "messages.getArchivedStickers"
+    case messagesGetRecentStickers = "messages.getRecentStickers"
+    case messagesSaveRecentSticker = "messages.saveRecentSticker"
+    case messagesClearRecentStickers = "messages.clearRecentStickers"
+    case messagesGetFavedStickers = "messages.getFavedStickers"
+    case messagesGetSavedGifs = "messages.getSavedGifs"
+    case messagesSaveGif = "messages.saveGif"
+    case accountGetWallPapers = "account.getWallPapers"
+    case accountGetWallPaper = "account.getWallPaper"
+    case accountSaveWallPaper = "account.saveWallPaper"
+    case accountInstallWallPaper = "account.installWallPaper"
+    case accountResetWallPapers = "account.resetWallPapers"
+    case messagesGetRecentReactions = "messages.getRecentReactions"
+    case messagesGetTopReactions = "messages.getTopReactions"
+    case helpGetConfigDefaultReaction = "help.getConfig(reactions_default)"
+    case messagesSetDefaultReaction = "messages.setDefaultReaction"
+    case messagesClearRecentReactions = "messages.clearRecentReactions"
     case contactsGetContacts = "contacts.getContacts"
     case contactsGetBlocked = "contacts.getBlocked"
     case contactsResolve = "contacts.resolve"
     case contactsSearch = "contacts.search"
+    case contactsImportContacts = "contacts.importContacts"
+    case contactsDeleteByPhones = "contacts.deleteByPhones"
+    case contactsExportContactToken = "contacts.exportContactToken"
+    case contactsImportContactToken = "contacts.importContactToken"
     case contactsAddContact = "contacts.addContact"
+    case contactsUpdateContactNote = "contacts.updateContactNote"
     case contactsRequestContact = "contacts.requestContact"
     case contactsAcceptContact = "contacts.acceptContact"
     case contactsDeclineContact = "contacts.declineContact"
@@ -724,7 +1182,13 @@ enum HSNativeServerOperation: String, Equatable {
     case channelsEditBanned = "channels.editBanned"
     case channelsDeleteParticipantHistory = "channels.deleteParticipantHistory"
     case channelsUpdateSettings = "channels.updateSettings"
+    case channelsCheckUsername = "channels.checkUsername"
+    case channelsUpdateUsername = "channels.updateUsername"
+    case channelsGetGroupsForDiscussion = "channels.getGroupsForDiscussion"
+    case channelsSetDiscussionGroup = "channels.setDiscussionGroup"
     case channelsGetAdminLog = "channels.getAdminLog"
+    case channelsReadMessageContents = "channels.readMessageContents"
+    case channelsReportAntiSpamFalsePositive = "channels.reportAntiSpamFalsePositive"
     case accountGetProfile = "users.getFullUser/account.getProfile"
     case accountUpdateProfile = "account.updateProfile/account.updateUsername"
     case accountDeleteAccount = "account.deleteAccount"
@@ -733,7 +1197,14 @@ enum HSNativeServerOperation: String, Equatable {
     case accountGetNotifySettings = "account.getNotifySettings"
     case accountUpdateNotifySettings = "account.updateNotifySettings"
     case accountUpdatePeerNotifySettings = "account.updateNotifySettings(peer)"
+    case accountGetNotifyExceptions = "account.getNotifyExceptions"
+    case accountResetNotifySettings = "account.resetNotifySettings"
+    case accountGetSavedRingtones = "account.getSavedRingtones"
+    case accountSaveRingtone = "account.saveRingtone"
+    case accountUploadRingtone = "account.uploadRingtone"
     case accountReportPeer = "account.reportPeer"
+    case accountReportProfilePhoto = "account.reportProfilePhoto"
+    case messagesReport = "messages.report"
     case accountGetStorageStats = "storage/settings local+remote state"
     case accountGetAuthorizations = "account.getAuthorizations"
     case accountResetAuthorization = "account.resetAuthorization"
